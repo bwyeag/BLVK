@@ -20,9 +20,7 @@ class ContextErrorCategory : public std::error_category {
    public:
     ContextErrorCategory() {}
     [[nodiscard]]
-    const char* name() const noexcept override {
-        return "Vulkan Context error";
-    }
+    const char* name() const noexcept override;
     [[nodiscard]]
     std::string message(int ev) const override;
 };

@@ -12,6 +12,7 @@
 #include <variant>
 #include <vector>
 namespace BL {
+const char* get_present_mode_string(VkPresentModeKHR mode);
 struct WindowInitState_t {
     enum Type : uint16_t {
         InitUnvisiable = 0x1,
@@ -29,18 +30,18 @@ struct WindowInitState_t {
 using WindowInitState = WindowInitState_t::Type;
 struct WindowInit_t {
     using State = WindowInitState;
-    State init_state = State(State::Specified | State::Decorated |
-                             State::Resizable | State::UsePrimaryMonitor);
+    State init_state {State(State::Specified | State::Decorated |
+                             State::Resizable | State::UsePrimaryMonitor)};
     uint32_t init_size_x, init_size_y;
-    uint32_t init_pos_x = (~0u), init_pos_y = (~0u);
-    uint32_t max_size_x = GLFW_DONT_CARE, max_size_y = GLFW_DONT_CARE,
-             min_size_x = GLFW_DONT_CARE, min_size_y = GLFW_DONT_CARE;
+    uint32_t init_pos_x {~0u}, init_pos_y {~0u};
+    uint32_t max_size_x{GLFW_DONT_CARE}, max_size_y{GLFW_DONT_CARE},
+             min_size_x{GLFW_DONT_CARE}, min_size_y{GLFW_DONT_CARE};
     const char* init_title;
     std::function<bool(GLFWmonitor*)> monitor_choose;
 };
 struct WindowContextSwapchainInit_t {
-    VkSwapchainCreateFlagsKHR flags = 0;
-    bool isFrameRateLimited = true;
+    VkSwapchainCreateFlagsKHR flags {0};
+    bool isFrameRateLimited {true};
 };
 struct WindowErrorEnum_t {
     enum Type {
@@ -57,9 +58,7 @@ class WindowErrorCategory : public std::error_category {
    public:
     WindowErrorCategory() {}
     [[nodiscard]]
-    const char* name() const noexcept override {
-        return "Window error";
-    }
+    const char* name() const noexcept override;
     [[nodiscard]]
     std::string message(int ev) const override;
 };
@@ -287,7 +286,6 @@ struct WindowContext {
     void iterate_callback(Args... vars);
     // Vulkan swapchain
     VkResult recreateSwapchain();
-
     VkResult createSwapchain(const WindowContextSwapchainInit_t* pInit);
 
    private:

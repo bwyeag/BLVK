@@ -1,6 +1,27 @@
-#include "bl_window.hpp"
-#include "bl_output.hpp"
+#include <bl_output.hpp>
+#include <bl_window.hpp>
 namespace BL {
+const char* get_present_mode_string(VkPresentModeKHR mode) {
+    switch (mode) {
+        case VK_PRESENT_MODE_FIFO_KHR:
+            return "VK_PRESENT_MODE_FIFO_KHR";
+        case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+            return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+        case VK_PRESENT_MODE_IMMEDIATE_KHR:
+            return "VK_PRESENT_MODE_IMMEDIATE_KHR";
+        case VK_PRESENT_MODE_MAILBOX_KHR:
+            return "VK_PRESENT_MODE_MAILBOX_KHR";
+        case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:
+            return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+        case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:
+            return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+        default:
+            return "Unknown Mode";
+    }
+}
+const char* WindowErrorCategory::name() const noexcept {
+    return "WindowContext error";
+}
 std::string WindowErrorCategory::message(int ev) const {
     using Enum = WindowErrorEnum;
     switch (static_cast<Enum>(ev)) {
@@ -118,7 +139,8 @@ std::error_code WindowContext::initialize() noexcept {
 void WindowContext::terminate() {
     glfwTerminate();
 }
-std::error_code WindowContext::create_window(const WindowInit_t& init) noexcept {
+std::error_code WindowContext::create_window(
+    const WindowInit_t& init) noexcept {
     using State = WindowInitState;
     using Error = WindowErrorEnum;
     if (init.init_state & State::UsePrimaryMonitor) {
@@ -215,7 +237,7 @@ VkResult WindowContext::_createSwapChain_Internal() {
     auto& createInfo = swapchainCreateInfo;
     if (VkResult result = vkCreateSwapchainKHR(context.device, &createInfo,
                                                nullptr, &swapchain)) {
-        print_error("createSwapchain",
+        print_error("WindowContext",
                     "Failed to create a swapchain! Error "
                     "code:",
                     int32_t(result));
@@ -224,7 +246,7 @@ VkResult WindowContext::_createSwapChain_Internal() {
     uint32_t swapchainImageCount;
     if (VkResult result = vkGetSwapchainImagesKHR(
             context.device, swapchain, &swapchainImageCount, nullptr)) {
-        print_error("createSwapchain",
+        print_error("WindowContext",
                     "Failed to get the count of swapchain images! Error code:",
                     int32_t(result));
         return result;
@@ -234,7 +256,7 @@ VkResult WindowContext::_createSwapChain_Internal() {
                                                   &swapchainImageCount,
                                                   swapchainImages.data())) {
         print_error(
-            "createSwapchain",
+            "WindowContext",
             "Failed to get swapchain images! Error code:", int32_t(result));
         return result;
     }
@@ -266,7 +288,7 @@ VkResult WindowContext::createSwapchain(
     if (VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
             context.phyDevice, surface, &surface_capabilities)) {
         print_error(
-            "createSwapchain",
+            "WindowContext",
             "Failed to get physical device surface capabilities! Error code:",
             int32_t(result));
         return result;
@@ -324,7 +346,7 @@ VkResult WindowContext::createSwapchain(
             createInfo.imageFormat = availableFormats[0].format;
             createInfo.imageColorSpace = availableFormats[0].colorSpace;
             print_warning(
-                "createSwapchain",
+                "WindowContext",
                 "Failed to select a four-component UNORM surface format!\n");
         }
     // 指定呈现模式
@@ -332,13 +354,13 @@ VkResult WindowContext::createSwapchain(
     if (VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(
             context.phyDevice, surface, &surfacePresentModeCount, nullptr)) {
         print_error(
-            "createSwapchain",
+            "WindowContext",
             "Failed to get the count of surface present modes! Error code:",
             int32_t(result));
         return result;
     }
     if (!surfacePresentModeCount) {
-        print_error("createSwapchain",
+        print_error("WindowContext",
                     "Failed to find any surface present mode!");
         abort();
     }
@@ -346,7 +368,7 @@ VkResult WindowContext::createSwapchain(
     if (VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(
             context.phyDevice, surface, &surfacePresentModeCount,
             surfacePresentModes.data())) {
-        print_error("createSwapchain",
+        print_error("WindowContext",
                     "Failed to get surface present "
                     "modes! Error code:",
                     int32_t(result));
@@ -359,30 +381,7 @@ VkResult WindowContext::createSwapchain(
                 createInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
                 break;
             }
-    const char* mode_str;
-    switch (createInfo.presentMode) {
-        case VK_PRESENT_MODE_FIFO_KHR:
-            mode_str = "VK_PRESENT_MODE_FIFO_KHR";
-            break;
-        case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-            mode_str = "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
-            break;
-        case VK_PRESENT_MODE_IMMEDIATE_KHR:
-            mode_str = "VK_PRESENT_MODE_IMMEDIATE_KHR";
-            break;
-        case VK_PRESENT_MODE_MAILBOX_KHR:
-            mode_str = "VK_PRESENT_MODE_MAILBOX_KHR";
-            break;
-        case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:
-            mode_str = "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
-            break;
-        case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:
-            mode_str = "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
-            break;
-        default:
-            mode_str = "Unknown!";
-            break;
-    }
+    const char* mode_str = get_present_mode_string(createInfo.presentMode);
     print_log("Present Mode", mode_str);
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
     createInfo.flags = pInit->flags;

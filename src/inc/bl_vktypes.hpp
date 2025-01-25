@@ -2,12 +2,14 @@
 #define BOUNDLESS_TYPES_FILE
 #include <vulkan/vulkan.h>
 #include <cstdint>
-#include "bl_output.hpp"
-#include "bl_vkcontext.hpp"
+#include <bl_output.hpp>
+#include <bl_vkcontext.hpp>
 namespace BL {
 /*
  * Vulkan类型封装
  */
+// todo: OcclusionQueries 修改（waitall()）
+
 constexpr VkFenceCreateInfo make_fence_createinfo(
     VkFenceCreateFlags flags = 0) {
     return {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = flags};
@@ -1334,7 +1336,7 @@ class OcclusionQueries {
         queryPool.create(VK_QUERY_TYPE_OCCLUSION, capacity);
     }
     void recreate(uint32_t capacity) {
-        wait_all();
+        // wait_all();
         queryPool.~QueryPool();
         create(capacity);
     }

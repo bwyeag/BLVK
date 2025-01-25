@@ -1,7 +1,10 @@
-#include "bl_vkcontext.hpp"
+#include <bl_vkcontext.hpp>
 
 namespace BL {
 thread_local static ContextThreadData local_data;
+const char* ContextErrorCategory::name() const noexcept {
+    return "Vulkan Context error";
+}
 std::string ContextErrorCategory::message(int ev) const {
     using Enum = ContextErrorEnum;
     switch (static_cast<Enum>(ev)) {
