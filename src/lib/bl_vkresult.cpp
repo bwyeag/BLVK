@@ -4,7 +4,7 @@
 namespace BL {
 namespace _vkresult {
 using Enum = VulkanErrorEnum;
-static constexpr std::unordered_map<VulkanErrorEnum, const char*> vk_resultmap{
+static const std::unordered_map<VulkanErrorEnum, const char*> vk_resultmap {
     {Enum::VK_SUCCESS, "No error"},
     {Enum::VK_NOT_READY, "VK_NOT_READY"},
     {Enum::VK_TIMEOUT, "VK_TIMEOUT"},

@@ -1,5 +1,6 @@
 #ifndef _BOUNDLESS_WINDOW_HPP_FILE_
 #define _BOUNDLESS_WINDOW_HPP_FILE_
+#include <bl_vkcontext.hpp>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <cstdint>
@@ -36,6 +37,10 @@ struct WindowInit_t {
              min_size_x = GLFW_DONT_CARE, min_size_y = GLFW_DONT_CARE;
     const char* init_title;
     std::function<bool(GLFWmonitor*)> monitor_choose;
+};
+struct WindowContextSwapchainInit_t {
+    VkSwapchainCreateFlagsKHR flags = 0;
+    bool isFrameRateLimited = true;
 };
 struct WindowErrorEnum_t {
     enum Type {
@@ -86,6 +91,8 @@ struct WindowCallbackEnum_t {
         CursorEnter,
         Scroll,
         DropFile,
+        SwapchainCreate,
+        SwapchainDestroy,
         MaxCallbackEnum  // 最后一个，标记枚举类型的数量
     };
 };
@@ -121,6 +128,9 @@ void __glfw_callback_charmods(GLFWwindow* window,
 void __glfw_callback_drop(GLFWwindow* window,
                           int path_count,
                           const char* paths[]);
+// 为了添加一个 Callback 先添加一个 FnType 指定函数类型
+// 再添加到 Wrapper 中, 在文件末尾添加 callback_set 函数
+// 第一个参数必须是 WindowContext*
 template <CBEnum Type>
 struct FnType {};
 #define _FNTYPE(e, fn)                  \
@@ -145,6 +155,8 @@ _FNTYPE(CBEnum::CursorPos, void(WindowContext*, double, double))
 _FNTYPE(CBEnum::CursorEnter, void(WindowContext*, int))
 _FNTYPE(CBEnum::Scroll, void(WindowContext*, double, double))
 _FNTYPE(CBEnum::DropFile, void(WindowContext*, int, const char*[]))
+_FNTYPE(CBEnum::SwapchainCreate, void(WindowContext*))
+_FNTYPE(CBEnum::SwapchainDestroy, void(WindowContext*))
 #undef _FNTYPE
 template <CBEnum Type>
 void callback_set(WindowContext* ctx) {
@@ -167,7 +179,9 @@ using Wrapper = std::variant<std::monostate,
                              FnType<CBEnum::CursorPos>,
                              FnType<CBEnum::CursorEnter>,
                              FnType<CBEnum::Scroll>,
-                             FnType<CBEnum::DropFile>>;
+                             FnType<CBEnum::DropFile>,
+                             FnType<CBEnum::SwapchainCreate>,
+                             FnType<CBEnum::SwapchainDestroy>>;
 }  // namespace _internal_windowcb
 template <WindowCallbackEnum Type>
 using WindowCallbackFunc = _internal_windowcb::FnType<Type>;
@@ -189,34 +203,34 @@ struct CallbackHandle {
     CallbackNode* operator->() { return ptr; }
 };
 struct WindowContext {
-    GLFWwindow* pWindow = nullptr;
-    GLFWmonitor* pMonitor = nullptr;
+    GLFWwindow* pWindow{nullptr};
+    GLFWmonitor* pMonitor{nullptr};
     std::string title;
-    double current_time = 0.0, delta_time = 0.0;
+    double current_time{0.0}, delta_time{0.0};
     std::deque<CallbackNode> callbacks;
     CallbackHandle callback_free{nullptr};
     CallbackHandle callback_head[size_t(WindowCallbackEnum::MaxCallbackEnum)]{};
 
-    // VkSurfaceKHR surface = VK_NULL_HANDLE;
-    // VkSwapchainKHR swapchain = VK_NULL_HANDLE;
-    // std::vector<VkImage> swapchainImages;
-    // std::vector<VkImageView> swapchainImageViews;
-    // VkSwapchainCreateInfoKHR swapchainCreateInfo = {};
+    VkSurfaceKHR surface{VK_NULL_HANDLE};
+    VkSwapchainKHR swapchain{VK_NULL_HANDLE};
+    std::vector<VkImage> swapchainImages;
+    std::vector<VkImageView> swapchainImageViews;
+    VkSwapchainCreateInfoKHR swapchainCreateInfo{};
 
     WindowContext() = default;
     WindowContext(const WindowInit_t& pInit, std::error_code& ec) {
-        create_window(pInit, ec);
+        ec = create_window(pInit);
     }
     WindowContext(WindowContext&&) = delete;
     ~WindowContext() {}
-    static void initialize(std::error_code& ec);
+    static std::error_code initialize();
     static void terminate();
     static void wait_events() { glfwWaitEvents(); }
     static void wait_events(double seconds) { glfwWaitEventsTimeout(seconds); }
     static void poll_events() { glfwPollEvents(); }
     static void post_empty_event() { glfwPostEmptyEvent(); }
 
-    void create_window(const WindowInit_t& pInit, std::error_code& ec) noexcept;
+    std::error_code create_window(const WindowInit_t& pInit) noexcept;
     void destroy() noexcept;
     void update() noexcept;
 
@@ -269,11 +283,26 @@ struct WindowContext {
     [[nodiscard]]
     CallbackHandle insert_callback(WindowCallbackFunc<Type>::Type&& func);
     void erase_callback(CallbackHandle handle);
+    template <WindowCallbackEnum Type, typename... Args>
+    void iterate_callback(Args... vars);
+    // Vulkan swapchain
+    VkResult recreateSwapchain();
+
+    VkResult createSwapchain(const WindowContextSwapchainInit_t* pInit);
+
+   private:
+    VkResult _createSurface();
+    VkResult _getSurfaceFormats(std::vector<VkSurfaceFormatKHR>& formats);
+    VkResult _setSurfaceFormat(
+        VkSurfaceFormatKHR surfaceFormat,
+        std::vector<VkSurfaceFormatKHR>& availableSurfaceFormats);
+    VkResult _createSwapChain_Internal();
 };
 template <WindowCallbackEnum Type>
 [[nodiscard]]
 CallbackHandle WindowContext::insert_callback(
     WindowCallbackFunc<Type>::Type&& func) {
+    constexpr size_t typen {static_cast<size_t>(Type)};
     using FuncType = WindowCallbackFunc<Type>::Type;
     CallbackHandle result;
     if (callback_free) {
@@ -284,22 +313,39 @@ CallbackHandle WindowContext::insert_callback(
     } else {
         callbacks.emplace_back(
             WindowCallbackFunc<Type>{std::forward<FuncType>(func)});
-        result= &callbacks.back();
+        result = &callbacks.back();
     }
-    if (!callback_head[size_t(Type)]) {
+    if (!callback_head[typen]) {
         callback_set<Type>(this);
         result.ptr->next = result;
         result.ptr->rear = result;
     } else {
-        CallbackHandle left{callback_head[size_t(Type)].ptr->rear};
-        CallbackHandle right{callback_head[size_t(Type)]};
+        CallbackHandle left{callback_head[typen].ptr->rear};
+        CallbackHandle right{callback_head[typen]};
         left.ptr->next = result.ptr;
         result.ptr->next = right.ptr;
         right.ptr->rear = result.ptr;
         result.ptr->rear = left.ptr;
     }
-    callback_head[size_t(Type)] = result;
+    callback_head[typen] = result;
     return result;
+}
+template <WindowCallbackEnum Type, typename... Args>
+void WindowContext::iterate_callback(Args... vars) {
+    constexpr size_t typen {static_cast<size_t>(Type)};
+    static_assert(0 < typen && typen < static_assert<size_t>(WindowCallbackEnum::MaxCallbackEnum), "Wrong enum type");
+    static_assert(
+        requires(WindowCallbackFunc<Type>::Type fn) { fn(this, vars...); },
+        "Wrong argument");
+    CallbackHandle p = ctx->callback_head[typen], end = p;
+    while (p) {
+        auto* fn = std::get_if<WindowCallbackFunc<e>::Type>(&p->func);
+        if (fn)
+            (*fn)(this, vars...);
+        p = p->next;
+        if (p == end)
+            break;
+    }
 }
 namespace _internal_windowcb {
 #define _SET_CB(e, sent)                        \
@@ -307,22 +353,44 @@ namespace _internal_windowcb {
     void callback_set<e>(WindowContext * ctx) { \
         sent;                                   \
     }
-_SET_CB(CBEnum::WindowPos, glfwSetWindowPosCallback(ctx->pWindow, __glfw_callback_windowpos))
-_SET_CB(CBEnum::WindowSize, glfwSetWindowSizeCallback(ctx->pWindow, __glfw_callback_windowsize))
-_SET_CB(CBEnum::WindowClose, glfwSetWindowCloseCallback(ctx->pWindow, __glfw_callback_windowclose))
-_SET_CB(CBEnum::WindowRefresh, glfwSetWindowRefreshCallback(ctx->pWindow, __glfw_callback_windowrefresh))
-_SET_CB(CBEnum::WindowFocus, glfwSetWindowFocusCallback(ctx->pWindow, __glfw_callback_windowfocus))
-_SET_CB(CBEnum::WindowIconify, glfwSetWindowIconifyCallback(ctx->pWindow, __glfw_callback_windowiconify))
-_SET_CB(CBEnum::WindowMaximize, glfwSetWindowMaximizeCallback(ctx->pWindow, __glfw_callback_windowmaximize))
-_SET_CB(CBEnum::WindowContentScale, glfwSetWindowContentScaleCallback(ctx->pWindow, __glfw_callback_windowcontentscale))
-_SET_CB(CBEnum::Keyboard, glfwSetKeyCallback(ctx->pWindow, __glfw_callback_keybord))
-_SET_CB(CBEnum::CharInput, glfwSetCharCallback(ctx->pWindow, __glfw_callback_charinput))
-_SET_CB(CBEnum::CharMods, glfwSetCharModsCallback(ctx->pWindow, __glfw_callback_charmods))
-_SET_CB(CBEnum::MouseButton, glfwSetMouseButtonCallback(ctx->pWindow, __glfw_callback_mousebutton))
-_SET_CB(CBEnum::CursorPos, glfwSetCursorPosCallback(ctx->pWindow, __glfw_callback_cursorpos))
-_SET_CB(CBEnum::CursorEnter, glfwSetCursorEnterCallback(ctx->pWindow, __glfw_callback_cursorenter))
-_SET_CB(CBEnum::Scroll, glfwSetScrollCallback(ctx->pWindow, __glfw_callback_scroll))
-_SET_CB(CBEnum::DropFile, glfwSetDropCallback(ctx->pWindow, __glfw_callback_drop))
+_SET_CB(CBEnum::WindowPos,
+        glfwSetWindowPosCallback(ctx->pWindow, __glfw_callback_windowpos))
+_SET_CB(CBEnum::WindowSize,
+        glfwSetWindowSizeCallback(ctx->pWindow, __glfw_callback_windowsize))
+_SET_CB(CBEnum::WindowClose,
+        glfwSetWindowCloseCallback(ctx->pWindow, __glfw_callback_windowclose))
+_SET_CB(CBEnum::WindowRefresh,
+        glfwSetWindowRefreshCallback(ctx->pWindow,
+                                     __glfw_callback_windowrefresh))
+_SET_CB(CBEnum::WindowFocus,
+        glfwSetWindowFocusCallback(ctx->pWindow, __glfw_callback_windowfocus))
+_SET_CB(CBEnum::WindowIconify,
+        glfwSetWindowIconifyCallback(ctx->pWindow,
+                                     __glfw_callback_windowiconify))
+_SET_CB(CBEnum::WindowMaximize,
+        glfwSetWindowMaximizeCallback(ctx->pWindow,
+                                      __glfw_callback_windowmaximize))
+_SET_CB(CBEnum::WindowContentScale,
+        glfwSetWindowContentScaleCallback(ctx->pWindow,
+                                          __glfw_callback_windowcontentscale))
+_SET_CB(CBEnum::Keyboard,
+        glfwSetKeyCallback(ctx->pWindow, __glfw_callback_keybord))
+_SET_CB(CBEnum::CharInput,
+        glfwSetCharCallback(ctx->pWindow, __glfw_callback_charinput))
+_SET_CB(CBEnum::CharMods,
+        glfwSetCharModsCallback(ctx->pWindow, __glfw_callback_charmods))
+_SET_CB(CBEnum::MouseButton,
+        glfwSetMouseButtonCallback(ctx->pWindow, __glfw_callback_mousebutton))
+_SET_CB(CBEnum::CursorPos,
+        glfwSetCursorPosCallback(ctx->pWindow, __glfw_callback_cursorpos))
+_SET_CB(CBEnum::CursorEnter,
+        glfwSetCursorEnterCallback(ctx->pWindow, __glfw_callback_cursorenter))
+_SET_CB(CBEnum::Scroll,
+        glfwSetScrollCallback(ctx->pWindow, __glfw_callback_scroll))
+_SET_CB(CBEnum::DropFile,
+        glfwSetDropCallback(ctx->pWindow, __glfw_callback_drop))
+_SET_CB(CBEnum::SwapchainCreate, return)
+_SET_CB(CBEnum::SwapchainDestroy, return)
 #undef _SET_CB
 }  // namespace _internal_windowcb
 struct FPSTitle {
