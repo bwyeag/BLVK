@@ -7,3 +7,5 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 add_subdirectory(subprojects)
 include(./cmake/CPM.cmake)
 include(./cmake/installpackage.cmake)
+
+add_subdirectory(src)
