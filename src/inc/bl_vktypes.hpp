@@ -1,9 +1,9 @@
 #ifndef BOUNDLESS_TYPES_FILE
 #define BOUNDLESS_TYPES_FILE
 #include <vulkan/vulkan.h>
-#include <cstdint>
 #include <bl_output.hpp>
 #include <bl_vkcontext.hpp>
+#include <cstdint>
 namespace BL {
 /*
  * Vulkan类型封装
@@ -133,40 +133,23 @@ class CommandBuffer {
     operator VkCommandBuffer() { return handle; }
     VkCommandBuffer* getPointer() { return &handle; }
     VkResult begin(VkCommandBufferUsageFlags usageFlags,
-                   VkCommandBufferInheritanceInfo& inheritanceInfo) const {
+                   VkCommandBufferInheritanceInfo& inheritanceInfo) {
         VkCommandBufferBeginInfo beginInfo = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .flags = usageFlags,
             .pInheritanceInfo = &inheritanceInfo};
-        VkResult result = vkBeginCommandBuffer(handle, &beginInfo);
-        if (result) {
-            print_error(
-                "CommandBuffer",
-                "Failed to begin a command buffer! Code:", int32_t(result));
-        }
-        return result;
+        return vkBeginCommandBuffer(handle, &beginInfo);
     }
-    VkResult begin(VkCommandBufferUsageFlags usageFlags = 0) const {
+    VkResult begin(VkCommandBufferUsageFlags usageFlags = 0) {
         VkCommandBufferBeginInfo beginInfo = {
             .sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             .flags = usageFlags,
         };
-        VkResult result = vkBeginCommandBuffer(handle, &beginInfo);
-        if (result) {
-            print_error(
-                "CommandBuffer",
-                "Failed to begin a command buffer! Code:", int32_t(result));
-        }
-        return result;
+        return vkBeginCommandBuffer(handle, &beginInfo);
     }
-    VkResult end() const {
-        VkResult result = vkEndCommandBuffer(handle);
-        if (result) {
-            print_error(
-                "CommandBuffer",
-                "Failed to end a command buffer! Code:", int32_t(result));
-        }
-        return result;
+    VkResult end() { return vkEndCommandBuffer(handle); }
+    VkResult reset(VkCommandBufferResetFlags flags = 0) {
+        return vkResetCommandBuffer(handle, flags);
     }
 };
 VkCommandPoolCreateInfo make_commandpool_createinfo(
@@ -598,8 +581,8 @@ class Buffer {
     void unmap_data() { vmaUnmapMemory(cur_context().allocator, allocation); }
     VkResult flush_data(VkDeviceSize offset = 0,
                         VkDeviceSize length = VK_WHOLE_SIZE) {
-        VkResult result = vmaFlushAllocation(cur_context().allocator, allocation,
-                                             offset, length);
+        VkResult result = vmaFlushAllocation(cur_context().allocator,
+                                             allocation, offset, length);
         if (result) {
             print_error("Buffer",
                         "flush_data() failed! Code:", int32_t(result));
@@ -1011,8 +994,8 @@ class Sampler {
     operator VkSampler() { return handle; }
     VkSampler* getPointer() { return &handle; }
     VkResult create(VkSamplerCreateInfo& createInfo) {
-        VkResult result =
-            vkCreateSampler(cur_context().device, &createInfo, nullptr, &handle);
+        VkResult result = vkCreateSampler(cur_context().device, &createInfo,
+                                          nullptr, &handle);
         if (result) {
             print_error("Sampler",
                         "Failed to create a Sampler! Code:", int32_t(result));

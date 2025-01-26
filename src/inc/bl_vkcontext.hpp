@@ -49,7 +49,7 @@ struct ContextDeviceInit {
     VkDeviceCreateFlags diviceFlags = 0;
     uint32_t surfaceCount;
     VkSurfaceKHR* surface;
-    VmaAllocatorCreateFlags vmaFlags;
+    VmaAllocatorCreateFlags vmaFlags = 0u;
     bool debug_print_deviceExtension{false};
     void* pNextDivice{nullptr};
 };

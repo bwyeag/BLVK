@@ -1,0 +1,512 @@
+{
+	"configurations" : 
+	[
+		{
+			"directories" : 
+			[
+				{
+					"build" : ".",
+					"childIndexes" : 
+					[
+						1,
+						4,
+						6,
+						7,
+						17
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-.-Release-d0094a50bb2071803777.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"projectIndex" : 0,
+					"source" : "."
+				},
+				{
+					"build" : "subprojects",
+					"childIndexes" : 
+					[
+						2,
+						3
+					],
+					"jsonFile" : "directory-subprojects-Release-e2e703e162744be3866e.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "subprojects"
+				},
+				{
+					"build" : "subprojects/utfcpp",
+					"jsonFile" : "directory-subprojects.utfcpp-Release-ba2a335c5268d7abae3b.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 0,
+					"source" : "subprojects/utfcpp"
+				},
+				{
+					"build" : "subprojects/vma",
+					"jsonFile" : "directory-subprojects.vma-Release-fb27efdc09c53ecb09dd.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.10"
+					},
+					"parentIndex" : 1,
+					"projectIndex" : 0,
+					"source" : "subprojects/vma"
+				},
+				{
+					"build" : "_deps/glfw-build",
+					"childIndexes" : 
+					[
+						5
+					],
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.glfw-build-Release-a00c130aacef90b48498.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 1,
+					"source" : "D:/cppprograms/cpmcache/glfw/725bc9fe4678a9d1f5e53c4583b8707894a183d3/GLFW",
+					"targetIndexes" : 
+					[
+						12
+					]
+				},
+				{
+					"build" : "_deps/glfw-build/src",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.glfw-build.src-Release-076bf6544791612d81af.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.4"
+					},
+					"parentIndex" : 4,
+					"projectIndex" : 1,
+					"source" : "D:/cppprograms/cpmcache/glfw/725bc9fe4678a9d1f5e53c4583b8707894a183d3/GLFW/src",
+					"targetIndexes" : 
+					[
+						4,
+						13
+					]
+				},
+				{
+					"build" : "_deps/freetype-build",
+					"hasInstallRule" : true,
+					"jsonFile" : "directory-_deps.freetype-build-Release-edbcb0df1619ba10bf73.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.8.12"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 2,
+					"source" : "D:/cppprograms/cpmcache/freetype/769768feb9b9c197863aba4fa990e7b0f42a766c/freetype",
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build",
+					"childIndexes" : 
+					[
+						8,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16
+					],
+					"jsonFile" : "directory-_deps.freeimage-build-Release-4f33df8ee448ef5a61af.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage",
+					"targetIndexes" : 
+					[
+						2
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build/dependencies",
+					"childIndexes" : 
+					[
+						9
+					],
+					"jsonFile" : "directory-_deps.freeimage-build.dependencies-Release-0a8c74c30900618b9586.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 7,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/dependencies"
+				},
+				{
+					"build" : "_deps/freeimage-build/dependencies/zlib",
+					"jsonFile" : "directory-_deps.freeimage-build.dependencies.zlib-Release-6c51fa1a355ceb5cfc68.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 8,
+					"projectIndex" : 4,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/dependencies/zlib",
+					"targetIndexes" : 
+					[
+						14
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build/LibJPEG",
+					"jsonFile" : "directory-_deps.freeimage-build.LibJPEG-Release-35ee6eac9ee3d791d118.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 7,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/LibJPEG",
+					"targetIndexes" : 
+					[
+						5
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build/LibMNG",
+					"jsonFile" : "directory-_deps.freeimage-build.LibMNG-Release-f7af5444348d87f5c904.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 7,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/LibMNG",
+					"targetIndexes" : 
+					[
+						6
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build/LibOpenJPEG",
+					"jsonFile" : "directory-_deps.freeimage-build.LibOpenJPEG-Release-f37df150b120694fda2e.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 7,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/LibOpenJPEG",
+					"targetIndexes" : 
+					[
+						8
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build/LibPNG",
+					"jsonFile" : "directory-_deps.freeimage-build.LibPNG-Release-d33bb1646d177e414270.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 7,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/LibPNG",
+					"targetIndexes" : 
+					[
+						9
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build/LibRawLite",
+					"jsonFile" : "directory-_deps.freeimage-build.LibRawLite-Release-19619725b7c665f80028.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 7,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/LibRawLite",
+					"targetIndexes" : 
+					[
+						10
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build/LibTIFF",
+					"jsonFile" : "directory-_deps.freeimage-build.LibTIFF-Release-e6fc435717dbf1d0e9c0.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 7,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/LibTIFF",
+					"targetIndexes" : 
+					[
+						11
+					]
+				},
+				{
+					"build" : "_deps/freeimage-build/OpenEXR",
+					"jsonFile" : "directory-_deps.freeimage-build.OpenEXR-Release-94e03c56e885a674be44.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "2.6"
+					},
+					"parentIndex" : 7,
+					"projectIndex" : 3,
+					"source" : "D:/cppprograms/cpmcache/freeimage/5cb196da0ce68efe9b5e54835e5979837ef25ef5/FreeImage/OpenEXR",
+					"targetIndexes" : 
+					[
+						7
+					]
+				},
+				{
+					"build" : "src",
+					"jsonFile" : "directory-src-Release-c94b7c2814d5a21df52c.json",
+					"minimumCMakeVersion" : 
+					{
+						"string" : "3.14"
+					},
+					"parentIndex" : 0,
+					"projectIndex" : 0,
+					"source" : "src",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				}
+			],
+			"name" : "Release",
+			"projects" : 
+			[
+				{
+					"childIndexes" : 
+					[
+						1,
+						2,
+						3
+					],
+					"directoryIndexes" : 
+					[
+						0,
+						1,
+						2,
+						3,
+						17
+					],
+					"name" : "BLVK",
+					"targetIndexes" : 
+					[
+						0,
+						1
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						4,
+						5
+					],
+					"name" : "GLFW",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						4,
+						12,
+						13
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						6
+					],
+					"name" : "freetype",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						3
+					]
+				},
+				{
+					"childIndexes" : 
+					[
+						4
+					],
+					"directoryIndexes" : 
+					[
+						7,
+						8,
+						10,
+						11,
+						12,
+						13,
+						14,
+						15,
+						16
+					],
+					"name" : "FREEIMAGE",
+					"parentIndex" : 0,
+					"targetIndexes" : 
+					[
+						2,
+						5,
+						6,
+						7,
+						8,
+						9,
+						10,
+						11
+					]
+				},
+				{
+					"directoryIndexes" : 
+					[
+						9
+					],
+					"name" : "ZLIB",
+					"parentIndex" : 3,
+					"targetIndexes" : 
+					[
+						14
+					]
+				}
+			],
+			"targets" : 
+			[
+				{
+					"directoryIndex" : 17,
+					"id" : "BLVKLib::@145eef247bfb46b6828c",
+					"jsonFile" : "target-BLVKLib-Release-e5bfc0697130cbc43f34.json",
+					"name" : "BLVKLib",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 17,
+					"id" : "BLVKMain::@145eef247bfb46b6828c",
+					"jsonFile" : "target-BLVKMain-Release-479370b9de2b22f4f08a.json",
+					"name" : "BLVKMain",
+					"projectIndex" : 0
+				},
+				{
+					"directoryIndex" : 7,
+					"id" : "freeimage::@30d847c9542d47639971",
+					"jsonFile" : "target-freeimage-Release-b2dbdfb56bc3f3d4be4a.json",
+					"name" : "freeimage",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 6,
+					"id" : "freetype::@d06f9f5ffc3cc0b4bd77",
+					"jsonFile" : "target-freetype-Release-17f1865cbc6958fb4deb.json",
+					"name" : "freetype",
+					"projectIndex" : 2
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "glfw::@fa9f4482d3a2b070f206",
+					"jsonFile" : "target-glfw-Release-e1f70cd19b77f5271f4e.json",
+					"name" : "glfw",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 10,
+					"id" : "jpeg::@9a7b4f4b13d8de26d828",
+					"jsonFile" : "target-jpeg-Release-33d5282518edac75869e.json",
+					"name" : "jpeg",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 11,
+					"id" : "mng::@cdc3b45bd1d2750a3330",
+					"jsonFile" : "target-mng-Release-161ff14b113c8d270a65.json",
+					"name" : "mng",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 16,
+					"id" : "openexr::@2fad5c9ff4f2573d520a",
+					"jsonFile" : "target-openexr-Release-0690240eb4c9d1a57aad.json",
+					"name" : "openexr",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 12,
+					"id" : "openjpeg::@7a2de2b62c97a72bc836",
+					"jsonFile" : "target-openjpeg-Release-be5c9d39ee1da489f84a.json",
+					"name" : "openjpeg",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 13,
+					"id" : "png::@0a7a28a1b0ca76c0cf7f",
+					"jsonFile" : "target-png-Release-b40c221d8ae05dd730e8.json",
+					"name" : "png",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 14,
+					"id" : "rawlite::@257fec673fa652658d78",
+					"jsonFile" : "target-rawlite-Release-13d561a2309eff197d38.json",
+					"name" : "rawlite",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 15,
+					"id" : "tiff::@e2ae1cc0cc34ed1992a8",
+					"jsonFile" : "target-tiff-Release-b3449b60b991fab04751.json",
+					"name" : "tiff",
+					"projectIndex" : 3
+				},
+				{
+					"directoryIndex" : 4,
+					"id" : "uninstall::@369fad943889a5ec39c8",
+					"jsonFile" : "target-uninstall-Release-6a9523b50532f0899d02.json",
+					"name" : "uninstall",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 5,
+					"id" : "update_mappings::@fa9f4482d3a2b070f206",
+					"jsonFile" : "target-update_mappings-Release-d864ae0acea7fbdb3658.json",
+					"name" : "update_mappings",
+					"projectIndex" : 1
+				},
+				{
+					"directoryIndex" : 9,
+					"id" : "zlib::@1c9b7d3e9909f5045ec0",
+					"jsonFile" : "target-zlib-Release-9c35b8a11dc67d0856dd.json",
+					"name" : "zlib",
+					"projectIndex" : 4
+				}
+			]
+		}
+	],
+	"kind" : "codemodel",
+	"paths" : 
+	{
+		"build" : "D:/cppprograms/BLVK/build",
+		"source" : "D:/cppprograms/BLVK"
+	},
+	"version" : 
+	{
+		"major" : 2,
+		"minor" : 7
+	}
+}

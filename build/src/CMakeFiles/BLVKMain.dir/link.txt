@@ -1,0 +1,3 @@
+"C:\Program Files\CMake\bin\cmake.exe" -E rm -f CMakeFiles\BLVKMain.dir/objects.a
+D:\msys2\mingw64\bin\ar.exe qc CMakeFiles\BLVKMain.dir/objects.a @CMakeFiles\BLVKMain.dir\objects1.rsp
+D:\msys2\mingw64\bin\c++.exe -O3 -DNDEBUG -Wl,--whole-archive CMakeFiles\BLVKMain.dir/objects.a -Wl,--no-whole-archive -o BLVKMain.exe -Wl,--out-implib,libBLVKMain.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\BLVKMain.dir\linkLibs.rsp

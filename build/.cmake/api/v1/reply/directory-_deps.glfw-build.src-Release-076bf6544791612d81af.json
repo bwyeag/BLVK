@@ -1,0 +1,58 @@
+{
+	"backtraceGraph" : 
+	{
+		"commands" : 
+		[
+			"install"
+		],
+		"files" : 
+		[
+			"D:/cppprograms/cpmcache/glfw/725bc9fe4678a9d1f5e53c4583b8707894a183d3/GLFW/src/CMakeLists.txt"
+		],
+		"nodes" : 
+		[
+			{
+				"file" : 0
+			},
+			{
+				"command" : 0,
+				"file" : 0,
+				"line" : 362,
+				"parent" : 0
+			}
+		]
+	},
+	"installers" : 
+	[
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "lib",
+			"paths" : 
+			[
+				"_deps/glfw-build/src/libglfw3dll.a"
+			],
+			"targetId" : "glfw::@fa9f4482d3a2b070f206",
+			"targetIndex" : 4,
+			"targetIsImportLibrary" : true,
+			"type" : "target"
+		},
+		{
+			"backtrace" : 1,
+			"component" : "Unspecified",
+			"destination" : "bin",
+			"paths" : 
+			[
+				"_deps/glfw-build/src/glfw3.dll"
+			],
+			"targetId" : "glfw::@fa9f4482d3a2b070f206",
+			"targetIndex" : 4,
+			"type" : "target"
+		}
+	],
+	"paths" : 
+	{
+		"build" : "_deps/glfw-build/src",
+		"source" : "D:/cppprograms/cpmcache/glfw/725bc9fe4678a9d1f5e53c4583b8707894a183d3/GLFW/src"
+	}
+}

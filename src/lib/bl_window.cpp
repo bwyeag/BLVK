@@ -140,10 +140,10 @@ void WindowContext::terminate() {
     glfwTerminate();
 }
 std::error_code WindowContext::create_window(
-    const WindowInit_t& init) noexcept {
+    const WindowInit_t* init) noexcept {
     using State = WindowInitState;
     using Error = WindowErrorEnum;
-    if (init.init_state & State::UsePrimaryMonitor) {
+    if (init->init_state & State::UsePrimaryMonitor) {
         pMonitor = glfwGetPrimaryMonitor();
     } else {
         int count;
@@ -151,11 +151,11 @@ std::error_code WindowContext::create_window(
         if (!pMonitors) {
             return make_error_code(Error::NoMonitor);
         }
-        if (!init.monitor_choose) {
+        if (!init->monitor_choose) {
             return make_error_code(Error::EmptyMonitorChooseFunc);
         }
         for (int i = 0; i < count; i++) {
-            if (init.monitor_choose(pMonitors[i])) {
+            if (init->monitor_choose(pMonitors[i])) {
                 pMonitor = pMonitors[i];
                 break;
             }
@@ -164,19 +164,19 @@ std::error_code WindowContext::create_window(
     if (!pMonitor) {
         return make_error_code(Error::NoMonitor);
     }
-    title = init.init_title;
+    title = init->init_title;
     glfwDefaultWindowHints();
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     glfwWindowHint(GLFW_RESIZABLE,
-                   static_cast<bool>(init.init_state & State::Resizable));
+                   static_cast<bool>(init->init_state & State::Resizable));
     glfwWindowHint(GLFW_DECORATED,
-                   static_cast<bool>(init.init_state & State::Decorated));
+                   static_cast<bool>(init->init_state & State::Decorated));
     glfwWindowHint(
         GLFW_CENTER_CURSOR,
-        static_cast<bool>(init.init_state & State::InitMouseCentered));
-    glfwWindowHint(GLFW_VISIBLE,
-                   !static_cast<bool>(init.init_state & State::InitUnvisiable));
-    State size_state = State(init.init_state & State::SizeMask);
+        static_cast<bool>(init->init_state & State::InitMouseCentered));
+    glfwWindowHint(GLFW_VISIBLE, !static_cast<bool>(init->init_state &
+                                                    State::InitUnvisiable));
+    State size_state = State(init->init_state & State::SizeMask);
     const GLFWvidmode* pMode = glfwGetVideoMode(pMonitor);
     if (size_state == State::FullScreen) {
         pWindow = glfwCreateWindow(pMode->width, pMode->height, title.c_str(),
@@ -186,7 +186,7 @@ std::error_code WindowContext::create_window(
         pWindow = glfwCreateWindow(pMode->width, pMode->height, title.c_str(),
                                    nullptr, nullptr);
     } else if (size_state == State::Specified) {
-        pWindow = glfwCreateWindow(init.init_size_x, init.init_size_y,
+        pWindow = glfwCreateWindow(init->init_size_x, init->init_size_y,
                                    title.c_str(), nullptr, nullptr);
     } else {
         pMonitor = nullptr;
@@ -198,10 +198,10 @@ std::error_code WindowContext::create_window(
         title.clear();
         return make_error_code(Error::WindowCreateFailed);
     }
-    if (init.init_pos_x != (~0u) && init.init_pos_y != (~0u))
-        glfwSetWindowPos(pWindow, init.init_pos_x, init.init_pos_y);
-    glfwSetWindowSizeLimits(pWindow, init.min_size_x, init.min_size_y,
-                            init.max_size_x, init.max_size_y);
+    if (init->init_pos_x != (~0u) && init->init_pos_y != (~0u))
+        glfwSetWindowPos(pWindow, init->init_pos_x, init->init_pos_y);
+    glfwSetWindowSizeLimits(pWindow, init->min_size_x, init->min_size_y,
+                            init->max_size_x, init->max_size_y);
     glfwSetWindowUserPointer(pWindow, this);
     return make_error_code(Error::Success);
 }
@@ -210,6 +210,16 @@ void WindowContext::destroy() noexcept {
         glfwDestroyWindow(pWindow);
     pWindow = nullptr;
     pMonitor = nullptr;
+
+    if (surface)
+        vkDestroySurfaceKHR(cur_context().instance, surface, nullptr);
+    if (swapchain) {
+        iterate_callback<WindowCallbackEnum::SwapchainDestroy>();
+        for (auto& i : swapchainImageViews)
+            if (i)
+                vkDestroyImageView(cur_context().device, i, nullptr);
+        vkDestroySwapchainKHR(cur_context().device, swapchain, nullptr);
+    }
 }
 void WindowContext::update() noexcept {
     double cur_time = glfwGetTime();

@@ -217,7 +217,7 @@ struct WindowContext {
     VkSwapchainCreateInfoKHR swapchainCreateInfo{};
 
     WindowContext() = default;
-    WindowContext(const WindowInit_t& pInit, std::error_code& ec) {
+    WindowContext(const WindowInit_t* pInit, std::error_code& ec) {
         ec = create_window(pInit);
     }
     WindowContext(WindowContext&&) = delete;
@@ -229,7 +229,7 @@ struct WindowContext {
     static void poll_events() { glfwPollEvents(); }
     static void post_empty_event() { glfwPostEmptyEvent(); }
 
-    std::error_code create_window(const WindowInit_t& pInit) noexcept;
+    std::error_code create_window(const WindowInit_t* pInit) noexcept;
     void destroy() noexcept;
     void update() noexcept;
 
