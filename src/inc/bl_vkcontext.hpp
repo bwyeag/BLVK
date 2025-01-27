@@ -3,8 +3,10 @@
 #include <bl_output.hpp>
 #include <bl_vkresult.hpp>
 #include <functional>
+#include <cstdint>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vulkan/vulkan.h>
 #include <vk_mem_alloc.h>
 namespace BL {
 struct ContextErrorEnum_t {
@@ -121,16 +123,6 @@ struct Context {
     void _get_physical_divice_properties();
     void _get_physical_divice_features();
 };
-// 线程本地数据，方便获取上下文
-struct ContextThreadData {
-    Context* current_vkcontext{nullptr};
-};
-thread_local extern ContextThreadData local_data{};
-inline Context& cur_context() {
-    return *local_data.current_vkcontext;
-}
-inline void make_current_context(Context& ctx) {
-    local_data.current_vkcontext = &ctx;
-}
+
 }  // namespace BL
 #endif  //!_BOUNDLESS_VKCONTEXT_HPP_FILE_

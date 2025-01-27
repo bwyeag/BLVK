@@ -76,90 +76,90 @@ src/CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.obj: src/CMakeFiles/BLVKLib.dir/inc
 src/CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.obj: D:/cppprograms/BLVK/src/lib/bl_output.cpp
 src/CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.obj: src/CMakeFiles/BLVKLib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\cppprograms\BLVK\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.obj"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_output.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_output.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_output.cpp
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_output.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_output.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_output.cpp
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.i"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_output.cpp > CMakeFiles\BLVKLib.dir\lib\bl_output.cpp.i
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_output.cpp > CMakeFiles\BLVKLib.dir\lib\bl_output.cpp.i
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.s"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_output.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_output.cpp.s
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_output.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_output.cpp.s
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.obj: src/CMakeFiles/BLVKLib.dir/flags.make
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.obj: src/CMakeFiles/BLVKLib.dir/includes_CXX.rsp
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.obj: D:/cppprograms/BLVK/src/lib/bl_vkcontext.cpp
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.obj: src/CMakeFiles/BLVKLib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\cppprograms\BLVK\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.obj"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_vkcontext.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_vkcontext.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_vkcontext.cpp
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_vkcontext.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_vkcontext.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_vkcontext.cpp
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.i"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_vkcontext.cpp > CMakeFiles\BLVKLib.dir\lib\bl_vkcontext.cpp.i
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_vkcontext.cpp > CMakeFiles\BLVKLib.dir\lib\bl_vkcontext.cpp.i
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.s"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_vkcontext.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_vkcontext.cpp.s
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_vkcontext.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_vkcontext.cpp.s
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.obj: src/CMakeFiles/BLVKLib.dir/flags.make
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.obj: src/CMakeFiles/BLVKLib.dir/includes_CXX.rsp
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.obj: D:/cppprograms/BLVK/src/lib/bl_vkrenderloop.cpp
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.obj: src/CMakeFiles/BLVKLib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\cppprograms\BLVK\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.obj"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_vkrenderloop.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_vkrenderloop.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_vkrenderloop.cpp
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_vkrenderloop.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_vkrenderloop.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_vkrenderloop.cpp
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.i"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_vkrenderloop.cpp > CMakeFiles\BLVKLib.dir\lib\bl_vkrenderloop.cpp.i
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_vkrenderloop.cpp > CMakeFiles\BLVKLib.dir\lib\bl_vkrenderloop.cpp.i
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.s"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_vkrenderloop.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_vkrenderloop.cpp.s
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_vkrenderloop.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_vkrenderloop.cpp.s
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.obj: src/CMakeFiles/BLVKLib.dir/flags.make
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.obj: src/CMakeFiles/BLVKLib.dir/includes_CXX.rsp
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.obj: D:/cppprograms/BLVK/src/lib/bl_vkresult.cpp
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.obj: src/CMakeFiles/BLVKLib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\cppprograms\BLVK\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.obj"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_vkresult.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_vkresult.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_vkresult.cpp
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_vkresult.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_vkresult.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_vkresult.cpp
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.i"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_vkresult.cpp > CMakeFiles\BLVKLib.dir\lib\bl_vkresult.cpp.i
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_vkresult.cpp > CMakeFiles\BLVKLib.dir\lib\bl_vkresult.cpp.i
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.s"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_vkresult.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_vkresult.cpp.s
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_vkresult.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_vkresult.cpp.s
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.obj: src/CMakeFiles/BLVKLib.dir/flags.make
 src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.obj: src/CMakeFiles/BLVKLib.dir/includes_CXX.rsp
 src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.obj: D:/cppprograms/BLVK/src/lib/bl_window.cpp
 src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.obj: src/CMakeFiles/BLVKLib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\cppprograms\BLVK\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.obj"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_window.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_window.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_window.cpp
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\bl_window.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\bl_window.cpp.obj -c D:\cppprograms\BLVK\src\lib\bl_window.cpp
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.i"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_window.cpp > CMakeFiles\BLVKLib.dir\lib\bl_window.cpp.i
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\bl_window.cpp > CMakeFiles\BLVKLib.dir\lib\bl_window.cpp.i
 
 src/CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.s"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_window.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_window.cpp.s
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\bl_window.cpp -o CMakeFiles\BLVKLib.dir\lib\bl_window.cpp.s
 
 src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.obj: src/CMakeFiles/BLVKLib.dir/flags.make
 src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.obj: src/CMakeFiles/BLVKLib.dir/includes_CXX.rsp
 src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.obj: D:/cppprograms/BLVK/src/lib/vma.cpp
 src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.obj: src/CMakeFiles/BLVKLib.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\cppprograms\BLVK\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.obj"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\vma.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\vma.cpp.obj -c D:\cppprograms\BLVK\src\lib\vma.cpp
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.obj -MF CMakeFiles\BLVKLib.dir\lib\vma.cpp.obj.d -o CMakeFiles\BLVKLib.dir\lib\vma.cpp.obj -c D:\cppprograms\BLVK\src\lib\vma.cpp
 
 src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/BLVKLib.dir/lib/vma.cpp.i"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\vma.cpp > CMakeFiles\BLVKLib.dir\lib\vma.cpp.i
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\lib\vma.cpp > CMakeFiles\BLVKLib.dir\lib\vma.cpp.i
 
 src/CMakeFiles/BLVKLib.dir/lib/vma.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/BLVKLib.dir/lib/vma.cpp.s"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\vma.cpp -o CMakeFiles\BLVKLib.dir\lib\vma.cpp.s
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\lib\vma.cpp -o CMakeFiles\BLVKLib.dir\lib\vma.cpp.s
 
 # Object files for target BLVKLib
 BLVKLib_OBJECTS = \

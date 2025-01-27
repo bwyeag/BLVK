@@ -4,6 +4,7 @@
 #include <bl_output.hpp>
 #include <bl_vkcontext.hpp>
 #include <cstdint>
+#include <cstring>
 namespace BL {
 /*
  * Vulkan类型封装

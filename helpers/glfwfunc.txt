@@ -1,0 +1,12 @@
+
+int glfwRawMouseMotionSupported();
+const char* glfwGetKeyName(int key, int scancode);
+int glfwGetKeyScancode(int key);
+
+int glfwExtensionSupported(const char* extension);
+GLFWglproc glfwGetProcAddress(const char* procname);
+int glfwVulkanSupported();
+const char** glfwGetRequiredInstanceExtensions(uint32_t* count);
+
+GLFWvkproc glfwGetInstanceProcAddress(VkInstance instance, const char* procname);
+int glfwGetPhysicalDevicePresentationSupport(VkInstance instance, VkPhysicalDevice device, uint32_t queuefamily);

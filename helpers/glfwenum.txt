@@ -1,0 +1,61 @@
+template <WindowCallback type>
+auto insert(_detail_init::GetType<type>::Func fn)
+-> _detail_init::GetType<type>::Handle {
+switch
+constexpr(type) {
+    case CB::glfw_windowpos_func:
+        if (callback_windowpos.size()==0u)
+        return callback_windowpos.insert(std::forward(fn));
+    case CB::glfw_windowsize_func:
+        if (callback_windowsize.size()==0u)
+        return callback_windowsize.insert(std::forward(fn));
+    case CB::glfw_windowclose_func:
+        if (callback_windowclose.size()==0u)
+        return callback_windowclose.insert(std::forward(fn));
+    case CB::glfw_windowrefresh_func:
+        if (callback_windowrefresh.size()==0u)
+        return callback_windowrefresh.insert(std::forward(fn));
+    case CB::glfw_windowfocus_func:
+        if (callback_windowfocus.size()==0u)
+        return callback_windowfocus.insert(std::forward(fn));
+    case CB::glfw_windowiconify_func:
+        if (callback_windowiconify.size()==0u)
+        return callback_windowiconify.insert(std::forward(fn));
+    case CB::glfw_windowmaximize_func:
+        if (callback_windowmaximize.size()==0u)
+        return callback_windowmaximize.insert(std::forward(fn));
+    case CB::glfw_framebuffersize_func:
+        if (callback_framebuffersize.size()==0u)
+        return callback_framebuffersize.insert(std::forward(fn));
+    case CB::glfw_windowcontentscale_func:
+        if (callback_windowcontentscale.size()==0u)
+        return callback_windowcontentscale.insert(std::forward(fn));
+    case CB::glfw_mousebutton_func:
+        if (callback_mousebutton.size()==0u)
+        return callback_mousebutton.insert(std::forward(fn));
+    case CB::glfw_cursorpos_func:
+        if (callback_cursorpos.size()==0u)
+        return callback_cursorpos.insert(std::forward(fn));
+    case CB::glfw_cursorenter_func:
+        if (callback_cursorenter.size()==0u)
+        return callback_cursorenter.insert(std::forward(fn));
+    case CB::glfw_scroll_func:
+        if (callback_scroll.size()==0u)
+        return callback_scroll.insert(std::forward(fn));
+    case CB::glfw_key_func:
+        if (callback_key.size()==0u)
+        return callback_key.insert(std::forward(fn));
+    case CB::glfw_char_func:
+        if (callback_char.size()==0u)
+        return callback_char.insert(std::forward(fn));
+    case CB::glfw_charmods_func:
+        if (callback_charmods.size()==0u)
+        return callback_charmods.insert(std::forward(fn));
+    case CB::glfw_drop_func:
+        if (callback_drop.size()==0u)
+        return callback_drop.insert(std::forward(fn));
+    default:
+        static_assert(false, "Wrong Callback type!");
+        break;
+}
+}

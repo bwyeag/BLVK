@@ -141,7 +141,7 @@ void WindowContext::terminate() {
 }
 std::error_code WindowContext::create_window(
     const WindowInit_t* init) noexcept {
-    using State = WindowInitState;
+    using State = WindowCreateState;
     using Error = WindowErrorEnum;
     if (init->init_state & State::UsePrimaryMonitor) {
         pMonitor = glfwGetPrimaryMonitor();

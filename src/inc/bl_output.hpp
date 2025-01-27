@@ -13,7 +13,7 @@
 #if IS_WINDOWS
 #include <Windows.h>
 #endif  // IS_WINDOWS
-namespace BL {
+namespace BLVK {
 enum class ConsoleColor {
     Green,
     Red,
@@ -111,7 +111,7 @@ void print_log_internal(const char* type, const Types&... args) {
 
 template <typename T, typename Arg, typename... OtherArgs>
 constexpr static bool is_all_same =
-    std::is_same_v<T, Args> &&
+    std::is_same_v<T, Arg> &&
     (sizeof...(OtherArgs) > 0 ? is_all_same<T, OtherArgs...> : true);
 template <typename... Types>
 void print_errorcode_internal(const Types&... ecs) {

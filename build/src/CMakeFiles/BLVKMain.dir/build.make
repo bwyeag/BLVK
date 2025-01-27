@@ -76,15 +76,15 @@ src/CMakeFiles/BLVKMain.dir/main.cpp.obj: src/CMakeFiles/BLVKMain.dir/includes_C
 src/CMakeFiles/BLVKMain.dir/main.cpp.obj: D:/cppprograms/BLVK/src/main.cpp
 src/CMakeFiles/BLVKMain.dir/main.cpp.obj: src/CMakeFiles/BLVKMain.dir/compiler_depend.ts
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --progress-dir=D:\cppprograms\BLVK\build\CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object src/CMakeFiles/BLVKMain.dir/main.cpp.obj"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKMain.dir/main.cpp.obj -MF CMakeFiles\BLVKMain.dir\main.cpp.obj.d -o CMakeFiles\BLVKMain.dir\main.cpp.obj -c D:\cppprograms\BLVK\src\main.cpp
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -MD -MT src/CMakeFiles/BLVKMain.dir/main.cpp.obj -MF CMakeFiles\BLVKMain.dir\main.cpp.obj.d -o CMakeFiles\BLVKMain.dir\main.cpp.obj -c D:\cppprograms\BLVK\src\main.cpp
 
 src/CMakeFiles/BLVKMain.dir/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Preprocessing CXX source to CMakeFiles/BLVKMain.dir/main.cpp.i"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\main.cpp > CMakeFiles\BLVKMain.dir\main.cpp.i
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E D:\cppprograms\BLVK\src\main.cpp > CMakeFiles\BLVKMain.dir\main.cpp.i
 
 src/CMakeFiles/BLVKMain.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green "Compiling CXX source to assembly CMakeFiles/BLVKMain.dir/main.cpp.s"
-	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\c++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\main.cpp -o CMakeFiles\BLVKMain.dir\main.cpp.s
+	cd /d D:\cppprograms\BLVK\build\src && D:\msys2\mingw64\bin\g++.exe $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S D:\cppprograms\BLVK\src\main.cpp -o CMakeFiles\BLVKMain.dir\main.cpp.s
 
 # Object files for target BLVKMain
 BLVKMain_OBJECTS = \
@@ -96,6 +96,7 @@ BLVKMain_EXTERNAL_OBJECTS =
 src/BLVKMain.exe: src/CMakeFiles/BLVKMain.dir/main.cpp.obj
 src/BLVKMain.exe: src/CMakeFiles/BLVKMain.dir/build.make
 src/BLVKMain.exe: src/libBLVKLib.a
+src/BLVKMain.exe: _deps/glfw-build/src/libglfw3.a
 src/BLVKMain.exe: src/CMakeFiles/BLVKMain.dir/linkLibs.rsp
 src/BLVKMain.exe: src/CMakeFiles/BLVKMain.dir/objects1.rsp
 src/BLVKMain.exe: src/CMakeFiles/BLVKMain.dir/link.txt

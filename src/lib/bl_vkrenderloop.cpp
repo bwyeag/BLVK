@@ -109,11 +109,11 @@ VkResult RenderLoop::acquire_next_image(uint32_t* index,
                vkAcquireNextImageKHR(ctx.device, windowContext->swapchain,
                                      UINT64_MAX, semsImageAvaliable, fence,
                                      index)) {  // 如果获取失败则重建交换链
+        VkExtent2D& t = windowContext->swapchainCreateInfo.imageExtent;
         switch (result) {
             case VK_SUBOPTIMAL_KHR:
             case VK_ERROR_OUT_OF_DATE_KHR:
                 windowContext->recreateSwapchain();
-                VkExtent2D& t = windowContext->swapchainCreateInfo.imageExtent;
                 print_log("RenderLoop", "New swapchain size:", t.width,
                           t.height);
                 break;
@@ -194,9 +194,8 @@ VkCommandBuffer RenderLoop::next_render_pass() {
         print_error("RenderLoop", "vkQueueSubmit() failed! Code:", result);
     }
     currentRenderPass++;
-    auto& curBuf = cmdBuffers[pos + 1];
     return reset_and_begin_cmdbuffer(
-        curBuf, 0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
+        cmdBuffers[pos + 1], 0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 }
 VkResult RenderLoop::present_image(VkPresentInfoKHR& presentInfo) {
     switch (VkResult result = vkQueuePresentKHR(
@@ -215,7 +214,7 @@ VkResult RenderLoop::present_image(VkPresentInfoKHR& presentInfo) {
     }
 }
 VkResult RenderLoop::present_image_semaphore(
-    VkSemaphore semaphore_renderingIsOver = VK_NULL_HANDLE) {
+    VkSemaphore semaphore_renderingIsOver) {
     VkPresentInfoKHR presentInfo = {.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
                                     .swapchainCount = 1,
                                     .pSwapchains = &windowContext->swapchain,
@@ -244,9 +243,9 @@ void RenderLoop::cmd_transfer_image_ownership(VkCommandBuffer commandBuffer) {
 }
 VkResult RenderLoop::submit_cmdbuffer_presentation(
     VkCommandBuffer commandBuffer,
-    VkSemaphore semaphore_renderingIsOver = VK_NULL_HANDLE,
-    VkSemaphore semaphore_ownershipIsTransfered = VK_NULL_HANDLE,
-    VkFence fence = VK_NULL_HANDLE) {
+    VkSemaphore semaphore_renderingIsOver,
+    VkSemaphore semaphore_ownershipIsTransfered,
+    VkFence fence) {
     static constexpr VkPipelineStageFlags waitDstStage =
         VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     VkSubmitInfo submitInfo = {.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,

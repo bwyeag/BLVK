@@ -13,7 +13,7 @@
 #include <vector>
 namespace BL {
 const char* get_present_mode_string(VkPresentModeKHR mode);
-struct WindowInitState_t {
+struct WindowCreateState_t {
     enum Type : uint16_t {
         InitUnvisiable = 0x1,
         FullScreen = 0x2,
@@ -27,21 +27,21 @@ struct WindowInitState_t {
         UsePrimaryMonitor = 0x80
     };
 };
-using WindowInitState = WindowInitState_t::Type;
+using WindowCreateState = WindowCreateState_t::Type;
 struct WindowInit_t {
-    using State = WindowInitState;
-    State init_state {State(State::Specified | State::Decorated |
-                             State::Resizable | State::UsePrimaryMonitor)};
+    using State = WindowCreateState;
+    State init_state{State(State::Specified | State::Decorated |
+                           State::Resizable | State::UsePrimaryMonitor)};
     uint32_t init_size_x, init_size_y;
-    uint32_t init_pos_x {~0u}, init_pos_y {~0u};
-    uint32_t max_size_x{GLFW_DONT_CARE}, max_size_y{GLFW_DONT_CARE},
-             min_size_x{GLFW_DONT_CARE}, min_size_y{GLFW_DONT_CARE};
+    uint32_t init_pos_x{~0u}, init_pos_y{~0u};
+    uint32_t max_size_x = GLFW_DONT_CARE, max_size_y = GLFW_DONT_CARE,
+             min_size_x = GLFW_DONT_CARE, min_size_y = GLFW_DONT_CARE;
     const char* init_title;
     std::function<bool(GLFWmonitor*)> monitor_choose;
 };
 struct WindowContextSwapchainInit_t {
-    VkSwapchainCreateFlagsKHR flags {0};
-    bool isFrameRateLimited {true};
+    VkSwapchainCreateFlagsKHR flags{0};
+    bool isFrameRateLimited{true};
 };
 struct WindowErrorEnum_t {
     enum Type {
@@ -195,7 +195,10 @@ struct CallbackNode {
 };
 struct CallbackHandle {
     CallbackNode* ptr;
-    CallbackHandle& operator=(CallbackNode* p) { ptr = p; }
+    CallbackHandle& operator=(CallbackNode* p) {
+        ptr = p;
+        return *this;
+    }
     bool operator==(CallbackHandle&& rhs) { return ptr == rhs.ptr; }
     bool operator!=(CallbackHandle&& rhs) { return ptr != rhs.ptr; }
     operator bool() { return ptr != nullptr; }
@@ -222,7 +225,7 @@ struct WindowContext {
     }
     WindowContext(WindowContext&&) = delete;
     ~WindowContext() {}
-    static std::error_code initialize();
+    static std::error_code initialize() noexcept;
     static void terminate();
     static void wait_events() { glfwWaitEvents(); }
     static void wait_events(double seconds) { glfwWaitEventsTimeout(seconds); }
@@ -300,7 +303,7 @@ template <WindowCallbackEnum Type>
 [[nodiscard]]
 CallbackHandle WindowContext::insert_callback(
     WindowCallbackFunc<Type>::Type&& func) {
-    constexpr size_t typen {static_cast<size_t>(Type)};
+    constexpr size_t typen{static_cast<size_t>(Type)};
     using FuncType = WindowCallbackFunc<Type>::Type;
     CallbackHandle result;
     if (callback_free) {
@@ -330,14 +333,16 @@ CallbackHandle WindowContext::insert_callback(
 }
 template <WindowCallbackEnum Type, typename... Args>
 void WindowContext::iterate_callback(Args... vars) {
-    constexpr size_t typen {static_cast<size_t>(Type)};
-    static_assert(0 < typen && typen < static_assert<size_t>(WindowCallbackEnum::MaxCallbackEnum), "Wrong enum type");
+    constexpr size_t typen{static_cast<size_t>(Type)};
+    static_assert(0 < typen && typen < static_cast<size_t>(
+                                           WindowCallbackEnum::MaxCallbackEnum),
+                  "Wrong enum type");
     static_assert(
-        requires(WindowCallbackFunc<Type>::Type fn) { fn(this, vars...); },
+        requires(WindowCallbackFunc<Type>::Type fn, Args... args) { fn(this, args...); },
         "Wrong argument");
-    CallbackHandle p = ctx->callback_head[typen], end = p;
+    CallbackHandle p = callback_head[typen], end = p;
     while (p) {
-        auto* fn = std::get_if<WindowCallbackFunc<e>::Type>(&p->func);
+        auto* fn = std::get_if<WindowCallbackFunc<Type>>(&p->func);
         if (fn)
             (*fn)(this, vars...);
         p = p->next;

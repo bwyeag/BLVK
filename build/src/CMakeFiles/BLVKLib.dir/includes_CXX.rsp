@@ -1,1 +1,1 @@
--ID:/cppprograms/BLVK/src/inc -ID:/cppprograms/BLVK/subprojects/vma/.
+-ID:/cppprograms/BLVK/src/inc -ID:/vulkanSDK/Include -I"D:/cppprograms/BLVK/build/_deps/glfw-src/include" -ID:/cppprograms/BLVK/subprojects/vma/.

@@ -1,7 +1,7 @@
 #include <bl_vkcontext.hpp>
+#include <cstring>
 
 namespace BL {
-thread_local static ContextThreadData local_data;
 const char* ContextErrorCategory::name() const noexcept {
     return "Vulkan Context error";
 }

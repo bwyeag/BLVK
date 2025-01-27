@@ -106,7 +106,7 @@ rebuild_cache/fast: rebuild_cache
 
 # Special rule for the target list_install_components
 list_install_components:
-	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Available install components are: \"Unspecified\" \"headers\""
+	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --cyan "Available install components are: \"Unspecified\""
 .PHONY : list_install_components
 
 # Special rule for the target list_install_components
@@ -220,136 +220,6 @@ update_mappings/fast:
 .PHONY : update_mappings/fast
 
 #=============================================================================
-# Target rules for targets named freetype
-
-# Build rule for target.
-freetype: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 freetype
-.PHONY : freetype
-
-# fast build rule for target.
-freetype/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freetype-build\CMakeFiles\freetype.dir\build.make _deps/freetype-build/CMakeFiles/freetype.dir/build
-.PHONY : freetype/fast
-
-#=============================================================================
-# Target rules for targets named freeimage
-
-# Build rule for target.
-freeimage: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 freeimage
-.PHONY : freeimage
-
-# fast build rule for target.
-freeimage/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\CMakeFiles\freeimage.dir\build.make _deps/freeimage-build/CMakeFiles/freeimage.dir/build
-.PHONY : freeimage/fast
-
-#=============================================================================
-# Target rules for targets named zlib
-
-# Build rule for target.
-zlib: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 zlib
-.PHONY : zlib
-
-# fast build rule for target.
-zlib/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\dependencies\zlib\CMakeFiles\zlib.dir\build.make _deps/freeimage-build/dependencies/zlib/CMakeFiles/zlib.dir/build
-.PHONY : zlib/fast
-
-#=============================================================================
-# Target rules for targets named jpeg
-
-# Build rule for target.
-jpeg: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 jpeg
-.PHONY : jpeg
-
-# fast build rule for target.
-jpeg/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\LibJPEG\CMakeFiles\jpeg.dir\build.make _deps/freeimage-build/LibJPEG/CMakeFiles/jpeg.dir/build
-.PHONY : jpeg/fast
-
-#=============================================================================
-# Target rules for targets named mng
-
-# Build rule for target.
-mng: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 mng
-.PHONY : mng
-
-# fast build rule for target.
-mng/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\LibMNG\CMakeFiles\mng.dir\build.make _deps/freeimage-build/LibMNG/CMakeFiles/mng.dir/build
-.PHONY : mng/fast
-
-#=============================================================================
-# Target rules for targets named openjpeg
-
-# Build rule for target.
-openjpeg: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 openjpeg
-.PHONY : openjpeg
-
-# fast build rule for target.
-openjpeg/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\LibOpenJPEG\CMakeFiles\openjpeg.dir\build.make _deps/freeimage-build/LibOpenJPEG/CMakeFiles/openjpeg.dir/build
-.PHONY : openjpeg/fast
-
-#=============================================================================
-# Target rules for targets named png
-
-# Build rule for target.
-png: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 png
-.PHONY : png
-
-# fast build rule for target.
-png/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\LibPNG\CMakeFiles\png.dir\build.make _deps/freeimage-build/LibPNG/CMakeFiles/png.dir/build
-.PHONY : png/fast
-
-#=============================================================================
-# Target rules for targets named rawlite
-
-# Build rule for target.
-rawlite: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 rawlite
-.PHONY : rawlite
-
-# fast build rule for target.
-rawlite/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\LibRawLite\CMakeFiles\rawlite.dir\build.make _deps/freeimage-build/LibRawLite/CMakeFiles/rawlite.dir/build
-.PHONY : rawlite/fast
-
-#=============================================================================
-# Target rules for targets named tiff
-
-# Build rule for target.
-tiff: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 tiff
-.PHONY : tiff
-
-# fast build rule for target.
-tiff/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\LibTIFF\CMakeFiles\tiff.dir\build.make _deps/freeimage-build/LibTIFF/CMakeFiles/tiff.dir/build
-.PHONY : tiff/fast
-
-#=============================================================================
-# Target rules for targets named openexr
-
-# Build rule for target.
-openexr: cmake_check_build_system
-	$(MAKE) $(MAKESILENT) -f CMakeFiles\Makefile2 openexr
-.PHONY : openexr
-
-# fast build rule for target.
-openexr/fast:
-	$(MAKE) $(MAKESILENT) -f _deps\freeimage-build\OpenEXR\CMakeFiles\openexr.dir\build.make _deps/freeimage-build/OpenEXR/CMakeFiles/openexr.dir/build
-.PHONY : openexr/fast
-
-#=============================================================================
 # Target rules for targets named BLVKLib
 
 # Build rule for target.
@@ -393,17 +263,7 @@ help:
 	@echo ... update_mappings
 	@echo ... BLVKLib
 	@echo ... BLVKMain
-	@echo ... freeimage
-	@echo ... freetype
 	@echo ... glfw
-	@echo ... jpeg
-	@echo ... mng
-	@echo ... openexr
-	@echo ... openjpeg
-	@echo ... png
-	@echo ... rawlite
-	@echo ... tiff
-	@echo ... zlib
 .PHONY : help
 
 

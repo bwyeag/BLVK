@@ -1,6 +1,6 @@
 #include <bl_output.hpp>
 
-namespace BL {
+namespace BLVK {
 #if IS_WINDOWS
 WORD getColorCode(ConsoleColor color) {
     using CC = ConsoleColor;
@@ -162,6 +162,7 @@ std::ostream& operator<<(std::ostream& os, ConsoleColor data) {
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
     os << GetColorCode(data);
 #endif
+    return os;
 }
 std::ostream& operator<<(std::ostream& os, ConsoleBackgroundColor data) {
 #if IS_WINDOWS
@@ -170,5 +171,6 @@ std::ostream& operator<<(std::ostream& os, ConsoleBackgroundColor data) {
 #else
     os << GetBackgroundColorCode(data);
 #endif
+    return os;
 }
 } // namespace BL
