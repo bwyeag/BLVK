@@ -13,7 +13,7 @@
 #if IS_WINDOWS
 #include <Windows.h>
 #endif  // IS_WINDOWS
-namespace BLVK {
+namespace BL {
 enum class ConsoleColor {
     Green,
     Red,

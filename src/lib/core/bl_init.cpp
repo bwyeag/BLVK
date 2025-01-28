@@ -1,6 +1,6 @@
 #include <core/bl_init.hpp>
 
-namespace BLVK {
+namespace BL {
 void __glfw_callback_windowpos(GLFWwindow* window, int xpos, int ypos) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
     ptr->iterate<WindowCallback::glfw_windowpos_func>(ptr, xpos, ypos);
@@ -947,7 +947,7 @@ VkResult WindowContext::acquire_present_modes(
     }
     return VK_SUCCESS;
 }
-VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat) {
+VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat, Context& ctx) {
     bool formatIsAvailable = false;
     if (!surfaceFormat.format) {
         // 如果格式未指定，只匹配色彩空间，图像格式有啥就用啥
@@ -973,7 +973,7 @@ VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat) {
         return VK_ERROR_FORMAT_NOT_SUPPORTED;
     // 如果交换链已存在，调用RecreateSwapchain()重建交换链
     if (swapchain)
-        return recreateSwapchain();
+        return recreateSwapchain(ctx);
     return VK_SUCCESS;
 }
 VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
@@ -1034,9 +1034,9 @@ VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
             return result;
     if (!createInfo.imageFormat)
         if (set_surface_format({VK_FORMAT_R8G8B8A8_UNORM,
-                                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}) &&
+                                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},ctx) &&
             set_surface_format({VK_FORMAT_B8G8R8A8_UNORM,
-                                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})) {
+                                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},ctx)) {
             // 如果找不到上述图像格式和色彩空间的组合，那只能有什么用什么，采用availableSurfaceFormats中的第一组
             createInfo.imageFormat = availableFormats[0].format;
             createInfo.imageColorSpace = availableFormats[0].colorSpace;
@@ -1067,7 +1067,7 @@ VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
     createInfo.oldSwapchain = VK_NULL_HANDLE;
     createInfo.pNext = nullptr;
     // ----------------
-    if (VkResult result = create_swapchain_Internal())
+    if (VkResult result = create_swapchain_Internal(ctx))
         return result;
     iterate<WindowCallback::vk_swapchain_construct>();
     return VK_SUCCESS;
@@ -1124,7 +1124,7 @@ VkResult WindowContext::recreateSwapchain(Context& ctx) {
         if (i)
             vkDestroyImageView(ctx.device, i, nullptr);
     swapchainImageViews.resize(0);
-    result = create_swapchain_Internal();
+    result = create_swapchain_Internal(ctx);
     if (result != VK_SUCCESS) {
         print_error("WindowContext",
                     "Create swapchain failed! Code:", int32_t(result));

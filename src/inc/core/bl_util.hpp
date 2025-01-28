@@ -2,7 +2,7 @@
 #define _BL_CORE_BL_UTIL_HPP_
 #include <functional>
 #include <list>
-namespace BLVK {
+namespace BL {
 template <uint32_t Tag, typename... Args>
 class Callback {
     List items;

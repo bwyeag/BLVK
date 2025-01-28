@@ -13,7 +13,7 @@
 #include <map>
 #include <span>
 #include <sstream>
-namespace BLVK {
+namespace BL {
 /// @brief 函数返回结果枚举
 enum class CtxResult {
     SUCCESS = 0,
@@ -322,7 +322,7 @@ struct WindowContext {
     /// @brief 
     /// @param surfaceFormat 
     /// @return 是否成功执行
-    VkResult set_surface_format(VkSurfaceFormatKHR surfaceFormat);
+    VkResult set_surface_format(VkSurfaceFormatKHR surfaceFormat, Context& ctx);
     /// @brief 
     /// @param info 
     /// @param ctx 使用的Vulkan上下文

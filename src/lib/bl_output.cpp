@@ -1,6 +1,6 @@
 #include <bl_output.hpp>
 
-namespace BLVK {
+namespace BL {
 #if IS_WINDOWS
 WORD getColorCode(ConsoleColor color) {
     using CC = ConsoleColor;
