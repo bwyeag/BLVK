@@ -2,8 +2,10 @@
 #define _BL_CORE_BL_INIT_HPP_
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#define VMA_VULKAN_VERSION VK_API_VERSION_1_3
 #include <vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
+#include <algorithm>
 #include <bl_output.hpp>
 #include <core/bl_util.hpp>
 #include <span>
@@ -27,7 +29,10 @@ enum class CtxResult {
     WINDOW_CREATE_FAILED = -12,
     WINDOW_SURFACE_CREATE_FAILED = -13,
     ACQUIRE_PHYSICAL_DEVICES_FAILED = -14,
-    NO_FIT_PHYDEVICE = -15
+    NO_FIT_PHYDEVICE = -15,
+    ENUM_DEVICE_EXT_FAILED = -16,
+    CREATE_DEVICE_FAILED = -17,
+    VMA_CREATE_FAILED = -18
 };
 
 /// @brief  Vulkan 实例创建信息
@@ -43,11 +48,10 @@ struct InstanceCreateInfo {
 };
 /// @brief Vulkan 设备创建信息
 struct DeviceCreateInfo {
-    std::function<bool(VkPhysicalDevice)> isDeviceSuitable{};
     VkDeviceCreateFlags diviceFlags = 0;
     uint32_t surfaceCount;
-    VkSurfaceKHR* surface;
     VmaAllocatorCreateFlags vmaFlags = 0u;
+    std::vector<const char*> extensionNames{};
     bool debug_print_deviceExtension{false};
     void* pNextDivice{nullptr};
 };
@@ -321,29 +325,90 @@ struct Context {
     GLFWmonitor** pMonitors;
     std::vector<WindowContext> windowData;
 
+    /// @brief
+    /// @param version
+    /// @return
     VkResult acquire_vkapi_version(uint32_t& version);
+    /// @brief
+    /// @param extensionNames
+    /// @param layerName
+    /// @return
     VkResult check_instance_extension(std::span<const char*> extensionNames,
                                       const char* layerName = nullptr);
+    /// @brief
+    /// @param layerNames
+    /// @return
     VkResult check_instance_layer(std::span<const char*> layerNames);
+    /// @brief
+    /// @param pCallbackData
+    /// @return
     static std::string combine_debug_message(
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
+    /// @brief
+    /// @return
     VkResult prepare_debugger();
+    /// @brief
+    /// @param info
+    /// @return
     CtxResult prepare_instance(InstanceCreateInfo& info);
+    /// @brief
+    /// @return
     CtxResult prepare_window();
+    /// @brief
+    /// @param info
+    /// @param ret
+    /// @return
     CtxResult create_window(WindowCreateInfo& info, WindowContext*& ret);
+    /// @brief
+    /// @param availablePhysicalDevices
+    /// @return
     VkResult acquire_physical_devices(
         std::vector<VkPhysicalDevice>& availablePhysicalDevices);
+    /// @brief
+    /// @param physicalDevice
+    /// @param enableGraphicsQueue
+    /// @param enableComputeQueue
+    /// @param queueFamilyIndices
+    /// @return
     VkResult get_queue_family_indices(VkPhysicalDevice physicalDevice,
                                       bool enableGraphicsQueue,
                                       bool enableComputeQueue,
-    VkResult determine_physical_device(
                                       uint32_t (&queueFamilyIndices)[3]);
+    /// @brief
+    /// @param availablePhysicalDevices
+    /// @param deviceIndex
+    /// @param enableGraphicsQueue
+    /// @param enableComputeQueue
+    /// @return
+    VkResult determine_physical_device(
         std::vector<VkPhysicalDevice>& availablePhysicalDevices,
         uint32_t deviceIndex = 0,
         bool enableGraphicsQueue = true,
         bool enableComputeQueue = true);
+    /// @brief
+    void acquire_physical_divice_properties();
+    /// @brief
+    void acquire_physical_divice_features();
+    /// @brief
+    /// @return
     CtxResult prepare_physical_device();
-    CtxResult prepare_device();
+    VkResult acquire_device_extensions(
+        std::vector<VkExtensionProperties>& extensionNames,
+        const char* layerName = nullptr);
+    /// @brief
+    /// @param extensionNames
+    /// @return
+    VkResult insert_device_extensions(std::vector<const char*>& extensionNames);
+    /// @brief
+    /// @param extensionNames
+    /// @param layerName
+    VkResult check_device_extension(std::span<const char*> extensionNames,
+                                    const char* layerName = nullptr);
+    VkResult prepare_VMA(DeviceCreateInfo& info);
+    /// @brief
+    /// @param info
+    /// @return
+    CtxResult prepare_device(DeviceCreateInfo& info);
 
     /// @brief 更新状态变量
     void update();
@@ -354,7 +419,10 @@ struct Context {
     Context() {}
     ~Context() {}
 };
-
+struct vkStructureHead {
+    VkStructureType sType;
+    void* pNext;
+};
 /// @brief 线程本地数据，方便获取上下文
 struct ThreadData {
     Context* current_vkcontext{nullptr};
@@ -377,6 +445,10 @@ inline void make_current_context(Context& ctx) {
     local_data.current_vkcontext = &ctx;
 }
 
+/// @brief
+/// @tparam type
+/// @param fn
+/// @return
 template <WindowCallback type>
 auto WindowContext::insert(_detail_init::GetType<type>::Func&& fn)
     -> _detail_init::GetType<type>::Handle {
@@ -415,6 +487,9 @@ auto WindowContext::insert(_detail_init::GetType<type>::Func&& fn)
                 break;
         }
 }
+/// @brief
+/// @tparam type
+/// @param handle
 template <WindowCallback type>
 void WindowContext::erase(_detail_init::GetType<type>::Handle handle) {
     switch
@@ -451,6 +526,10 @@ void WindowContext::erase(_detail_init::GetType<type>::Handle handle) {
                 break;
         }
 }
+/// @brief
+/// @tparam ...Args
+/// @tparam type
+/// @param ...args
 template <WindowCallback type, typename... Args>
 void WindowContext::iterate(Args... args) {
     constexpr size_t typen{static_cast<size_t>(type)};

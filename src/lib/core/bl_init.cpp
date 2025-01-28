@@ -578,18 +578,199 @@ VkResult Context::determine_physical_device(
     phyDevice = availablePhysicalDevices[deviceIndex];
     return VK_SUCCESS;
 }
+void Context::acquire_physical_divice_properties() {
+    //   设备属性:
+    if (vulkanApiVersion >= VK_API_VERSION_1_1) {
+        phyDeviceProperties = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
+        phyDeviceVulkan11Properties = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_PROPERTIES};
+        phyDeviceVulkan12Properties = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_PROPERTIES};
+        phyDeviceVulkan13Properties = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_PROPERTIES};
+        if (vulkanApiVersion >= VK_API_VERSION_1_2) {
+            phyDeviceProperties.pNext = &phyDeviceVulkan11Properties;
+            phyDeviceVulkan11Properties.pNext = &phyDeviceVulkan12Properties;
+            if (vulkanApiVersion >= VK_API_VERSION_1_3) {
+                phyDeviceVulkan12Properties.pNext =
+                    &phyDeviceVulkan13Properties;
+            }
+        }
+        vkGetPhysicalDeviceProperties2(phyDevice, &phyDeviceProperties);
+        phyDeviceMemoryProperties = {
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_PROPERTIES_2};
+        vkGetPhysicalDeviceMemoryProperties2(phyDevice,
+                                             &phyDeviceMemoryProperties);
+    } else {
+        vkGetPhysicalDeviceProperties(phyDevice,
+                                      &phyDeviceProperties.properties);
+        vkGetPhysicalDeviceMemoryProperties(
+            phyDevice, &phyDeviceMemoryProperties.memoryProperties);
+    }
+}
+void Context::acquire_physical_divice_features() {
+    //   设备特性:
+    if (vulkanApiVersion >= VK_API_VERSION_1_1) {
+        phyDeviceFeatures = {.sType =
+                                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+        phyDeviceVulkan11Features = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
+        phyDeviceVulkan12Features = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
+        phyDeviceVulkan13Features = {
+            .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+        if (vulkanApiVersion >= VK_API_VERSION_1_2) {
+            phyDeviceFeatures.pNext = &phyDeviceVulkan11Features;
+            phyDeviceVulkan11Features.pNext = &phyDeviceVulkan12Features;
+            if (vulkanApiVersion >= VK_API_VERSION_1_3)
+                phyDeviceVulkan12Features.pNext = &phyDeviceVulkan13Features;
+        }
+        vkGetPhysicalDeviceFeatures2(phyDevice, &phyDeviceFeatures);
+    } else
+        vkGetPhysicalDeviceFeatures(phyDevice, &phyDeviceFeatures.features);
+}
 CtxResult Context::prepare_physical_device() {
     std::vector<VkPhysicalDevice> availablePhysicalDevices;
     if (acquire_physical_devices(availablePhysicalDevices))
         return CtxResult::ACQUIRE_PHYSICAL_DEVICES_FAILED;
-    for (uint32_t i = 0;i<availablePhysicalDevices.size();++i)
-        if (!determine_physical_device(availablePhysicalDevices,i,true,true))
+    for (uint32_t i = 0; i < availablePhysicalDevices.size(); ++i)
+        if (!determine_physical_device(availablePhysicalDevices, i, true, true))
             goto FIND_SUCCESS;
-    print_error("Context","Can not find any phyDevice useable!");
-    return ;
+    print_error("Context", "Can not find any phyDevice useable!");
+    return CtxResult::NO_FIT_PHYDEVICE;
 FIND_SUCCESS:
+    acquire_physical_divice_properties();
+    acquire_physical_divice_features();
+    return CtxResult::SUCCESS;
 }
-CtxResult Context::prepare_device() {}
+VkResult Context::acquire_device_extensions(
+    std::vector<VkExtensionProperties>& extensionNames,
+    const char* layerName) {
+    uint32_t extCount;
+    if (VkResult result = vkEnumerateDeviceExtensionProperties(
+            phyDevice, layerName, &extCount, nullptr)) {
+        print_error("Context",
+                    "vkEnumerateDeviceExtensionProperties() failed! Code:",
+                    int32_t(result));
+        return VK_RESULT_MAX_ENUM;
+    }
+    extensionNames.resize(extCount);
+    if (VkResult result = vkEnumerateDeviceExtensionProperties(
+            phyDevice, layerName, &extCount, extensionNames.data())) {
+        print_error("Context",
+                    "vkEnumerateDeviceExtensionProperties() failed! Code:",
+                    int32_t(result));
+        return VK_RESULT_MAX_ENUM;
+    }
+    return VK_SUCCESS;
+}
+VkResult Context::insert_device_extensions(
+    std::vector<const char*>& extensionNames) {
+    extensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+}
+VkResult Context::check_device_extension(std::span<const char*> extensionNames,
+                                         const char* layerName) {
+    std::vector<VkExtensionProperties> availableExtensions;
+    if (VkResult result = acquire_device_extensions(availableExtensions))
+        return result;
+    std::vector<const char*> extensions(availableExtensions.size());
+    std::transform(availableExtensions.begin(), availableExtensions.end(),
+                   extensions.begin(), [](VkExtensionProperties& ext) {
+                       return ext.extensionName;
+                   });
+    std::sort(
+        extensions.begin(), extensions.end(),
+        [](const char* a, const char* b) { return std::strcmp(a, b) < 0; });
+    for (auto& i : extensionNames) {
+        if (!std::binary_search(extensions.begin(), extensions.end(), i))
+            i = nullptr;
+    }
+}
+VkResult Context::prepare_VMA(DeviceCreateInfo& info) {
+    
+}
+CtxResult Context::prepare_device(DeviceCreateInfo& info) {
+    // 1.构建队列创建表
+    float queuePriority = 1.0f;
+    VkDeviceQueueCreateInfo queue_create_infos[3] = {
+        {.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+         .queueCount = 1,
+         .pQueuePriorities = &queuePriority},
+        {.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+         .queueCount = 1,
+         .pQueuePriorities = &queuePriority},
+        {.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+         .queueCount = 1,
+         .pQueuePriorities = &queuePriority}};
+    uint32_t queue_create_info_count = 0;
+    uint32_t& queue_index_graphics = queueFamilyIndex_graphics;
+    uint32_t& queue_index_compute = queueFamilyIndex_compute;
+    uint32_t& queue_index_present = queueFamilyIndex_presentation;
+    if (queue_index_graphics != VK_QUEUE_FAMILY_IGNORED)
+        queue_create_infos[queue_create_info_count++].queueFamilyIndex =
+            queue_index_graphics;
+    if (queue_index_present != VK_QUEUE_FAMILY_IGNORED &&
+        queue_index_present != queue_index_graphics)
+        queue_create_infos[queue_create_info_count++].queueFamilyIndex =
+            queue_index_present;
+    if (queue_index_compute != VK_QUEUE_FAMILY_IGNORED &&
+        queue_index_compute != queue_index_graphics &&
+        queue_index_compute != queue_index_present)
+        queue_create_infos[queue_create_info_count++].queueFamilyIndex =
+            queue_index_compute;
+    //   设备扩展:
+    if (insert_device_extensions(info.extensionNames) ||
+        check_device_extension(info.extensionNames)) {
+        print_error("Context", "Init device extension failed!");
+    }
+    // 3.创建逻辑设备
+    VkDeviceCreateInfo deviceCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        .flags = info.diviceFlags,
+        .queueCreateInfoCount = queue_create_info_count,
+        .pQueueCreateInfos = queue_create_infos,
+        .enabledExtensionCount = uint32_t(info.extensionNames.size()),
+        .ppEnabledExtensionNames = info.extensionNames.data()};
+    vkStructureHead* last;
+    if (vulkanApiVersion >= VK_API_VERSION_1_1) {
+        auto* ptr = (vkStructureHead*)(info.pNextDivice);
+        last = ptr;
+        while (ptr)
+            last = ptr, ptr = (vkStructureHead*)(ptr->pNext);
+        if (last) {
+            last->pNext = &phyDeviceFeatures;
+            deviceCreateInfo.pNext = info.pNextDivice;
+        } else {
+            deviceCreateInfo.pNext = &phyDeviceFeatures;
+        }
+    } else {
+        deviceCreateInfo.pEnabledFeatures = &phyDeviceFeatures.features;
+    }
+    if (VkResult result =
+            vkCreateDevice(phyDevice, &deviceCreateInfo, nullptr, &device)) {
+        print_error("Context",
+                    "Failed to create a vulkan logical device! "
+                    "Error code: ",
+                    int32_t(result));
+        last->pNext = nullptr;
+        return CtxResult::CREATE_DEVICE_FAILED;
+    }
+    last->pNext = nullptr;
+    // 4.获取队列
+    if (queue_index_graphics != VK_QUEUE_FAMILY_IGNORED)
+        vkGetDeviceQueue(device, queue_index_graphics, 0, &queue_graphics);
+    if (queue_index_present != VK_QUEUE_FAMILY_IGNORED)
+        vkGetDeviceQueue(device, queue_index_present, 0, &queue_presentation);
+    if (queue_index_compute != VK_QUEUE_FAMILY_IGNORED)
+        vkGetDeviceQueue(device, queue_index_compute, 0, &queue_compute);
+    if (VkResult result = prepare_VMA(info)) {
+        return CtxResult::VMA_CREATE_FAILED;
+    }
+    print_log("Context",
+              "Renderer:", phyDeviceProperties.properties.deviceName);
+    return CtxResult::SUCCESS;
+}
 void Context::update() {}
 void WindowContext::cleanup(Context& ctx) {
     if (pWindow)
