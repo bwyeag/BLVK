@@ -3,7 +3,7 @@
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #define VMA_VULKAN_VERSION VK_API_VERSION_1_3
-#include <vk_mem_alloc.h>
+#include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
 #include <algorithm>
 #include <bl_output.hpp>

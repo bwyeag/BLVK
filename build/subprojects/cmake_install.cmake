@@ -40,7 +40,6 @@ endif()
 if(NOT CMAKE_INSTALL_LOCAL_ONLY)
   # Include the install script for each subdirectory.
   include("D:/cppprograms/BLVK/build/subprojects/utfcpp/cmake_install.cmake")
-  include("D:/cppprograms/BLVK/build/subprojects/vma/cmake_install.cmake")
 
 endif()
 
