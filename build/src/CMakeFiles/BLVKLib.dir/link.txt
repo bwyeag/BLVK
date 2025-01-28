@@ -1,2 +1,0 @@
-D:\msys2\mingw64\bin\ar.exe qc libBLVKLib.a CMakeFiles/BLVKLib.dir/lib/bl_output.cpp.obj CMakeFiles/BLVKLib.dir/lib/bl_vkcontext.cpp.obj CMakeFiles/BLVKLib.dir/lib/bl_vkrenderloop.cpp.obj CMakeFiles/BLVKLib.dir/lib/bl_vkresult.cpp.obj CMakeFiles/BLVKLib.dir/lib/bl_window.cpp.obj CMakeFiles/BLVKLib.dir/lib/vma.cpp.obj
-D:\msys2\mingw64\bin\ranlib.exe libBLVKLib.a
