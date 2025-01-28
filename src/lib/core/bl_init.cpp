@@ -339,14 +339,14 @@ CtxResult Context::create_window(WindowCreateInfo& info, WindowContext*& ret) {
         print_error("GLFW", "Error code:", error_code, "; Desc:", description);
     });
     auto& window = windowData.emplace_back();
-    if (CtxResult result = window.prepare_window(*this, info);
+    if (CtxResult result = window.prepare_window(info, *this);
         result != CtxResult::SUCCESS) {
         window.cleanup(*this);
         return result;
     }
     return CtxResult::SUCCESS;
 }
-CtxResult WindowContext::prepare_window(Context& ctx, WindowCreateInfo& info) {
+CtxResult WindowContext::prepare_window(WindowCreateInfo& info, Context& ctx) {
     using State = WindowCreateState;
     if (info.init_state & State::UsePrimaryMonitor) {
         pMonitor = glfwGetPrimaryMonitor();
@@ -411,16 +411,6 @@ FINISH_CHOOSE:
                             info.max_size_x, info.max_size_y);
     glfwSetWindowUserPointer(pWindow, this);
 
-    VkSurfaceKHR surface = VK_NULL_HANDLE;
-    if (VkResult result = glfwCreateWindowSurface(cur_context().instance,
-                                                  pWindow, nullptr, &surface)) {
-        print_error("Context",
-                    "Failed to create a window "
-                    "surface! Code:",
-                    int32_t(result));
-        return CtxResult::WINDOW_SURFACE_CREATE_FAILED;
-    }
-    this->surface = surface;
     return CtxResult::SUCCESS;
 }
 VkResult Context::acquire_physical_devices(
@@ -435,7 +425,7 @@ VkResult Context::acquire_physical_devices(
     }
     if (!deviceCount) {
         print_error("Context",
-                    "Failed to find any physical device supports vulkan!\n");
+                    "Failed to find any physical device supports vulkan!");
         abort();
     }
     availablePhysicalDevices.resize(deviceCount);
@@ -446,10 +436,11 @@ VkResult Context::acquire_physical_devices(
                     int32_t(result));
     return result;
 }
-VkResult Context::get_queue_family_indices(VkPhysicalDevice physicalDevice,
-                                           bool enableGraphicsQueue,
-                                           bool enableComputeQueue,
-                                           uint32_t (&queueFamilyIndices)[3]) {
+VkResult Context::acquire_queue_family_indices(
+    VkPhysicalDevice physicalDevice,
+    uint32_t (&queueFamilyIndices)[3],
+    bool enableGraphicsQueue,
+    bool enableComputeQueue) {
     uint32_t queueFamilyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyCount,
                                              nullptr);
@@ -548,9 +539,9 @@ VkResult Context::determine_physical_device(
         ip == VK_QUEUE_FAMILY_IGNORED && windowData.size() > 0 ||
         ic == VK_QUEUE_FAMILY_IGNORED && enableComputeQueue) {
         uint32_t indices[3];
-        VkResult result = get_queue_family_indices(
-            availablePhysicalDevices[deviceIndex], enableGraphicsQueue,
-            enableComputeQueue, indices);
+        VkResult result = acquire_queue_family_indices(
+            availablePhysicalDevices[deviceIndex], indices, enableGraphicsQueue,
+            enableComputeQueue);
         // 若GetQueueFamilyIndices(...)返回VK_SUCCESS或VK_RESULT_MAX_ENUM（vkGetPhysicalDeviceSurfaceSupportKHR(...)执行成功但没找齐所需队列族），
         // 说明对所需队列族索引已有结论，保存结果到queueFamilyIndexCombinations[deviceIndex]中相应变量
         // 应被获取的索引若仍为VK_QUEUE_FAMILY_IGNORED，说明未找到相应队列族，VK_QUEUE_FAMILY_IGNORED（~0u）与INT32_MAX做位与得到的数值等于notFound
@@ -663,17 +654,6 @@ VkResult Context::acquire_device_extensions(
                     int32_t(result));
         return VK_RESULT_MAX_ENUM;
     }
-    return VK_SUCCESS;
-}
-VkResult Context::insert_device_extensions(
-    std::vector<const char*>& extensionNames) {
-    extensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-}
-VkResult Context::check_device_extension(std::span<const char*> extensionNames,
-                                         const char* layerName) {
-    std::vector<VkExtensionProperties> availableExtensions;
-    if (VkResult result = acquire_device_extensions(availableExtensions))
-        return result;
     std::vector<const char*> extensions(availableExtensions.size());
     std::transform(availableExtensions.begin(), availableExtensions.end(),
                    extensions.begin(), [](VkExtensionProperties& ext) {
@@ -682,13 +662,62 @@ VkResult Context::check_device_extension(std::span<const char*> extensionNames,
     std::sort(
         extensions.begin(), extensions.end(),
         [](const char* a, const char* b) { return std::strcmp(a, b) < 0; });
+    return VK_SUCCESS;
+}
+static constexpr uint32_t vma_flags_count = 8;
+static constexpr std::pair<const char*, VmaAllocatorCreateFlagBits> vma_flags[]{
+    {VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
+     VMA_ALLOCATOR_CREATE_KHR_DEDICATED_ALLOCATION_BIT},
+    {VK_KHR_BIND_MEMORY_2_EXTENSION_NAME,
+     VMA_ALLOCATOR_CREATE_KHR_BIND_MEMORY2_BIT},
+    {VK_KHR_MAINTENANCE_4_EXTENSION_NAME,
+     VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE4_BIT},
+    {VK_KHR_MAINTENANCE_5_EXTENSION_NAME,
+     VMA_ALLOCATOR_CREATE_KHR_MAINTENANCE5_BIT},
+    {VK_EXT_MEMORY_BUDGET_EXTENSION_NAME,
+     VMA_ALLOCATOR_CREATE_EXT_MEMORY_BUDGET_BIT},
+    {VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME,
+     VMA_ALLOCATOR_CREATE_BUFFER_DEVICE_ADDRESS_BIT},
+    {VK_EXT_MEMORY_PRIORITY_EXTENSION_NAME,
+     VMA_ALLOCATOR_CREATE_EXT_MEMORY_PRIORITY_BIT},
+    {VK_AMD_DEVICE_COHERENT_MEMORY_EXTENSION_NAME,
+     VMA_ALLOCATOR_CREATE_AMD_DEVICE_COHERENT_MEMORY_BIT}
+    // {VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
+    //  VMA_ALLOCATOR_CREATE_KHR_EXTERNAL_MEMORY_WIN32_BIT}
+};
+VmaAllocatorCreateFlagBits Context::check_VMA_extensions(
+    std::vector<const char*>& extensionNames) {
+    auto ret = static_cast<VmaAllocatorCreateFlagBits>(0);
+    for (uint32_t i = 0; i < vma_flags_count; ++i)
+        if (!std::binary_search(extensions.begin(), extensions.end(),
+                                vma_flags[i].first,
+                                [](const char* a, const char* b) {
+                                    return std::strcmp(a, b) < 0;
+                                })) {
+            extensionNames.push_back(vma_flags[i].first);
+            ret = static_cast<VmaAllocatorCreateFlagBits>(ret |
+                                                          vma_flags[i].second);
+        }
+    return ret;
+}
+VkResult Context::check_device_extension(std::span<const char*> extensionNames,
+                                         const char* layerName) {
     for (auto& i : extensionNames) {
-        if (!std::binary_search(extensions.begin(), extensions.end(), i))
+        if (!std::binary_search(extensions.begin(), extensions.end(), i,
+                                [](const char* a, const char* b) {
+                                    return std::strcmp(a, b) < 0;
+                                }))
             i = nullptr;
     }
 }
 VkResult Context::prepare_VMA(DeviceCreateInfo& info) {
-    
+    VmaAllocatorCreateInfo allocatorCreateInfo = {
+        .flags = info.vmaFlags,
+        .physicalDevice = phyDevice,
+        .device = device,
+        .instance = instance,
+        .vulkanApiVersion = vulkanApiVersion};
+    return vmaCreateAllocator(&allocatorCreateInfo, &allocator);
 }
 CtxResult Context::prepare_device(DeviceCreateInfo& info) {
     // 1.构建队列创建表
@@ -720,10 +749,16 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
         queue_create_infos[queue_create_info_count++].queueFamilyIndex =
             queue_index_compute;
     //   设备扩展:
-    if (insert_device_extensions(info.extensionNames) ||
-        check_device_extension(info.extensionNames)) {
+    if (acquire_device_extensions(availableExtensions))
+        return CtxResult::ACQUIRE_DEVICE_EXTENSIONS_FAILED;
+    info.extensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    info.vmaFlags = static_cast<VmaAllocatorCreateFlagBits>(
+        info.vmaFlags | check_VMA_extensions(info.extensionNames));
+    if (check_device_extension(info.extensionNames)) {
         print_error("Context", "Init device extension failed!");
     }
+    availableExtensions.clear();
+    extensions.clear();
     // 3.创建逻辑设备
     VkDeviceCreateInfo deviceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -751,7 +786,7 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
             vkCreateDevice(phyDevice, &deviceCreateInfo, nullptr, &device)) {
         print_error("Context",
                     "Failed to create a vulkan logical device! "
-                    "Error code: ",
+                    "Code: ",
                     int32_t(result));
         last->pNext = nullptr;
         return CtxResult::CREATE_DEVICE_FAILED;
@@ -764,14 +799,18 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
         vkGetDeviceQueue(device, queue_index_present, 0, &queue_presentation);
     if (queue_index_compute != VK_QUEUE_FAMILY_IGNORED)
         vkGetDeviceQueue(device, queue_index_compute, 0, &queue_compute);
-    if (VkResult result = prepare_VMA(info)) {
+    if (prepare_VMA(info))
         return CtxResult::VMA_CREATE_FAILED;
-    }
     print_log("Context",
               "Renderer:", phyDeviceProperties.properties.deviceName);
     return CtxResult::SUCCESS;
 }
-void Context::update() {}
+void Context::update() {
+    // 更新时间
+    auto newtime = glfwGetTime();
+    delta_time = newtime - current_time;
+    current_time = newtime;
+}
 void WindowContext::cleanup(Context& ctx) {
     if (pWindow)
         glfwDestroyWindow(pWindow);
@@ -784,5 +823,315 @@ void Context::cleanup() {
         window.cleanup(*this);
     glfwTerminate();
 }
-CtxResult WindowContext::prepare_swapchain(Context& ctx) {}
+VkResult WindowContext::prepare_surface(Context& ctx) {
+    VkSurfaceKHR surface = VK_NULL_HANDLE;
+    if (VkResult result =
+            glfwCreateWindowSurface(ctx.instance, pWindow, nullptr, &surface)) {
+        print_error("Context",
+                    "Failed to create a window "
+                    "surface! Code:",
+                    int32_t(result));
+        return VK_RESULT_MAX_ENUM;
+    }
+    this->surface = surface;
+    return VK_SUCCESS;
+}
+CtxResult WindowContext::prepare_swapchain(SwapchainCreateInfo info,
+                                           Context& ctx) {
+    if (prepare_surface(ctx) || create_swapchain(info, ctx)) {
+        return CtxResult::SWAPCHAIN_CREATE_FAILED;
+    }
+    return CtxResult::SUCCESS;
+}
+
+VkResult WindowContext::create_swapchain_Internal(Context& ctx) {
+    auto& createInfo = swapchainCreateInfo;
+    // 直接创建交换链
+    if (VkResult result = vkCreateSwapchainKHR(ctx.device, &createInfo,
+                                               nullptr, &swapchain)) {
+        print_error("WindowContext",
+                    "Failed to create a swapchain! "
+                    "Code:",
+                    int32_t(result));
+        return result;
+    }
+    // 获取交换链图像
+    uint32_t swapchainImageCount;
+    if (VkResult result = vkGetSwapchainImagesKHR(
+            ctx.device, swapchain, &swapchainImageCount, nullptr)) {
+        print_error("WindowContext",
+                    "Failed to get the count of swapchain images! Code:",
+                    int32_t(result));
+        return result;
+    }
+    swapchainImages.resize(swapchainImageCount);
+    if (VkResult result = vkGetSwapchainImagesKHR(ctx.device, swapchain,
+                                                  &swapchainImageCount,
+                                                  swapchainImages.data())) {
+        print_error("WindowContext",
+                    "Failed to get swapchain images! Code:", int32_t(result));
+        return result;
+    }
+    // 直接创建交换链，并且获取交换链图像和视图
+    swapchainImageViews.resize(swapchainImageCount);
+    VkImageViewCreateInfo imageViewCreateInfo = {
+        .sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        .viewType = VK_IMAGE_VIEW_TYPE_2D,
+        .format = createInfo.imageFormat,
+        //.components = {}, // 四个成员皆为VK_COMPONENT_SWIZZLE_IDENTITY
+        .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
+    for (size_t i = 0; i < swapchainImageCount; i++) {
+        imageViewCreateInfo.image = swapchainImages[i];
+        if (VkResult result =
+                vkCreateImageView(ctx.device, &imageViewCreateInfo, nullptr,
+                                  &swapchainImageViews[i])) {
+            print_error("WindowContext",
+                        "Failed to create a swapchain image view! Code:",
+                        int32_t(result));
+            return result;
+        }
+    }
+    return VK_SUCCESS;
+}
+VkResult WindowContext::acquire_surface_formats(Context& ctx) {
+    uint32_t surfaceFormatCount;
+    if (VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(
+            ctx.phyDevice, surface, &surfaceFormatCount, nullptr)) {
+        print_error("WindowContext",
+                    "Failed to get the count of surface "
+                    "formats! Code:",
+                    int32_t(result));
+        return result;
+    }
+    if (!surfaceFormatCount)
+        print_error("WindowContext",
+                    "Failed to find any supported surface "
+                    "format!"),
+            abort();
+    availableFormats.resize(surfaceFormatCount);
+    VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(
+        ctx.phyDevice, surface, &surfaceFormatCount, availableFormats.data());
+    if (result)
+        print_error("WindowContext",
+                    "Failed to get surface formats! "
+                    "code:",
+                    int32_t(result));
+    return VK_SUCCESS;
+}
+VkResult WindowContext::acquire_present_modes(
+    std::vector<VkPresentModeKHR>& presentModes,
+    Context& ctx) {
+    uint32_t surfacePresentModeCount;
+    if (VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(
+            ctx.phyDevice, surface, &surfacePresentModeCount, nullptr)) {
+        print_error(
+            "WindowContext",
+            "Failed to get the count of surface present modes! Code:",
+            int32_t(result));
+        return result;
+    }
+    if (!surfacePresentModeCount) {
+        print_error("WindowContext",
+                    "Failed to find any surface present mode!");
+        abort();
+    }
+    presentModes.resize(surfacePresentModeCount);
+    if (VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(
+            ctx.phyDevice, surface, &surfacePresentModeCount,
+            presentModes.data())) {
+        print_error("WindowContext",
+                    "Failed to get surface present "
+                    "modes! Code:",
+                    int32_t(result));
+        return result;
+    }
+    return VK_SUCCESS;
+}
+VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat) {
+    bool formatIsAvailable = false;
+    if (!surfaceFormat.format) {
+        // 如果格式未指定，只匹配色彩空间，图像格式有啥就用啥
+        for (auto& i : availableFormats)
+            if (i.colorSpace == surfaceFormat.colorSpace) {
+                swapchainCreateInfo.imageFormat = i.format;
+                swapchainCreateInfo.imageColorSpace = i.colorSpace;
+                formatIsAvailable = true;
+                break;
+            }
+    } else
+        // 否则匹配格式和色彩空间
+        for (auto& i : availableFormats)
+            if (i.format == surfaceFormat.format &&
+                i.colorSpace == surfaceFormat.colorSpace) {
+                swapchainCreateInfo.imageFormat = i.format;
+                swapchainCreateInfo.imageColorSpace = i.colorSpace;
+                formatIsAvailable = true;
+                break;
+            }
+    // 如果没有符合的格式，恰好有个语义相符的错误代码
+    if (!formatIsAvailable)
+        return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    // 如果交换链已存在，调用RecreateSwapchain()重建交换链
+    if (swapchain)
+        return recreateSwapchain();
+    return VK_SUCCESS;
+}
+VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
+                                         Context& ctx) {
+    VkSurfaceCapabilitiesKHR surface_capabilities;
+    // 获取surface支持能力
+    if (VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+            ctx.phyDevice, surface, &surface_capabilities)) {
+        print_error("WindowContext",
+                    "Failed to get physical device surface capabilities! Code:",
+                    int32_t(result));
+        return result;
+    }
+    auto& createInfo = swapchainCreateInfo;
+    // 如果容许的最大数量与最小数量不等，那么使用最小数量+1
+    createInfo.minImageCount = surface_capabilities.minImageCount +
+                               (surface_capabilities.maxImageCount >
+                                surface_capabilities.minImageCount);
+    // 决定窗口大小
+    uint32_t width, height;
+    glfwGetWindowSize(pWindow, (int*)&width, (int*)&height);
+    // surface_capabilities.currentExtent.width为 ~0u 表示大小未确定
+    createInfo.imageExtent =
+        surface_capabilities.currentExtent.width == (~0u)
+            ? VkExtent2D{std::clamp(width,
+                                    surface_capabilities.minImageExtent.width,
+                                    surface_capabilities.maxImageExtent.width),
+                         std::clamp(height,
+                                    surface_capabilities.minImageExtent.height,
+                                    surface_capabilities.maxImageExtent.height)}
+            : surface_capabilities.currentExtent;
+    createInfo.imageArrayLayers = 1;
+    createInfo.preTransform = surface_capabilities.currentTransform;
+    // 指定处理交换链图像透明通道方式
+    if (surface_capabilities.supportedCompositeAlpha &
+        VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR)
+        createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_INHERIT_BIT_KHR;
+    else
+        for (size_t i = 0; i < 4; i++)
+            if (surface_capabilities.supportedCompositeAlpha & 1 << i) {
+                createInfo.compositeAlpha = VkCompositeAlphaFlagBitsKHR(
+                    surface_capabilities.supportedCompositeAlpha & 1 << i);
+                break;
+            }
+    // 指定图像的用途
+    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    createInfo.imageUsage |= surface_capabilities.supportedUsageFlags &
+                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (surface_capabilities.supportedUsageFlags &
+        VK_IMAGE_USAGE_TRANSFER_DST_BIT)
+        createInfo.imageUsage |= VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    else
+        print_warning("WindowContext",
+                      "VK_IMAGE_USAGE_TRANSFER_DST_BIT isn't supported!");
+    // 指定图像格式
+    if (availableFormats.empty())
+        if (VkResult result = acquire_surface_formats(ctx))
+            return result;
+    if (!createInfo.imageFormat)
+        if (set_surface_format({VK_FORMAT_R8G8B8A8_UNORM,
+                                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}) &&
+            set_surface_format({VK_FORMAT_B8G8R8A8_UNORM,
+                                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})) {
+            // 如果找不到上述图像格式和色彩空间的组合，那只能有什么用什么，采用availableSurfaceFormats中的第一组
+            createInfo.imageFormat = availableFormats[0].format;
+            createInfo.imageColorSpace = availableFormats[0].colorSpace;
+            print_warning(
+                "WindowContext",
+                "Failed to select a four-component UNORM surface format!");
+        }
+    // 指定呈现模式
+    std::vector<VkPresentModeKHR> surfacePresentModes;
+    if (VkResult result = acquire_present_modes(surfacePresentModes, ctx)) {
+        return result;
+    }
+    createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
+    if (!info.isFrameRateLimited)
+        for (size_t i = 0; i < surfacePresentModes.size(); i++)
+            if (surfacePresentModes[i] == VK_PRESENT_MODE_MAILBOX_KHR) {
+                createInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
+                break;
+            }
+    const char* mode_str = get_present_mode_string(createInfo.presentMode);
+    print_log("Present Mode", mode_str);
+    // ----------------
+    createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
+    createInfo.flags = info.flags;
+    createInfo.surface = surface;
+    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    createInfo.clipped = VK_TRUE;
+    createInfo.oldSwapchain = VK_NULL_HANDLE;
+    createInfo.pNext = nullptr;
+    // ----------------
+    if (VkResult result = create_swapchain_Internal())
+        return result;
+    iterate<WindowCallback::vk_swapchain_construct>();
+    return VK_SUCCESS;
+}
+const char* get_present_mode_string(VkPresentModeKHR mode) {
+    switch (mode) {
+        case VK_PRESENT_MODE_IMMEDIATE_KHR:
+            return "VK_PRESENT_MODE_IMMEDIATE_KHR";
+        case VK_PRESENT_MODE_MAILBOX_KHR:
+            return "VK_PRESENT_MODE_MAILBOX_KHR";
+        case VK_PRESENT_MODE_FIFO_KHR:
+            return "VK_PRESENT_MODE_FIFO_KHR";
+        case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
+            return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
+        case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:
+            return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
+        case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:
+            return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
+        case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:
+            return "VK_PRESENT_MODE_FIFO_LATEST_READY_EXT";
+        default:
+            return "unknown";
+    }
+}
+VkResult WindowContext::recreateSwapchain(Context& ctx) {
+    auto& createInfo = swapchainCreateInfo;
+    VkSurfaceCapabilitiesKHR surface_capabilities = {};
+    VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
+        ctx.phyDevice, surface, &surface_capabilities);
+    if (result != VK_SUCCESS) {
+        print_error(
+            "WindowContext",
+            "Failed to get physical device surface capabilities! Code:",
+            int32_t(result));
+        return result;
+    }
+    if (surface_capabilities.currentExtent.width == 0 ||
+        surface_capabilities.currentExtent.height == 0)
+        return VK_SUBOPTIMAL_KHR;
+    createInfo.imageExtent = surface_capabilities.currentExtent;
+    createInfo.oldSwapchain = swapchain;
+    result = vkQueueWaitIdle(ctx.queue_graphics);
+    // 仅在等待图形队列成功，且图形与呈现所用队列不同时等待呈现队列
+    if (!result && ctx.queue_graphics != ctx.queue_presentation)
+        result = vkQueueWaitIdle(ctx.queue_presentation);
+    if (result) {
+        print_error("WindowContext",
+                    "Failed to wait for the queue to be idle! Code:",
+                    int32_t(result));
+        return result;
+    }
+    iterate<WindowCallback::vk_swapchain_destroy>();
+    for (auto& i : swapchainImageViews)
+        if (i)
+            vkDestroyImageView(ctx.device, i, nullptr);
+    swapchainImageViews.resize(0);
+    result = create_swapchain_Internal();
+    if (result != VK_SUCCESS) {
+        print_error("WindowContext",
+                    "Create swapchain failed! Code:", int32_t(result));
+        return result;
+    }
+    iterate<WindowCallback::vk_swapchain_construct>();
+    print_log("WindowContext", "Swapchain recreated!");
+    return VK_SUCCESS;
+}
 }  // namespace BLVK

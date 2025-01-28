@@ -356,41 +356,41 @@ namespace _internal_windowcb {
     void callback_set<e>(WindowContext * ctx) { \
         sent;                                   \
     }
-_SET_CB(CBEnum::WindowPos,
+_SETCB(CBEnum::WindowPos,
         glfwSetWindowPosCallback(ctx->pWindow, __glfw_callback_windowpos))
-_SET_CB(CBEnum::WindowSize,
+_SETCB(CBEnum::WindowSize,
         glfwSetWindowSizeCallback(ctx->pWindow, __glfw_callback_windowsize))
-_SET_CB(CBEnum::WindowClose,
+_SETCB(CBEnum::WindowClose,
         glfwSetWindowCloseCallback(ctx->pWindow, __glfw_callback_windowclose))
-_SET_CB(CBEnum::WindowRefresh,
+_SETCB(CBEnum::WindowRefresh,
         glfwSetWindowRefreshCallback(ctx->pWindow,
                                      __glfw_callback_windowrefresh))
-_SET_CB(CBEnum::WindowFocus,
+_SETCB(CBEnum::WindowFocus,
         glfwSetWindowFocusCallback(ctx->pWindow, __glfw_callback_windowfocus))
-_SET_CB(CBEnum::WindowIconify,
+_SETCB(CBEnum::WindowIconify,
         glfwSetWindowIconifyCallback(ctx->pWindow,
                                      __glfw_callback_windowiconify))
-_SET_CB(CBEnum::WindowMaximize,
+_SETCB(CBEnum::WindowMaximize,
         glfwSetWindowMaximizeCallback(ctx->pWindow,
                                       __glfw_callback_windowmaximize))
-_SET_CB(CBEnum::WindowContentScale,
+_SETCB(CBEnum::WindowContentScale,
         glfwSetWindowContentScaleCallback(ctx->pWindow,
                                           __glfw_callback_windowcontentscale))
-_SET_CB(CBEnum::Keyboard,
+_SETCB(CBEnum::Keyboard,
         glfwSetKeyCallback(ctx->pWindow, __glfw_callback_keybord))
-_SET_CB(CBEnum::CharInput,
+_SETCB(CBEnum::CharInput,
         glfwSetCharCallback(ctx->pWindow, __glfw_callback_charinput))
-_SET_CB(CBEnum::CharMods,
+_SETCB(CBEnum::CharMods,
         glfwSetCharModsCallback(ctx->pWindow, __glfw_callback_charmods))
-_SET_CB(CBEnum::MouseButton,
+_SETCB(CBEnum::MouseButton,
         glfwSetMouseButtonCallback(ctx->pWindow, __glfw_callback_mousebutton))
-_SET_CB(CBEnum::CursorPos,
+_SETCB(CBEnum::CursorPos,
         glfwSetCursorPosCallback(ctx->pWindow, __glfw_callback_cursorpos))
-_SET_CB(CBEnum::CursorEnter,
+_SETCB(CBEnum::CursorEnter,
         glfwSetCursorEnterCallback(ctx->pWindow, __glfw_callback_cursorenter))
-_SET_CB(CBEnum::Scroll,
+_SETCB(CBEnum::Scroll,
         glfwSetScrollCallback(ctx->pWindow, __glfw_callback_scroll))
-_SET_CB(CBEnum::DropFile,
+_SETCB(CBEnum::DropFile,
         glfwSetDropCallback(ctx->pWindow, __glfw_callback_drop))
 _SET_CB(CBEnum::SwapchainCreate, return)
 _SET_CB(CBEnum::SwapchainDestroy, return)

@@ -1,13 +1,16 @@
 #ifndef _BL_CORE_BL_INIT_HPP_
 #define _BL_CORE_BL_INIT_HPP_
 #define GLFW_INCLUDE_VULKAN
+#include <bl_output.hpp>
+#include <core/bl_util.hpp>
+
 #include <GLFW/glfw3.h>
 #define VMA_VULKAN_VERSION VK_API_VERSION_1_3
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vulkan.h>
+
 #include <algorithm>
-#include <bl_output.hpp>
-#include <core/bl_util.hpp>
+#include <map>
 #include <span>
 #include <sstream>
 namespace BLVK {
@@ -30,9 +33,10 @@ enum class CtxResult {
     WINDOW_SURFACE_CREATE_FAILED = -13,
     ACQUIRE_PHYSICAL_DEVICES_FAILED = -14,
     NO_FIT_PHYDEVICE = -15,
-    ENUM_DEVICE_EXT_FAILED = -16,
+    ACQUIRE_DEVICE_EXTENSIONS_FAILED = -16,
     CREATE_DEVICE_FAILED = -17,
-    VMA_CREATE_FAILED = -18
+    VMA_CREATE_FAILED = -18,
+    SWAPCHAIN_CREATE_FAILED = -19
 };
 
 /// @brief  Vulkan 实例创建信息
@@ -48,11 +52,9 @@ struct InstanceCreateInfo {
 };
 /// @brief Vulkan 设备创建信息
 struct DeviceCreateInfo {
-    VkDeviceCreateFlags diviceFlags = 0;
-    uint32_t surfaceCount;
+    VkDeviceCreateFlags diviceFlags = 0u;
     VmaAllocatorCreateFlags vmaFlags = 0u;
     std::vector<const char*> extensionNames{};
-    bool debug_print_deviceExtension{false};
     void* pNextDivice{nullptr};
 };
 
@@ -92,6 +94,8 @@ enum class WindowCallback {
     glfw_charmods_func,
     /// @brief 窗口拖入文件回调
     glfw_drop_func,
+    vk_swapchain_construct,
+    vk_swapchain_destroy,
     MAX_ENUM
 };
 
@@ -127,6 +131,10 @@ struct WindowCreateInfo {
     const char* init_title;
     std::function<bool(GLFWmonitor*)> monitor_choose;
 };
+struct SwapchainCreateInfo {
+    bool isFrameRateLimited;
+    VkSwapchainCreateFlagsKHR flags;
+};
 
 struct WindowContext;
 struct Context;
@@ -141,23 +149,25 @@ struct GetType {};
     struct GetType<e> {                             \
         using Type = Callback<250127, __VA_ARGS__>; \
     }
-_GETTYPE(CB::glfw_windowpos_func, GLFWwindow*, int, int);
-_GETTYPE(CB::glfw_windowsize_func, GLFWwindow*, int, int);
-_GETTYPE(CB::glfw_windowclose_func, GLFWwindow*);
-_GETTYPE(CB::glfw_windowrefresh_func, GLFWwindow*);
-_GETTYPE(CB::glfw_windowfocus_func, GLFWwindow*, int);
-_GETTYPE(CB::glfw_windowiconify_func, GLFWwindow*, int);
-_GETTYPE(CB::glfw_windowmaximize_func, GLFWwindow*, int);
-_GETTYPE(CB::glfw_framebuffersize_func, GLFWwindow*, int, int);
-_GETTYPE(CB::glfw_windowcontentscale_func, GLFWwindow*, float, float);
-_GETTYPE(CB::glfw_mousebutton_func, GLFWwindow*, int, int, int);
-_GETTYPE(CB::glfw_cursorpos_func, GLFWwindow*, double, double);
-_GETTYPE(CB::glfw_cursorenter_func, GLFWwindow*, int);
-_GETTYPE(CB::glfw_scroll_func, GLFWwindow*, double, double);
-_GETTYPE(CB::glfw_key_func, GLFWwindow*, int, int, int, int);
-_GETTYPE(CB::glfw_char_func, GLFWwindow*, unsigned int);
-_GETTYPE(CB::glfw_charmods_func, GLFWwindow*, unsigned int, int);
-_GETTYPE(CB::glfw_drop_func, GLFWwindow*, int, const char*[]);
+_GETTYPE(CB::glfw_windowpos_func, WindowContext*, int, int);
+_GETTYPE(CB::glfw_windowsize_func, WindowContext*, int, int);
+_GETTYPE(CB::glfw_windowclose_func, WindowContext*);
+_GETTYPE(CB::glfw_windowrefresh_func, WindowContext*);
+_GETTYPE(CB::glfw_windowfocus_func, WindowContext*, int);
+_GETTYPE(CB::glfw_windowiconify_func, WindowContext*, int);
+_GETTYPE(CB::glfw_windowmaximize_func, WindowContext*, int);
+_GETTYPE(CB::glfw_framebuffersize_func, WindowContext*, int, int);
+_GETTYPE(CB::glfw_windowcontentscale_func, WindowContext*, float, float);
+_GETTYPE(CB::glfw_mousebutton_func, WindowContext*, int, int, int);
+_GETTYPE(CB::glfw_cursorpos_func, WindowContext*, double, double);
+_GETTYPE(CB::glfw_cursorenter_func, WindowContext*, int);
+_GETTYPE(CB::glfw_scroll_func, WindowContext*, double, double);
+_GETTYPE(CB::glfw_key_func, WindowContext*, int, int, int, int);
+_GETTYPE(CB::glfw_char_func, WindowContext*, unsigned int);
+_GETTYPE(CB::glfw_charmods_func, WindowContext*, unsigned int, int);
+_GETTYPE(CB::glfw_drop_func, WindowContext*, int, const char*[]);
+_GETTYPE(CB::vk_swapchain_construct, );
+_GETTYPE(CB::vk_swapchain_destroy, GLFWwindow*, int, const char*[]);
 #undef _GETTYPE
 void __glfw_callback_windowpos(GLFWwindow* window, int xpos, int ypos);
 void __glfw_callback_windowsize(GLFWwindow* window, int width, int height);
@@ -192,47 +202,47 @@ template <CB Type>
 void callback_set(WindowContext* ctx) {
     static_assert(false, "callback_set(): Wrong CBEnum Type!");
 }
-#define _SET_CB(e, sent)                        \
+#define _SETCB(e, sent)                         \
     template <>                                 \
     void callback_set<e>(WindowContext * ctx) { \
         sent;                                   \
     }
-_SET_CB(CB::glfw_windowpos_func,
-        glfwSetWindowPosCallback(ctx->pWindow, __glfw_callback_windowpos))
-_SET_CB(CB::glfw_windowsize_func,
-        glfwSetWindowSizeCallback(ctx->pWindow, __glfw_callback_windowsize))
-_SET_CB(CB::glfw_windowclose_func,
-        glfwSetWindowCloseCallback(ctx->pWindow, __glfw_callback_windowclose))
-_SET_CB(CB::glfw_windowrefresh_func,
-        glfwSetWindowRefreshCallback(ctx->pWindow,
-                                     __glfw_callback_windowrefresh))
-_SET_CB(CB::glfw_windowfocus_func,
-        glfwSetWindowFocusCallback(ctx->pWindow, __glfw_callback_windowfocus))
-_SET_CB(CB::glfw_windowiconify_func,
-        glfwSetWindowIconifyCallback(ctx->pWindow,
-                                     __glfw_callback_windowiconify))
-_SET_CB(CB::glfw_windowmaximize_func,
-        glfwSetWindowMaximizeCallback(ctx->pWindow,
-                                      __glfw_callback_windowmaximize))
-_SET_CB(CB::glfw_windowcontentscale_func,
-        glfwSetWindowContentScaleCallback(ctx->pWindow,
-                                          __glfw_callback_windowcontentscale))
-_SET_CB(CB::glfw_key_func,
-        glfwSetKeyCallback(ctx->pWindow, __glfw_callback_keybord))
-_SET_CB(CB::glfw_char_func,
-        glfwSetCharCallback(ctx->pWindow, __glfw_callback_charinput))
-_SET_CB(CB::glfw_charmods_func,
-        glfwSetCharModsCallback(ctx->pWindow, __glfw_callback_charmods))
-_SET_CB(CB::glfw_mousebutton_func,
-        glfwSetMouseButtonCallback(ctx->pWindow, __glfw_callback_mousebutton))
-_SET_CB(CB::glfw_cursorpos_func,
-        glfwSetCursorPosCallback(ctx->pWindow, __glfw_callback_cursorpos))
-_SET_CB(CB::glfw_cursorenter_func,
-        glfwSetCursorEnterCallback(ctx->pWindow, __glfw_callback_cursorenter))
-_SET_CB(CB::glfw_scroll_func,
-        glfwSetScrollCallback(ctx->pWindow, __glfw_callback_scroll))
-_SET_CB(CB::glfw_drop_func,
-        glfwSetDropCallback(ctx->pWindow, __glfw_callback_drop))
+_SETCB(CB::glfw_windowpos_func,
+       glfwSetWindowPosCallback(ctx->pWindow, __glfw_callback_windowpos))
+_SETCB(CB::glfw_windowsize_func,
+       glfwSetWindowSizeCallback(ctx->pWindow, __glfw_callback_windowsize))
+_SETCB(CB::glfw_windowclose_func,
+       glfwSetWindowCloseCallback(ctx->pWindow, __glfw_callback_windowclose))
+_SETCB(CB::glfw_windowrefresh_func,
+       glfwSetWindowRefreshCallback(ctx->pWindow,
+                                    __glfw_callback_windowrefresh))
+_SETCB(CB::glfw_windowfocus_func,
+       glfwSetWindowFocusCallback(ctx->pWindow, __glfw_callback_windowfocus))
+_SETCB(CB::glfw_windowiconify_func,
+       glfwSetWindowIconifyCallback(ctx->pWindow,
+                                    __glfw_callback_windowiconify))
+_SETCB(CB::glfw_windowmaximize_func,
+       glfwSetWindowMaximizeCallback(ctx->pWindow,
+                                     __glfw_callback_windowmaximize))
+_SETCB(CB::glfw_windowcontentscale_func,
+       glfwSetWindowContentScaleCallback(ctx->pWindow,
+                                         __glfw_callback_windowcontentscale))
+_SETCB(CB::glfw_key_func,
+       glfwSetKeyCallback(ctx->pWindow, __glfw_callback_keybord))
+_SETCB(CB::glfw_char_func,
+       glfwSetCharCallback(ctx->pWindow, __glfw_callback_charinput))
+_SETCB(CB::glfw_charmods_func,
+       glfwSetCharModsCallback(ctx->pWindow, __glfw_callback_charmods))
+_SETCB(CB::glfw_mousebutton_func,
+       glfwSetMouseButtonCallback(ctx->pWindow, __glfw_callback_mousebutton))
+_SETCB(CB::glfw_cursorpos_func,
+       glfwSetCursorPosCallback(ctx->pWindow, __glfw_callback_cursorpos))
+_SETCB(CB::glfw_cursorenter_func,
+       glfwSetCursorEnterCallback(ctx->pWindow, __glfw_callback_cursorenter))
+_SETCB(CB::glfw_scroll_func,
+       glfwSetScrollCallback(ctx->pWindow, __glfw_callback_scroll))
+_SETCB(CB::glfw_drop_func,
+       glfwSetDropCallback(ctx->pWindow, __glfw_callback_drop))
 #undef _SET_CB
 }  // namespace _detail_init
 
@@ -258,8 +268,9 @@ struct WindowCallbacks {
     _detail_init::GetType<CB::glfw_char_func> callback_char;
     _detail_init::GetType<CB::glfw_charmods_func> callback_charmods;
     _detail_init::GetType<CB::glfw_drop_func> callback_drop;
+    _detail_init::GetType<CB::glfw_drop_func> callback_swapchain_destroy;
+    _detail_init::GetType<CB::glfw_drop_func> callback_swapchain_construct;
 };
-
 /// @brief 窗口上下文
 struct WindowContext {
     GLFWwindow* pWindow{nullptr};
@@ -274,8 +285,50 @@ struct WindowContext {
     std::vector<VkImageView> swapchainImageViews;
     VkSwapchainCreateInfoKHR swapchainCreateInfo{};
 
-    CtxResult prepare_window(Context& ctx, WindowCreateInfo& info);
-    CtxResult prepare_swapchain(Context& ctx);
+    std::vector<VkSurfaceFormatKHR> availableFormats;
+
+    /// @brief 创建窗口
+    /// @param info 窗口创建信息
+    /// @param ctx 使用的Vulkan上下文
+    /// @return 是否成功执行
+    CtxResult prepare_window(WindowCreateInfo& info, Context& ctx);
+    /// @brief 创建窗口表面
+    /// @param ctx 使用的Vulkan上下文
+    /// @return 是否成功执行
+    VkResult prepare_surface(Context& ctx);
+    /// @brief 创建交换链
+    /// @param info 交换链创建信息
+    /// @param ctx 使用的Vulkan上下文
+    /// @return 是否成功执行
+    CtxResult prepare_swapchain(SwapchainCreateInfo info, Context& ctx);
+
+    /// @brief 重建交换链
+    /// @param ctx 使用的Vulkan上下文
+    /// @return 是否成功执行
+    VkResult recreateSwapchain(Context& ctx);
+    /// @brief 直接创建交换链，并且获取交换链图像和视图，不调用回调
+    /// @param ctx 使用的Vulkan上下文
+    /// @return 是否成功执行
+    VkResult create_swapchain_Internal(Context& ctx);
+    /// @brief 
+    /// @param ctx 使用的Vulkan上下文
+    /// @return 是否成功执行
+    VkResult acquire_surface_formats(Context& ctx);
+    /// @brief 
+    /// @param presentModes 
+    /// @param ctx 使用的Vulkan上下文
+    /// @return 是否成功执行
+    VkResult acquire_present_modes(std::vector<VkPresentModeKHR>& presentModes,Context& ctx);
+    /// @brief 
+    /// @param surfaceFormat 
+    /// @return 是否成功执行
+    VkResult set_surface_format(VkSurfaceFormatKHR surfaceFormat);
+    /// @brief 
+    /// @param info 
+    /// @param ctx 使用的Vulkan上下文
+    /// @return 是否成功执行
+    VkResult create_swapchain(const SwapchainCreateInfo& info, Context& ctx);
+
     void cleanup(Context& ctx);
 
     template <WindowCallback type>
@@ -286,6 +339,7 @@ struct WindowContext {
     template <WindowCallback type, typename... Args>
     void iterate(Args... args);
 };
+const char* get_present_mode_string(VkPresentModeKHR mode);
 /// @brief Vulkan 上下文
 struct Context {
     uint32_t vulkanApiVersion;
@@ -301,8 +355,6 @@ struct Context {
     VkQueue queue_compute{VK_NULL_HANDLE};
     VkQueue queue_presentation{VK_NULL_HANDLE};
 
-    // Callback callbacks;
-
     VkPhysicalDeviceProperties2 phyDeviceProperties;
     VkPhysicalDeviceVulkan11Properties phyDeviceVulkan11Properties;
     VkPhysicalDeviceVulkan12Properties phyDeviceVulkan12Properties;
@@ -315,6 +367,11 @@ struct Context {
     VkPhysicalDeviceVulkan12Features phyDeviceVulkan12Features;
     VkPhysicalDeviceVulkan13Features phyDeviceVulkan13Features;
 
+    /// @brief 当前设备可用的扩展
+    std::vector<VkExtensionProperties> availableExtensions;
+    /// @brief 指向availableExtensions的扩展名称, 已按照字典序排列
+    std::vector<const char*> extensions;
+
     VkDebugUtilsMessengerEXT debugger{VK_NULL_HANDLE};
 
     VmaAllocator allocator;
@@ -325,89 +382,92 @@ struct Context {
     GLFWmonitor** pMonitors;
     std::vector<WindowContext> windowData;
 
-    /// @brief
-    /// @param version
-    /// @return
+    /// @brief 获取VulkanAPI的版本
+    /// @param version 返回版本
+    /// @return 是否正确查询
     VkResult acquire_vkapi_version(uint32_t& version);
-    /// @brief
-    /// @param extensionNames
-    /// @param layerName
-    /// @return
+    /// @brief 检查实例扩展是否可用
+    /// @param extensionNames 被检查的数组
+    /// @param layerName 扩展所在的层级, 一律为nullptr
+    /// @return 是否正确检查
     VkResult check_instance_extension(std::span<const char*> extensionNames,
                                       const char* layerName = nullptr);
-    /// @brief
-    /// @param layerNames
-    /// @return
+    /// @brief 检查实例层级是否可用
+    /// @param layerNames 被检查的数组
+    /// @return 是否正确检查
     VkResult check_instance_layer(std::span<const char*> layerNames);
-    /// @brief
-    /// @param pCallbackData
-    /// @return
+    /// @brief 合并pCallbackData内容为一个字符串输出
+    /// @param pCallbackData 被合并的debug数据
+    /// @return 表示debug信息的字符串
     static std::string combine_debug_message(
         const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
-    /// @brief
-    /// @return
+    /// @brief 初始化debug部分
+    /// @return 是否正确完成
     VkResult prepare_debugger();
-    /// @brief
-    /// @param info
-    /// @return
+    /// @brief 初始化Vulkan实例
+    /// @param info 创建信息
+    /// @return 是否正确完成
     CtxResult prepare_instance(InstanceCreateInfo& info);
-    /// @brief
-    /// @return
+    /// @brief 初始化GLFW及其debug
+    /// @return 是否正确完成
     CtxResult prepare_window();
-    /// @brief
-    /// @param info
-    /// @param ret
-    /// @return
+    /// @brief 创建窗口
+    /// @param info 创建信息
+    /// @param ret 返回窗口数据
+    /// @return 是否正确完成
     CtxResult create_window(WindowCreateInfo& info, WindowContext*& ret);
-    /// @brief
-    /// @param availablePhysicalDevices
-    /// @return
+    /// @brief 取得物理设备列表
+    /// @param availablePhysicalDevices 返回该列表
+    /// @return 是否正确完成
     VkResult acquire_physical_devices(
         std::vector<VkPhysicalDevice>& availablePhysicalDevices);
-    /// @brief
-    /// @param physicalDevice
-    /// @param enableGraphicsQueue
-    /// @param enableComputeQueue
-    /// @param queueFamilyIndices
-    /// @return
-    VkResult get_queue_family_indices(VkPhysicalDevice physicalDevice,
-                                      bool enableGraphicsQueue,
-                                      bool enableComputeQueue,
-                                      uint32_t (&queueFamilyIndices)[3]);
-    /// @brief
-    /// @param availablePhysicalDevices
-    /// @param deviceIndex
-    /// @param enableGraphicsQueue
-    /// @param enableComputeQueue
-    /// @return
+    /// @brief 获取设备所用的队列族
+    /// @param physicalDevice 被获取的设备
+    /// @param enableGraphicsQueue 是否查找图形队列
+    /// @param enableComputeQueue 是否查找计算队列
+    /// @param queueFamilyIndices 返回队列族索引, 依次为图形,呈现,计算
+    /// @return 是否正确完成
+    VkResult acquire_queue_family_indices(VkPhysicalDevice physicalDevice,
+                                          uint32_t (&queueFamilyIndices)[3],
+                                          bool enableGraphicsQueue = true,
+                                          bool enableComputeQueue = true);
+    /// @brief 决定使用的物理设备, 呈现队列取决于当前是否创建窗口
+    /// @param availablePhysicalDevices 可用的物理设备
+    /// @param deviceIndex 被决定的设备索引
+    /// @param enableGraphicsQueue 是否启用图形队列
+    /// @param enableComputeQueue 是否启用计算队列
+    /// @return 是否正确完成
     VkResult determine_physical_device(
         std::vector<VkPhysicalDevice>& availablePhysicalDevices,
         uint32_t deviceIndex = 0,
         bool enableGraphicsQueue = true,
         bool enableComputeQueue = true);
-    /// @brief
+    /// @brief 获取物理设备属性
     void acquire_physical_divice_properties();
-    /// @brief
+    /// @brief 获取物理设备特性
     void acquire_physical_divice_features();
-    /// @brief
-    /// @return
+    /// @brief 初始化物理设备
+    /// @return 是否正确完成
     CtxResult prepare_physical_device();
     VkResult acquire_device_extensions(
         std::vector<VkExtensionProperties>& extensionNames,
         const char* layerName = nullptr);
-    /// @brief
-    /// @param extensionNames
-    /// @return
-    VkResult insert_device_extensions(std::vector<const char*>& extensionNames);
-    /// @brief
-    /// @param extensionNames
-    /// @param layerName
+    VmaAllocatorCreateFlagBits check_VMA_extensions(
+        std::vector<const char*>& extensionNames);
+
+    /// @brief 检查设备扩展
+    /// @param extensionNames 扩展名称
+    /// @param layerName 被检查的层级, 一律为nullptr
+    /// @return 是否正确完成
     VkResult check_device_extension(std::span<const char*> extensionNames,
                                     const char* layerName = nullptr);
+    /// @brief 初始化VMA库(内存分配)
+    /// @param info 创建信息
+    /// @return 是否正确完成
     VkResult prepare_VMA(DeviceCreateInfo& info);
-    /// @brief
-    /// @param info
-    /// @return
+    /// @brief 初始化设备
+    /// @param info 创建信息
+    /// @return 是否正确完成
     CtxResult prepare_device(DeviceCreateInfo& info);
 
     /// @brief 更新状态变量
@@ -445,10 +505,10 @@ inline void make_current_context(Context& ctx) {
     local_data.current_vkcontext = &ctx;
 }
 
-/// @brief
-/// @tparam type
-/// @param fn
-/// @return
+/// @brief 在对应Window的type回调函数中加入一个回调
+/// @tparam type 回调类型
+/// @param fn 函数对象
+/// @return 回调句柄
 template <WindowCallback type>
 auto WindowContext::insert(_detail_init::GetType<type>::Func&& fn)
     -> _detail_init::GetType<type>::Handle {
@@ -458,6 +518,9 @@ auto WindowContext::insert(_detail_init::GetType<type>::Func&& fn)
     case e:                        \
         if (name.size() == 0u)     \
             callback_set<e>(this); \
+        return callback.name.insert(std::forward(fn));
+#define _CASE2(e, name) \
+    case e:             \
         return callback.name.insert(std::forward(fn));
             _CASE(WindowCallback::glfw_windowpos_func, callback_windowpos)
             _CASE(WindowCallback::glfw_windowsize_func, callback_windowsize)
@@ -481,15 +544,20 @@ auto WindowContext::insert(_detail_init::GetType<type>::Func&& fn)
             _CASE(WindowCallback::glfw_char_func, callback_char)
             _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
             _CASE(WindowCallback::glfw_drop_func, callback_drop)
+            _CASE2(WindowCallback::vk_swapchain_destroy,
+                   callback_swapchain_destroy)
+            _CASE2(WindowCallback::vk_swapchain_construct,
+                   callback_swapchain_construct)
+#undef _CASE2
 #undef _CASE
             default:
                 static_assert(false, "Wrong Callback type!");
                 break;
         }
 }
-/// @brief
-/// @tparam type
-/// @param handle
+/// @brief 删除回调函数
+/// @tparam type 对应的回调类型
+/// @param handle 回调句柄
 template <WindowCallback type>
 void WindowContext::erase(_detail_init::GetType<type>::Handle handle) {
     switch
@@ -520,16 +588,18 @@ void WindowContext::erase(_detail_init::GetType<type>::Handle handle) {
             _CASE(WindowCallback::glfw_char_func, callback_char)
             _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
             _CASE(WindowCallback::glfw_drop_func, callback_drop)
+            _CASE(WindowCallback::vk_swapchain_destroy,
+                  callback_swapchain_destroy)
+            _CASE(WindowCallback::vk_swapchain_construct,
+                  callback_swapchain_construct)
 #undef _CASE
             default:
                 static_assert(false, "Wrong Callback type!");
                 break;
         }
 }
-/// @brief
-/// @tparam ...Args
-/// @tparam type
-/// @param ...args
+/// @brief 调用回调函数
+/// @tparam type 回调类型
 template <WindowCallback type, typename... Args>
 void WindowContext::iterate(Args... args) {
     constexpr size_t typen{static_cast<size_t>(type)};
@@ -542,9 +612,9 @@ void WindowContext::iterate(Args... args) {
         }, "Wrong argument");
     switch
         constexpr(type) {
-#define _CASE(e, name)               \
-    case e:                          \
-        callback.name.iterate(args); \
+#define _CASE(e, name)                  \
+    case e:                             \
+        callback.name.iterate(args...); \
         break;
             _CASE(WindowCallback::glfw_windowpos_func, callback_windowpos)
             _CASE(WindowCallback::glfw_windowsize_func, callback_windowsize)
@@ -568,6 +638,10 @@ void WindowContext::iterate(Args... args) {
             _CASE(WindowCallback::glfw_char_func, callback_char)
             _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
             _CASE(WindowCallback::glfw_drop_func, callback_drop)
+            _CASE(WindowCallback::vk_swapchain_destroy,
+                  callback_swapchain_destroy)
+            _CASE(WindowCallback::vk_swapchain_construct,
+                  callback_swapchain_construct)
 #undef _CASE
         }
 }
