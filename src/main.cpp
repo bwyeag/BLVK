@@ -1,50 +1,34 @@
-#include <bl_vkcontext.hpp>
-#include <bl_window.hpp>
+#include <core/bl_init.hpp>
 
 BL::Context ctx;
-BL::WindowContext window;
 int main() {
     {
-        BL::WindowContext::initialize();
-        BL::ContextInstanceInit ctxinit{
-            .pAppName = "BLVK test",
-            .appVersion = VK_MAKE_API_VERSION(0, 0, 1, 1),
-            .minApiVersion = VK_API_VERSION_1_3,
-            .isDebuging = true,
-        };
-        if (ctx.create_instance(&ctxinit)) {
-            BL::WindowContext::initialize();
+        BL::ContextCreateInfo info{
+            {.appVersion = VK_MAKE_API_VERSION(0, 0, 1, 0),
+             .isDebuging = true,
+             .min_api_version = VK_API_VERSION_1_2,
+             .pAppName = "BLVK test",
+             .extensionNames = {},
+             .layerNames = {},
+             .pNextInstance = nullptr},
+            {.extensionNames = {}, .pNextDivice = nullptr}};
+        std::array<std::pair<BL::WindowCreateInfo, BL::SwapchainCreateInfo>，1>
+            window_info;
+        window_info[0] = {
+            BL::WindowCreateInfo{
+                .init_size_x = 800, .init_size_y = 600, .init_title = "BLVK"},
+            BL::SwapchainCreateInfo{.isFrameRateLimited = false}};
+        std::array<BL::WindowContext*, 1> windows;
+        if (auto result = ctx.prepare_context(info, window_info, windows);
+            result != BL::CtxResult::SUCCESS) {
+            std::cout << "Error in init" << int32_t(result) << '\n';
             exit(-1);
         }
         BL::make_current_context(ctx);
-        BL::WindowInit_t wininit{
-            .init_size_x = 800, .init_size_y = 600, .init_title = "BLVK test"};
-        if (window.create_window(&wininit)) {
-            BL::WindowContext::terminate();
-            exit(-1);
-        }
-        BL::ContextDeviceInit diviceinit{.surfaceCount = 1,
-                                         .surface = &window.surface};
-        if (ctx.create_device(&diviceinit)) {
-            BL::WindowContext::terminate();
-            exit(-1);
-        }
-        BL::WindowContextSwapchainInit_t swapchaininit{
-            .isFrameRateLimited = false,
-        };
-        if (window.createSwapchain(&swapchaininit)) {
-            BL::WindowContext::terminate();
-            exit(-1);
-        }
-        while (glfwWindowShouldClose(window.pWindow)) {
-            while (glfwGetWindowAttrib(window.pWindow, GLFW_ICONIFIED))
-                glfwWaitEvents();
-
+        while (!glfwWindowShouldClose(windows[0]->pWindow)) {
+            // do something
             glfwPollEvents();
         }
-        window.destroy();
-        ctx.destroy_device();
-        ctx.destroy_instance();
-        BL::WindowContext::terminate();
+        ctx.cleanup();
     }
 }

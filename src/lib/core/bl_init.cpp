@@ -1,5 +1,8 @@
 #include <core/bl_init.hpp>
 
+#define VMA_IMPLEMENTATION
+#include <vma/vk_mem_alloc.h>
+
 namespace BL {
 void __glfw_callback_windowpos(GLFWwindow* window, int xpos, int ypos) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
@@ -100,7 +103,7 @@ VkResult Context::check_instance_extension(
         print_error("Context",
                     "Failed to get the count of instance "
                     "extension! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     if (extensionCount) {
@@ -110,7 +113,7 @@ VkResult Context::check_instance_extension(
             print_error("Context",
                         "Failed to enumerate instance extension "
                         "properties! Code:",
-                        int32_t(result));
+                        string_VkResult(result));
             return result;
         }
         for (auto& i : extensionNames) {
@@ -134,7 +137,7 @@ VkResult Context::check_instance_layer(std::span<const char*> layerNames) {
         print_error("Context",
                     "Failed to get the count of instance "
                     "layers! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     if (layerCount) {
@@ -144,7 +147,7 @@ VkResult Context::check_instance_layer(std::span<const char*> layerNames) {
             print_error("Context",
                         "Failed to enumerate instance layer "
                         "properties! Code:",
-                        int32_t(result));
+                        string_VkResult(result));
             return result;
         }
         for (auto& i : layerNames) {
@@ -187,8 +190,9 @@ std::string Context::combine_debug_message(
         sstm << "Object Labels:\n";
         for (uint32_t i = 0; i < pCallbackData->queueLabelCount; ++i) {
             auto& label = pCallbackData->pObjects[i];
-            sstm << "Type:" << label.objectType << '\t';
-            sstm << "Handle:" << label.objectHandle << '\t';
+            sstm << "Type:" << string_VkObjectType(label.objectType) << '\t';
+            sstm << "Handle:" << std::hex << label.objectHandle << std::dec
+                 << '\t';
             sstm << "Name:"
                  << ((label.pObjectName) ? label.pObjectName : "Null") << '\n';
         }
@@ -245,8 +249,8 @@ VkResult Context::prepare_debugger() {
         VkResult result = vkCreateDebugUtilsMessenger(
             instance, &debugUtilsMessengerCreateInfo, nullptr, &debugger);
         if (result)
-            print_error("Context", "Failed to create debug messenger! code:",
-                        int32_t(result));
+            print_error("Context", "Failed to create debug messenger! Code:",
+                        string_VkResult(result));
         return result;
     }
     print_error("Context",
@@ -276,12 +280,12 @@ CtxResult Context::prepare_instance(InstanceCreateInfo& info) {
 
     if (VkResult result = check_instance_extension(info.extensionNames)) {
         print_error("Context", "check_instance_extension() failed! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return CtxResult::CHECK_EXT_FAILED;
     }
     if (VkResult result = check_instance_layer(info.layerNames)) {
-        print_error("Context",
-                    "check_instance_layer() failed! Code:", int32_t(result));
+        print_error("Context", "check_instance_layer() failed! Code:",
+                    string_VkResult(result));
         return CtxResult::CHECK_LAYER_FAILED;
     }
 
@@ -302,11 +306,11 @@ CtxResult Context::prepare_instance(InstanceCreateInfo& info) {
                 print_warning(
                     "Context",
                     "Vulkan instance some ext/layer not useable! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
                 break;
             default:
                 print_error("Context", "Vulkan instance create failed! Code:",
-                            int32_t(result));
+                            string_VkResult(result));
                 return CtxResult::INSTANCE_CREATE_FAILED;
         }
     }
@@ -317,27 +321,23 @@ CtxResult Context::prepare_instance(InstanceCreateInfo& info) {
     if (info.isDebuging)
         if (VkResult result = prepare_debugger()) {
             print_error("Context",
-                        "create debug failed! Code:", int32_t(result));
+                        "create debug failed! Code:", string_VkResult(result));
             return CtxResult::DEBUG_CREATE_FAILED;
         }
     return CtxResult::SUCCESS;
 }
-CtxResult Context::prepare_window() {
+CtxResult Context::prepare_glfw() {
     if (!glfwInit()) {
         print_error("Context", "Failed to initialize GLFW!");
         return CtxResult::INIT_GLFW_FAILED;
     }
-    pMonitors = glfwGetMonitors(&monitorCount);
-    if (!pMonitors) {
-        print_error("Context", "No monitors!");
-        return CtxResult::NO_MONITOR;
-    }
+    glfwSetErrorCallback([](int error_code, const char* description) {
+        print_error("GLFW", "Error Code:", error_code, "; Desc:", description);
+    });
     return CtxResult::SUCCESS;
 }
-CtxResult Context::create_window(WindowCreateInfo& info, WindowContext*& ret) {
-    glfwSetErrorCallback([](int error_code, const char* description) {
-        print_error("GLFW", "Error code:", error_code, "; Desc:", description);
-    });
+CtxResult Context::create_window(const WindowCreateInfo& info,
+                                 WindowContext*& ret) {
     auto& window = windowData.emplace_back();
     if (CtxResult result = window.prepare_window(info, *this);
         result != CtxResult::SUCCESS) {
@@ -346,11 +346,20 @@ CtxResult Context::create_window(WindowCreateInfo& info, WindowContext*& ret) {
     }
     return CtxResult::SUCCESS;
 }
-CtxResult WindowContext::prepare_window(WindowCreateInfo& info, Context& ctx) {
+CtxResult WindowContext::prepare_window(const WindowCreateInfo& info,
+                                        Context& ctx) {
     using State = WindowCreateState;
     if (info.init_state & State::UsePrimaryMonitor) {
         pMonitor = glfwGetPrimaryMonitor();
+        if (!pMonitor)
+            return CtxResult::NO_MONITOR;
     } else {
+        int monitorCount;
+        GLFWmonitor** pMonitors = glfwGetMonitors(&monitorCount);
+        if (!pMonitors) {
+            print_error("Context", "No monitors!");
+            return CtxResult::NO_MONITOR;
+        }
         if (!info.monitor_choose) {
             return CtxResult::NO_MONITOR_CHOOSE_FUNCT;
         }
@@ -420,7 +429,7 @@ VkResult Context::acquire_physical_devices(
             vkEnumeratePhysicalDevices(instance, &deviceCount, nullptr)) {
         print_error("Context",
                     "Failed to get the count of physical devices! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     if (!deviceCount) {
@@ -433,7 +442,7 @@ VkResult Context::acquire_physical_devices(
         instance, &deviceCount, availablePhysicalDevices.data());
     if (result)
         print_error("Context", "Failed to enumerate physical devices! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
     return result;
 }
 VkResult Context::acquire_queue_family_indices(
@@ -474,7 +483,7 @@ VkResult Context::acquire_queue_family_indices(
                                 "Failed to determine if the "
                                 "queue "
                                 "family supports presentation! Code:",
-                                int32_t(result));
+                                string_VkResult(result));
                     return result;
                 }
         }
@@ -643,7 +652,7 @@ VkResult Context::acquire_device_extensions(
             phyDevice, layerName, &extCount, nullptr)) {
         print_error("Context",
                     "vkEnumerateDeviceExtensionProperties() failed! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return VK_RESULT_MAX_ENUM;
     }
     extensionNames.resize(extCount);
@@ -651,7 +660,7 @@ VkResult Context::acquire_device_extensions(
             phyDevice, layerName, &extCount, extensionNames.data())) {
         print_error("Context",
                     "vkEnumerateDeviceExtensionProperties() failed! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return VK_RESULT_MAX_ENUM;
     }
     std::vector<const char*> extensions(availableExtensions.size());
@@ -787,7 +796,7 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
         print_error("Context",
                     "Failed to create a vulkan logical device! "
                     "Code: ",
-                    int32_t(result));
+                    string_VkResult(result));
         last->pNext = nullptr;
         return CtxResult::CREATE_DEVICE_FAILED;
     }
@@ -830,29 +839,28 @@ VkResult WindowContext::prepare_surface(Context& ctx) {
         print_error("Context",
                     "Failed to create a window "
                     "surface! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return VK_RESULT_MAX_ENUM;
     }
     this->surface = surface;
     return VK_SUCCESS;
 }
-CtxResult WindowContext::prepare_swapchain(SwapchainCreateInfo info,
+CtxResult WindowContext::prepare_swapchain(const SwapchainCreateInfo info,
                                            Context& ctx) {
-    if (prepare_surface(ctx) || create_swapchain(info, ctx)) {
+    if (create_swapchain(info, ctx))
         return CtxResult::SWAPCHAIN_CREATE_FAILED;
-    }
     return CtxResult::SUCCESS;
 }
 
 VkResult WindowContext::create_swapchain_Internal(Context& ctx) {
     auto& createInfo = swapchainCreateInfo;
     // 直接创建交换链
-    if (VkResult result = vkCreateSwapchainKHR(ctx.device, &createInfo,
-                                               nullptr, &swapchain)) {
+    if (VkResult result = vkCreateSwapchainKHR(ctx.device, &createInfo, nullptr,
+                                               &swapchain)) {
         print_error("WindowContext",
                     "Failed to create a swapchain! "
                     "Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     // 获取交换链图像
@@ -861,15 +869,15 @@ VkResult WindowContext::create_swapchain_Internal(Context& ctx) {
             ctx.device, swapchain, &swapchainImageCount, nullptr)) {
         print_error("WindowContext",
                     "Failed to get the count of swapchain images! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     swapchainImages.resize(swapchainImageCount);
-    if (VkResult result = vkGetSwapchainImagesKHR(ctx.device, swapchain,
-                                                  &swapchainImageCount,
-                                                  swapchainImages.data())) {
-        print_error("WindowContext",
-                    "Failed to get swapchain images! Code:", int32_t(result));
+    if (VkResult result =
+            vkGetSwapchainImagesKHR(ctx.device, swapchain, &swapchainImageCount,
+                                    swapchainImages.data())) {
+        print_error("WindowContext", "Failed to get swapchain images! Code:",
+                    string_VkResult(result));
         return result;
     }
     // 直接创建交换链，并且获取交换链图像和视图
@@ -887,7 +895,7 @@ VkResult WindowContext::create_swapchain_Internal(Context& ctx) {
                                   &swapchainImageViews[i])) {
             print_error("WindowContext",
                         "Failed to create a swapchain image view! Code:",
-                        int32_t(result));
+                        string_VkResult(result));
             return result;
         }
     }
@@ -900,7 +908,7 @@ VkResult WindowContext::acquire_surface_formats(Context& ctx) {
         print_error("WindowContext",
                     "Failed to get the count of surface "
                     "formats! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     if (!surfaceFormatCount)
@@ -914,8 +922,8 @@ VkResult WindowContext::acquire_surface_formats(Context& ctx) {
     if (result)
         print_error("WindowContext",
                     "Failed to get surface formats! "
-                    "code:",
-                    int32_t(result));
+                    "Code:",
+                    string_VkResult(result));
     return VK_SUCCESS;
 }
 VkResult WindowContext::acquire_present_modes(
@@ -924,10 +932,9 @@ VkResult WindowContext::acquire_present_modes(
     uint32_t surfacePresentModeCount;
     if (VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(
             ctx.phyDevice, surface, &surfacePresentModeCount, nullptr)) {
-        print_error(
-            "WindowContext",
-            "Failed to get the count of surface present modes! Code:",
-            int32_t(result));
+        print_error("WindowContext",
+                    "Failed to get the count of surface present modes! Code:",
+                    string_VkResult(result));
         return result;
     }
     if (!surfacePresentModeCount) {
@@ -942,12 +949,13 @@ VkResult WindowContext::acquire_present_modes(
         print_error("WindowContext",
                     "Failed to get surface present "
                     "modes! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     return VK_SUCCESS;
 }
-VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat, Context& ctx) {
+VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat,
+                                           Context& ctx) {
     bool formatIsAvailable = false;
     if (!surfaceFormat.format) {
         // 如果格式未指定，只匹配色彩空间，图像格式有啥就用啥
@@ -973,7 +981,7 @@ VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat, Con
         return VK_ERROR_FORMAT_NOT_SUPPORTED;
     // 如果交换链已存在，调用RecreateSwapchain()重建交换链
     if (swapchain)
-        return recreateSwapchain(ctx);
+        return recreate_swapchain(ctx);
     return VK_SUCCESS;
 }
 VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
@@ -984,7 +992,7 @@ VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
             ctx.phyDevice, surface, &surface_capabilities)) {
         print_error("WindowContext",
                     "Failed to get physical device surface capabilities! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     auto& createInfo = swapchainCreateInfo;
@@ -1033,10 +1041,12 @@ VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
         if (VkResult result = acquire_surface_formats(ctx))
             return result;
     if (!createInfo.imageFormat)
-        if (set_surface_format({VK_FORMAT_R8G8B8A8_UNORM,
-                                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},ctx) &&
-            set_surface_format({VK_FORMAT_B8G8R8A8_UNORM,
-                                VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},ctx)) {
+        if (set_surface_format(
+                {VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},
+                ctx) &&
+            set_surface_format(
+                {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR},
+                ctx)) {
             // 如果找不到上述图像格式和色彩空间的组合，那只能有什么用什么，采用availableSurfaceFormats中的第一组
             createInfo.imageFormat = availableFormats[0].format;
             createInfo.imageColorSpace = availableFormats[0].colorSpace;
@@ -1056,7 +1066,7 @@ VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
                 createInfo.presentMode = VK_PRESENT_MODE_MAILBOX_KHR;
                 break;
             }
-    const char* mode_str = get_present_mode_string(createInfo.presentMode);
+    const char* mode_str = string_VkPresentModeKHR(createInfo.presentMode);
     print_log("Present Mode", mode_str);
     // ----------------
     createInfo.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -1072,36 +1082,15 @@ VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
     iterate<WindowCallback::vk_swapchain_construct>();
     return VK_SUCCESS;
 }
-const char* get_present_mode_string(VkPresentModeKHR mode) {
-    switch (mode) {
-        case VK_PRESENT_MODE_IMMEDIATE_KHR:
-            return "VK_PRESENT_MODE_IMMEDIATE_KHR";
-        case VK_PRESENT_MODE_MAILBOX_KHR:
-            return "VK_PRESENT_MODE_MAILBOX_KHR";
-        case VK_PRESENT_MODE_FIFO_KHR:
-            return "VK_PRESENT_MODE_FIFO_KHR";
-        case VK_PRESENT_MODE_FIFO_RELAXED_KHR:
-            return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
-        case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:
-            return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
-        case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:
-            return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
-        case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:
-            return "VK_PRESENT_MODE_FIFO_LATEST_READY_EXT";
-        default:
-            return "unknown";
-    }
-}
-VkResult WindowContext::recreateSwapchain(Context& ctx) {
+VkResult WindowContext::recreate_swapchain(Context& ctx) {
     auto& createInfo = swapchainCreateInfo;
     VkSurfaceCapabilitiesKHR surface_capabilities = {};
     VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
         ctx.phyDevice, surface, &surface_capabilities);
     if (result != VK_SUCCESS) {
-        print_error(
-            "WindowContext",
-            "Failed to get physical device surface capabilities! Code:",
-            int32_t(result));
+        print_error("WindowContext",
+                    "Failed to get physical device surface capabilities! Code:",
+                    string_VkResult(result));
         return result;
     }
     if (surface_capabilities.currentExtent.width == 0 ||
@@ -1116,7 +1105,7 @@ VkResult WindowContext::recreateSwapchain(Context& ctx) {
     if (result) {
         print_error("WindowContext",
                     "Failed to wait for the queue to be idle! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
         return result;
     }
     iterate<WindowCallback::vk_swapchain_destroy>();
@@ -1127,11 +1116,38 @@ VkResult WindowContext::recreateSwapchain(Context& ctx) {
     result = create_swapchain_Internal(ctx);
     if (result != VK_SUCCESS) {
         print_error("WindowContext",
-                    "Create swapchain failed! Code:", int32_t(result));
+                    "Create swapchain failed! Code:", string_VkResult(result));
         return result;
     }
     iterate<WindowCallback::vk_swapchain_construct>();
     print_log("WindowContext", "Swapchain recreated!");
     return VK_SUCCESS;
 }
-}  // namespace BLVK
+CtxResult Context::prepare_context(
+    ContextCreateInfo& info,
+    std::span<std::pair<WindowCreateInfo, SwapchainCreateInfo>>& list,
+    std::span<WindowContext*> ret) {
+    CtxResult result;
+    if (result = prepare_glfw(); result != CtxResult::SUCCESS)
+        return result;
+    if (result = prepare_instance(info.instance_info);
+        result != CtxResult::SUCCESS)
+        return result;
+    for (size_t i = 0; i < list.size(); ++i) {
+        if (result = create_window(list[i].first, ret[i]);
+            result != CtxResult::SUCCESS)
+            return result;
+        if (ret[i]->prepare_surface(*this))
+            return CtxResult::SURFACE_ACQUIRE_FAILED;
+    }
+    if (result = prepare_physical_device(); result != CtxResult::SUCCESS)
+        return result;
+    if (result = prepare_device(info.device_info); result != CtxResult::SUCCESS)
+        return result;
+    for (size_t i = 0; i < list.size(); ++i)
+        if (result = ret[i]->prepare_swapchain(list[i].second, *this);
+            result != CtxResult::SUCCESS)
+            return result;
+    return result;
+}
+}  // namespace BL

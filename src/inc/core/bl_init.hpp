@@ -1,15 +1,16 @@
 #ifndef _BL_CORE_BL_INIT_HPP_
 #define _BL_CORE_BL_INIT_HPP_
-#define GLFW_INCLUDE_VULKAN
 #include <bl_output.hpp>
 #include <core/bl_util.hpp>
 
-#include <GLFW/glfw3.h>
+#define GLFW_INCLUDE_VULKAN
+#include "GLFW/glfw3.h"
 #define VMA_VULKAN_VERSION VK_API_VERSION_1_3
 #include <vma/vk_mem_alloc.h>
-#include <vulkan/vulkan.h>
+#include <vulkan/vk_enum_string_helper.h>
 
 #include <algorithm>
+#include <initializer_list>
 #include <map>
 #include <span>
 #include <sstream>
@@ -36,7 +37,8 @@ enum class CtxResult {
     ACQUIRE_DEVICE_EXTENSIONS_FAILED = -16,
     CREATE_DEVICE_FAILED = -17,
     VMA_CREATE_FAILED = -18,
-    SWAPCHAIN_CREATE_FAILED = -19
+    SWAPCHAIN_CREATE_FAILED = -19,
+    SURFACE_ACQUIRE_FAILED = -20
 };
 
 /// @brief  Vulkan 实例创建信息
@@ -57,7 +59,6 @@ struct DeviceCreateInfo {
     std::vector<const char*> extensionNames{};
     void* pNextDivice{nullptr};
 };
-
 /// @brief 窗口回调函数的枚举类型
 enum class WindowCallback {
     /// @brief 窗口位置改变回调
@@ -131,9 +132,15 @@ struct WindowCreateInfo {
     const char* init_title;
     std::function<bool(GLFWmonitor*)> monitor_choose;
 };
+/// @brief 窗口交换链创建信息
 struct SwapchainCreateInfo {
     bool isFrameRateLimited;
     VkSwapchainCreateFlagsKHR flags;
+};
+/// @brief 全部创建信息的包装
+struct ContextCreateInfo {
+    InstanceCreateInfo instance_info;
+    DeviceCreateInfo device_info;
 };
 
 struct WindowContext;
@@ -291,7 +298,7 @@ struct WindowContext {
     /// @param info 窗口创建信息
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
-    CtxResult prepare_window(WindowCreateInfo& info, Context& ctx);
+    CtxResult prepare_window(const WindowCreateInfo& info, Context& ctx);
     /// @brief 创建窗口表面
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
@@ -300,31 +307,32 @@ struct WindowContext {
     /// @param info 交换链创建信息
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
-    CtxResult prepare_swapchain(SwapchainCreateInfo info, Context& ctx);
+    CtxResult prepare_swapchain(const SwapchainCreateInfo info, Context& ctx);
 
     /// @brief 重建交换链
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
-    VkResult recreateSwapchain(Context& ctx);
+    VkResult recreate_swapchain(Context& ctx);
     /// @brief 直接创建交换链，并且获取交换链图像和视图，不调用回调
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
     VkResult create_swapchain_Internal(Context& ctx);
-    /// @brief 
+    /// @brief
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
     VkResult acquire_surface_formats(Context& ctx);
-    /// @brief 
-    /// @param presentModes 
+    /// @brief
+    /// @param presentModes
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
-    VkResult acquire_present_modes(std::vector<VkPresentModeKHR>& presentModes,Context& ctx);
-    /// @brief 
-    /// @param surfaceFormat 
+    VkResult acquire_present_modes(std::vector<VkPresentModeKHR>& presentModes,
+                                   Context& ctx);
+    /// @brief
+    /// @param surfaceFormat
     /// @return 是否成功执行
     VkResult set_surface_format(VkSurfaceFormatKHR surfaceFormat, Context& ctx);
-    /// @brief 
-    /// @param info 
+    /// @brief
+    /// @param info
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
     VkResult create_swapchain(const SwapchainCreateInfo& info, Context& ctx);
@@ -339,7 +347,6 @@ struct WindowContext {
     template <WindowCallback type, typename... Args>
     void iterate(Args... args);
 };
-const char* get_present_mode_string(VkPresentModeKHR mode);
 /// @brief Vulkan 上下文
 struct Context {
     uint32_t vulkanApiVersion;
@@ -378,8 +385,6 @@ struct Context {
 
     double current_time{0.0}, delta_time{0.0};
 
-    int monitorCount;
-    GLFWmonitor** pMonitors;
     std::vector<WindowContext> windowData;
 
     /// @brief 获取VulkanAPI的版本
@@ -410,12 +415,12 @@ struct Context {
     CtxResult prepare_instance(InstanceCreateInfo& info);
     /// @brief 初始化GLFW及其debug
     /// @return 是否正确完成
-    CtxResult prepare_window();
+    CtxResult prepare_glfw();
     /// @brief 创建窗口
     /// @param info 创建信息
     /// @param ret 返回窗口数据
     /// @return 是否正确完成
-    CtxResult create_window(WindowCreateInfo& info, WindowContext*& ret);
+    CtxResult create_window(const WindowCreateInfo& info, WindowContext*& ret);
     /// @brief 取得物理设备列表
     /// @param availablePhysicalDevices 返回该列表
     /// @return 是否正确完成
@@ -459,7 +464,7 @@ struct Context {
     /// @param extensionNames 扩展名称
     /// @param layerName 被检查的层级, 一律为nullptr
     /// @return 是否正确完成
-    VkResult check_device_extension(std::span<const char*> extensionNames,
+    VkResult check_device_extension(std::span<const char*> exstensionNames,
                                     const char* layerName = nullptr);
     /// @brief 初始化VMA库(内存分配)
     /// @param info 创建信息
@@ -469,6 +474,11 @@ struct Context {
     /// @param info 创建信息
     /// @return 是否正确完成
     CtxResult prepare_device(DeviceCreateInfo& info);
+
+    CtxResult prepare_context(
+        ContextCreateInfo& info,
+        std::span<std::pair<WindowCreateInfo, SwapchainCreateInfo>>& list,
+        std::span<WindowContext*> ret);
 
     /// @brief 更新状态变量
     void update();
@@ -645,5 +655,5 @@ void WindowContext::iterate(Args... args) {
 #undef _CASE
         }
 }
-}  // namespace BLVK
+}  // namespace BL
 #endif  //!_BL_CORE_BL_INIT_HPP_
