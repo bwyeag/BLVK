@@ -6,37 +6,37 @@
 namespace BL {
 void __glfw_callback_windowpos(GLFWwindow* window, int xpos, int ypos) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowpos_func>(ptr, xpos, ypos);
+    ptr->iterate<WindowCallback::glfw_windowpos_func>(xpos, ypos);
 }
 void __glfw_callback_windowsize(GLFWwindow* window, int width, int height) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowsize_func>(ptr, width, height);
+    ptr->iterate<WindowCallback::glfw_windowsize_func>(width, height);
 }
 void __glfw_callback_windowclose(GLFWwindow* window) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowclose_func>(ptr);
+    ptr->iterate<WindowCallback::glfw_windowclose_func>();
 }
 void __glfw_callback_windowrefresh(GLFWwindow* window) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowrefresh_func>(ptr);
+    ptr->iterate<WindowCallback::glfw_windowrefresh_func>();
 }
 void __glfw_callback_windowfocus(GLFWwindow* window, int focused) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowfocus_func>(ptr, focused);
+    ptr->iterate<WindowCallback::glfw_windowfocus_func>(focused);
 }
 void __glfw_callback_windowiconify(GLFWwindow* window, int iconified) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowiconify_func>(ptr, iconified);
+    ptr->iterate<WindowCallback::glfw_windowiconify_func>(iconified);
 }
 void __glfw_callback_windowmaximize(GLFWwindow* window, int maximized) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowmaximize_func>(ptr, maximized);
+    ptr->iterate<WindowCallback::glfw_windowmaximize_func>(maximized);
 }
 void __glfw_callback_windowcontentscale(GLFWwindow* window,
                                         float xscale,
                                         float yscale) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowcontentscale_func>(ptr, xscale,
+    ptr->iterate<WindowCallback::glfw_windowcontentscale_func>(xscale,
                                                                yscale);
 }
 void __glfw_callback_mousebutton(GLFWwindow* window,
@@ -44,22 +44,22 @@ void __glfw_callback_mousebutton(GLFWwindow* window,
                                  int action,
                                  int mods) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_mousebutton_func>(ptr, button, action,
+    ptr->iterate<WindowCallback::glfw_mousebutton_func>(button, action,
                                                         mods);
 }
 void __glfw_callback_cursorpos(GLFWwindow* window, double xpos, double ypos) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_cursorpos_func>(ptr, xpos, ypos);
+    ptr->iterate<WindowCallback::glfw_cursorpos_func>(xpos, ypos);
 }
 void __glfw_callback_cursorenter(GLFWwindow* window, int entered) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_cursorenter_func>(ptr, entered);
+    ptr->iterate<WindowCallback::glfw_cursorenter_func>(entered);
 }
 void __glfw_callback_scroll(GLFWwindow* window,
                             double xoffset,
                             double yoffset) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_scroll_func>(ptr, xoffset, yoffset);
+    ptr->iterate<WindowCallback::glfw_scroll_func>(xoffset, yoffset);
 }
 void __glfw_callback_keybord(GLFWwindow* window,
                              int key,
@@ -67,24 +67,24 @@ void __glfw_callback_keybord(GLFWwindow* window,
                              int action,
                              int mods) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_key_func>(ptr, key, scancode, action,
+    ptr->iterate<WindowCallback::glfw_key_func>(key, scancode, action,
                                                 mods);
 }
 void __glfw_callback_charinput(GLFWwindow* window, unsigned int codepoint) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_char_func>(ptr, codepoint);
+    ptr->iterate<WindowCallback::glfw_char_func>(codepoint);
 }
 void __glfw_callback_charmods(GLFWwindow* window,
                               unsigned int codepoint,
                               int mods) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_charmods_func>(ptr, codepoint, mods);
+    ptr->iterate<WindowCallback::glfw_charmods_func>(codepoint, mods);
 }
 void __glfw_callback_drop(GLFWwindow* window,
                           int path_count,
                           const char* paths[]) {
     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_drop_func>(ptr, path_count, paths);
+    ptr->iterate<WindowCallback::glfw_drop_func>(path_count, paths);
 }
 VkResult Context::acquire_vkapi_version(uint32_t& version) {
     if (vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"))
@@ -339,15 +339,14 @@ CtxResult Context::prepare_glfw() {
 CtxResult Context::create_window(const WindowCreateInfo& info,
                                  WindowContext*& ret) {
     auto& window = windowData.emplace_back();
-    if (CtxResult result = window.prepare_window(info, *this);
+    if (CtxResult result = window.prepare_window(info);
         result != CtxResult::SUCCESS) {
         window.cleanup(*this);
         return result;
     }
     return CtxResult::SUCCESS;
 }
-CtxResult WindowContext::prepare_window(const WindowCreateInfo& info,
-                                        Context& ctx) {
+CtxResult WindowContext::prepare_window(const WindowCreateInfo& info) {
     using State = WindowCreateState;
     if (info.init_state & State::UsePrimaryMonitor) {
         pMonitor = glfwGetPrimaryMonitor();
@@ -363,9 +362,9 @@ CtxResult WindowContext::prepare_window(const WindowCreateInfo& info,
         if (!info.monitor_choose) {
             return CtxResult::NO_MONITOR_CHOOSE_FUNCT;
         }
-        for (int i = 0; i < ctx.monitorCount; i++) {
-            if (info.monitor_choose(ctx.pMonitors[i])) {
-                pMonitor = ctx.pMonitors[i];
+        for (int i = 0; i < monitorCount; i++) {
+            if (info.monitor_choose(pMonitors[i])) {
+                pMonitor = pMonitors[i];
                 goto FINISH_CHOOSE;
             }
         }
@@ -520,7 +519,7 @@ VkResult Context::acquire_queue_family_indices(
 }
 VkResult Context::determine_physical_device(
     std::vector<VkPhysicalDevice>& availablePhysicalDevices,
-    uint32_t deviceIndex = 0,
+    uint32_t deviceIndex,
     bool enableGraphicsQueue,
     bool enableComputeQueue) {
     // 定义一个特殊值用于标记一个队列族索引已被找过但未找到
@@ -709,7 +708,7 @@ VmaAllocatorCreateFlagBits Context::check_VMA_extensions(
         }
     return ret;
 }
-VkResult Context::check_device_extension(std::span<const char*> extensionNames,
+void Context::check_device_extension(std::span<const char*> extensionNames,
                                          const char* layerName) {
     for (auto& i : extensionNames) {
         if (!std::binary_search(extensions.begin(), extensions.end(), i,
@@ -763,9 +762,7 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
     info.extensionNames.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
     info.vmaFlags = static_cast<VmaAllocatorCreateFlagBits>(
         info.vmaFlags | check_VMA_extensions(info.extensionNames));
-    if (check_device_extension(info.extensionNames)) {
-        print_error("Context", "Init device extension failed!");
-    }
+    check_device_extension(info.extensionNames);
     availableExtensions.clear();
     extensions.clear();
     // 3.创建逻辑设备

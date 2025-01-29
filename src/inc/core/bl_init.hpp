@@ -5,7 +5,7 @@
 
 #define GLFW_INCLUDE_VULKAN
 #include "GLFW/glfw3.h"
-#define VMA_VULKAN_VERSION VK_API_VERSION_1_3
+#define VMA_VULKAN_VERSION 1003000
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vk_enum_string_helper.h>
 
@@ -173,8 +173,8 @@ _GETTYPE(CB::glfw_key_func, WindowContext*, int, int, int, int);
 _GETTYPE(CB::glfw_char_func, WindowContext*, unsigned int);
 _GETTYPE(CB::glfw_charmods_func, WindowContext*, unsigned int, int);
 _GETTYPE(CB::glfw_drop_func, WindowContext*, int, const char*[]);
-_GETTYPE(CB::vk_swapchain_construct, );
-_GETTYPE(CB::vk_swapchain_destroy, GLFWwindow*, int, const char*[]);
+_GETTYPE(CB::vk_swapchain_construct, WindowContext*);
+_GETTYPE(CB::vk_swapchain_destroy, WindowContext*);
 #undef _GETTYPE
 void __glfw_callback_windowpos(GLFWwindow* window, int xpos, int ypos);
 void __glfw_callback_windowsize(GLFWwindow* window, int width, int height);
@@ -209,74 +209,35 @@ template <CB Type>
 void callback_set(WindowContext* ctx) {
     static_assert(false, "callback_set(): Wrong CBEnum Type!");
 }
-#define _SETCB(e, sent)                         \
-    template <>                                 \
-    void callback_set<e>(WindowContext * ctx) { \
-        sent;                                   \
-    }
-_SETCB(CB::glfw_windowpos_func,
-       glfwSetWindowPosCallback(ctx->pWindow, __glfw_callback_windowpos))
-_SETCB(CB::glfw_windowsize_func,
-       glfwSetWindowSizeCallback(ctx->pWindow, __glfw_callback_windowsize))
-_SETCB(CB::glfw_windowclose_func,
-       glfwSetWindowCloseCallback(ctx->pWindow, __glfw_callback_windowclose))
-_SETCB(CB::glfw_windowrefresh_func,
-       glfwSetWindowRefreshCallback(ctx->pWindow,
-                                    __glfw_callback_windowrefresh))
-_SETCB(CB::glfw_windowfocus_func,
-       glfwSetWindowFocusCallback(ctx->pWindow, __glfw_callback_windowfocus))
-_SETCB(CB::glfw_windowiconify_func,
-       glfwSetWindowIconifyCallback(ctx->pWindow,
-                                    __glfw_callback_windowiconify))
-_SETCB(CB::glfw_windowmaximize_func,
-       glfwSetWindowMaximizeCallback(ctx->pWindow,
-                                     __glfw_callback_windowmaximize))
-_SETCB(CB::glfw_windowcontentscale_func,
-       glfwSetWindowContentScaleCallback(ctx->pWindow,
-                                         __glfw_callback_windowcontentscale))
-_SETCB(CB::glfw_key_func,
-       glfwSetKeyCallback(ctx->pWindow, __glfw_callback_keybord))
-_SETCB(CB::glfw_char_func,
-       glfwSetCharCallback(ctx->pWindow, __glfw_callback_charinput))
-_SETCB(CB::glfw_charmods_func,
-       glfwSetCharModsCallback(ctx->pWindow, __glfw_callback_charmods))
-_SETCB(CB::glfw_mousebutton_func,
-       glfwSetMouseButtonCallback(ctx->pWindow, __glfw_callback_mousebutton))
-_SETCB(CB::glfw_cursorpos_func,
-       glfwSetCursorPosCallback(ctx->pWindow, __glfw_callback_cursorpos))
-_SETCB(CB::glfw_cursorenter_func,
-       glfwSetCursorEnterCallback(ctx->pWindow, __glfw_callback_cursorenter))
-_SETCB(CB::glfw_scroll_func,
-       glfwSetScrollCallback(ctx->pWindow, __glfw_callback_scroll))
-_SETCB(CB::glfw_drop_func,
-       glfwSetDropCallback(ctx->pWindow, __glfw_callback_drop))
-#undef _SET_CB
 }  // namespace _detail_init
-
 /// @brief 保存窗口回调
 struct WindowCallbacks {
     using CB = WindowCallback;
-    _detail_init::GetType<CB::glfw_windowpos_func> callback_windowpos;
-    _detail_init::GetType<CB::glfw_windowsize_func> callback_windowsize;
-    _detail_init::GetType<CB::glfw_windowclose_func> callback_windowclose;
-    _detail_init::GetType<CB::glfw_windowrefresh_func> callback_windowrefresh;
-    _detail_init::GetType<CB::glfw_windowfocus_func> callback_windowfocus;
-    _detail_init::GetType<CB::glfw_windowiconify_func> callback_windowiconify;
-    _detail_init::GetType<CB::glfw_windowmaximize_func> callback_windowmaximize;
-    _detail_init::GetType<CB::glfw_framebuffersize_func>
+    _detail_init::GetType<CB::glfw_windowpos_func>::Type callback_windowpos;
+    _detail_init::GetType<CB::glfw_windowsize_func>::Type callback_windowsize;
+    _detail_init::GetType<CB::glfw_windowclose_func>::Type callback_windowclose;
+    _detail_init::GetType<CB::glfw_windowrefresh_func>::Type
+        callback_windowrefresh;
+    _detail_init::GetType<CB::glfw_windowfocus_func>::Type callback_windowfocus;
+    _detail_init::GetType<CB::glfw_windowiconify_func>::Type
+        callback_windowiconify;
+    _detail_init::GetType<CB::glfw_windowmaximize_func>::Type
+        callback_windowmaximize;
+    _detail_init::GetType<CB::glfw_framebuffersize_func>::Type
         callback_framebuffersize;
-    _detail_init::GetType<CB::glfw_windowcontentscale_func>
+    _detail_init::GetType<CB::glfw_windowcontentscale_func>::Type
         callback_windowcontentscale;
-    _detail_init::GetType<CB::glfw_mousebutton_func> callback_mousebutton;
-    _detail_init::GetType<CB::glfw_cursorpos_func> callback_cursorpos;
-    _detail_init::GetType<CB::glfw_cursorenter_func> callback_cursorenter;
-    _detail_init::GetType<CB::glfw_scroll_func> callback_scroll;
-    _detail_init::GetType<CB::glfw_key_func> callback_key;
-    _detail_init::GetType<CB::glfw_char_func> callback_char;
-    _detail_init::GetType<CB::glfw_charmods_func> callback_charmods;
-    _detail_init::GetType<CB::glfw_drop_func> callback_drop;
-    _detail_init::GetType<CB::glfw_drop_func> callback_swapchain_destroy;
-    _detail_init::GetType<CB::glfw_drop_func> callback_swapchain_construct;
+    _detail_init::GetType<CB::glfw_mousebutton_func>::Type callback_mousebutton;
+    _detail_init::GetType<CB::glfw_cursorpos_func>::Type callback_cursorpos;
+    _detail_init::GetType<CB::glfw_cursorenter_func>::Type callback_cursorenter;
+    _detail_init::GetType<CB::glfw_scroll_func>::Type callback_scroll;
+    _detail_init::GetType<CB::glfw_key_func>::Type callback_key;
+    _detail_init::GetType<CB::glfw_char_func>::Type callback_char;
+    _detail_init::GetType<CB::glfw_charmods_func>::Type callback_charmods;
+    _detail_init::GetType<CB::glfw_drop_func>::Type callback_drop;
+    _detail_init::GetType<CB::glfw_drop_func>::Type callback_swapchain_destroy;
+    _detail_init::GetType<CB::glfw_drop_func>::Type
+        callback_swapchain_construct;
 };
 /// @brief 窗口上下文
 struct WindowContext {
@@ -298,7 +259,7 @@ struct WindowContext {
     /// @param info 窗口创建信息
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
-    CtxResult prepare_window(const WindowCreateInfo& info, Context& ctx);
+    CtxResult prepare_window(const WindowCreateInfo& info);
     /// @brief 创建窗口表面
     /// @param ctx 使用的Vulkan上下文
     /// @return 是否成功执行
@@ -345,7 +306,11 @@ struct WindowContext {
     template <WindowCallback type>
     void erase(_detail_init::GetType<type>::Handle handle);
     template <WindowCallback type, typename... Args>
-    void iterate(Args... args);
+    void iterate(Args... args)
+        requires std::is_invocable_v<
+            typename _detail_init::GetType<type>::Type::Func,
+            WindowContext*,
+            Args...>;
 };
 /// @brief Vulkan 上下文
 struct Context {
@@ -464,8 +429,8 @@ struct Context {
     /// @param extensionNames 扩展名称
     /// @param layerName 被检查的层级, 一律为nullptr
     /// @return 是否正确完成
-    VkResult check_device_extension(std::span<const char*> exstensionNames,
-                                    const char* layerName = nullptr);
+    void check_device_extension(std::span<const char*> exstensionNames,
+                                const char* layerName = nullptr);
     /// @brief 初始化VMA库(内存分配)
     /// @param info 创建信息
     /// @return 是否正确完成
@@ -522,138 +487,170 @@ inline void make_current_context(Context& ctx) {
 template <WindowCallback type>
 auto WindowContext::insert(_detail_init::GetType<type>::Func&& fn)
     -> _detail_init::GetType<type>::Handle {
-    switch
-        constexpr(type) {
-#define _CASE(e, name)             \
-    case e:                        \
-        if (name.size() == 0u)     \
-            callback_set<e>(this); \
+    static_assert(static_cast<size_t>(type) <
+                      static_cast<size_t>(WindowCallback::MAX_ENUM),
+                  "Wrong enum type");
+    switch (type) {
+#define _CASE(e, name)                           \
+    case e:                                      \
+        if (callback.name.size() == 0u)          \
+            _detail_init::callback_set<e>(this); \
         return callback.name.insert(std::forward(fn));
 #define _CASE2(e, name) \
     case e:             \
         return callback.name.insert(std::forward(fn));
-            _CASE(WindowCallback::glfw_windowpos_func, callback_windowpos)
-            _CASE(WindowCallback::glfw_windowsize_func, callback_windowsize)
-            _CASE(WindowCallback::glfw_windowclose_func, callback_windowclose)
-            _CASE(WindowCallback::glfw_windowrefresh_func,
-                  callback_windowrefresh)
-            _CASE(WindowCallback::glfw_windowfocus_func, callback_windowfocus)
-            _CASE(WindowCallback::glfw_windowiconify_func,
-                  callback_windowiconify)
-            _CASE(WindowCallback::glfw_windowmaximize_func,
-                  callback_windowmaximize)
-            _CASE(WindowCallback::glfw_framebuffersize_func,
-                  callback_framebuffersize)
-            _CASE(WindowCallback::glfw_windowcontentscale_func,
-                  callback_windowcontentscale)
-            _CASE(WindowCallback::glfw_mousebutton_func, callback_mousebutton)
-            _CASE(WindowCallback::glfw_cursorpos_func, callback_cursorpos)
-            _CASE(WindowCallback::glfw_cursorenter_func, callback_cursorenter)
-            _CASE(WindowCallback::glfw_scroll_func, callback_scroll)
-            _CASE(WindowCallback::glfw_key_func, callback_key)
-            _CASE(WindowCallback::glfw_char_func, callback_char)
-            _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
-            _CASE(WindowCallback::glfw_drop_func, callback_drop)
-            _CASE2(WindowCallback::vk_swapchain_destroy,
-                   callback_swapchain_destroy)
-            _CASE2(WindowCallback::vk_swapchain_construct,
-                   callback_swapchain_construct)
+        _CASE(WindowCallback::glfw_windowpos_func, callback_windowpos)
+        _CASE(WindowCallback::glfw_windowsize_func, callback_windowsize)
+        _CASE(WindowCallback::glfw_windowclose_func, callback_windowclose)
+        _CASE(WindowCallback::glfw_windowrefresh_func, callback_windowrefresh)
+        _CASE(WindowCallback::glfw_windowfocus_func, callback_windowfocus)
+        _CASE(WindowCallback::glfw_windowiconify_func, callback_windowiconify)
+        _CASE(WindowCallback::glfw_windowmaximize_func, callback_windowmaximize)
+        _CASE(WindowCallback::glfw_framebuffersize_func,
+              callback_framebuffersize)
+        _CASE(WindowCallback::glfw_windowcontentscale_func,
+              callback_windowcontentscale)
+        _CASE(WindowCallback::glfw_mousebutton_func, callback_mousebutton)
+        _CASE(WindowCallback::glfw_cursorpos_func, callback_cursorpos)
+        _CASE(WindowCallback::glfw_cursorenter_func, callback_cursorenter)
+        _CASE(WindowCallback::glfw_scroll_func, callback_scroll)
+        _CASE(WindowCallback::glfw_key_func, callback_key)
+        _CASE(WindowCallback::glfw_char_func, callback_char)
+        _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
+        _CASE(WindowCallback::glfw_drop_func, callback_drop)
+        _CASE2(WindowCallback::vk_swapchain_destroy, callback_swapchain_destroy)
+        _CASE2(WindowCallback::vk_swapchain_construct,
+               callback_swapchain_construct)
 #undef _CASE2
 #undef _CASE
-            default:
-                static_assert(false, "Wrong Callback type!");
-                break;
-        }
+        default:
+            static_assert(false, "Wrong Callback type!");
+            break;
+    }
 }
 /// @brief 删除回调函数
 /// @tparam type 对应的回调类型
 /// @param handle 回调句柄
 template <WindowCallback type>
 void WindowContext::erase(_detail_init::GetType<type>::Handle handle) {
-    switch
-        constexpr(type) {
+    static_assert(static_cast<size_t>(type) <
+                      static_cast<size_t>(WindowCallback::MAX_ENUM),
+                  "Wrong enum type");
+    switch (type) {
 #define _CASE(e, name)               \
     case e:                          \
         callback.name.erase(handle); \
         break;
-            _CASE(WindowCallback::glfw_windowpos_func, callback_windowpos)
-            _CASE(WindowCallback::glfw_windowsize_func, callback_windowsize)
-            _CASE(WindowCallback::glfw_windowclose_func, callback_windowclose)
-            _CASE(WindowCallback::glfw_windowrefresh_func,
-                  callback_windowrefresh)
-            _CASE(WindowCallback::glfw_windowfocus_func, callback_windowfocus)
-            _CASE(WindowCallback::glfw_windowiconify_func,
-                  callback_windowiconify)
-            _CASE(WindowCallback::glfw_windowmaximize_func,
-                  callback_windowmaximize)
-            _CASE(WindowCallback::glfw_framebuffersize_func,
-                  callback_framebuffersize)
-            _CASE(WindowCallback::glfw_windowcontentscale_func,
-                  callback_windowcontentscale)
-            _CASE(WindowCallback::glfw_mousebutton_func, callback_mousebutton)
-            _CASE(WindowCallback::glfw_cursorpos_func, callback_cursorpos)
-            _CASE(WindowCallback::glfw_cursorenter_func, callback_cursorenter)
-            _CASE(WindowCallback::glfw_scroll_func, callback_scroll)
-            _CASE(WindowCallback::glfw_key_func, callback_key)
-            _CASE(WindowCallback::glfw_char_func, callback_char)
-            _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
-            _CASE(WindowCallback::glfw_drop_func, callback_drop)
-            _CASE(WindowCallback::vk_swapchain_destroy,
-                  callback_swapchain_destroy)
-            _CASE(WindowCallback::vk_swapchain_construct,
-                  callback_swapchain_construct)
+        _CASE(WindowCallback::glfw_windowpos_func, callback_windowpos)
+        _CASE(WindowCallback::glfw_windowsize_func, callback_windowsize)
+        _CASE(WindowCallback::glfw_windowclose_func, callback_windowclose)
+        _CASE(WindowCallback::glfw_windowrefresh_func, callback_windowrefresh)
+        _CASE(WindowCallback::glfw_windowfocus_func, callback_windowfocus)
+        _CASE(WindowCallback::glfw_windowiconify_func, callback_windowiconify)
+        _CASE(WindowCallback::glfw_windowmaximize_func, callback_windowmaximize)
+        _CASE(WindowCallback::glfw_framebuffersize_func,
+              callback_framebuffersize)
+        _CASE(WindowCallback::glfw_windowcontentscale_func,
+              callback_windowcontentscale)
+        _CASE(WindowCallback::glfw_mousebutton_func, callback_mousebutton)
+        _CASE(WindowCallback::glfw_cursorpos_func, callback_cursorpos)
+        _CASE(WindowCallback::glfw_cursorenter_func, callback_cursorenter)
+        _CASE(WindowCallback::glfw_scroll_func, callback_scroll)
+        _CASE(WindowCallback::glfw_key_func, callback_key)
+        _CASE(WindowCallback::glfw_char_func, callback_char)
+        _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
+        _CASE(WindowCallback::glfw_drop_func, callback_drop)
+        _CASE(WindowCallback::vk_swapchain_destroy, callback_swapchain_destroy)
+        _CASE(WindowCallback::vk_swapchain_construct,
+              callback_swapchain_construct)
 #undef _CASE
-            default:
-                static_assert(false, "Wrong Callback type!");
-                break;
-        }
+    }
 }
 /// @brief 调用回调函数
 /// @tparam type 回调类型
 template <WindowCallback type, typename... Args>
-void WindowContext::iterate(Args... args) {
-    constexpr size_t typen{static_cast<size_t>(type)};
-    static_assert(
-        0 < typen && typen < static_cast<size_t>(WindowCallback::MAX_ENUM),
-        "Wrong enum type");
-    static_assert(
-        requires(_detail_init::GetType<type>::Func fn, Args... args) {
-            fn(this, args...);
-        }, "Wrong argument");
-    switch
-        constexpr(type) {
-#define _CASE(e, name)                  \
-    case e:                             \
-        callback.name.iterate(args...); \
+void WindowContext::iterate(Args... args)
+    requires std::is_invocable_v<
+        typename _detail_init::GetType<type>::Type::Func,
+        WindowContext*,
+        Args...>
+{
+    static_assert(static_cast<size_t>(type) <
+                      static_cast<size_t>(WindowCallback::MAX_ENUM),
+                  "Wrong enum type");
+    switch (type) {
+#define _CASE(e, name)                        \
+    case e:                                   \
+        callback.name.iterate(this, std::forward(args)...); \
         break;
-            _CASE(WindowCallback::glfw_windowpos_func, callback_windowpos)
-            _CASE(WindowCallback::glfw_windowsize_func, callback_windowsize)
-            _CASE(WindowCallback::glfw_windowclose_func, callback_windowclose)
-            _CASE(WindowCallback::glfw_windowrefresh_func,
-                  callback_windowrefresh)
-            _CASE(WindowCallback::glfw_windowfocus_func, callback_windowfocus)
-            _CASE(WindowCallback::glfw_windowiconify_func,
-                  callback_windowiconify)
-            _CASE(WindowCallback::glfw_windowmaximize_func,
-                  callback_windowmaximize)
-            _CASE(WindowCallback::glfw_framebuffersize_func,
-                  callback_framebuffersize)
-            _CASE(WindowCallback::glfw_windowcontentscale_func,
-                  callback_windowcontentscale)
-            _CASE(WindowCallback::glfw_mousebutton_func, callback_mousebutton)
-            _CASE(WindowCallback::glfw_cursorpos_func, callback_cursorpos)
-            _CASE(WindowCallback::glfw_cursorenter_func, callback_cursorenter)
-            _CASE(WindowCallback::glfw_scroll_func, callback_scroll)
-            _CASE(WindowCallback::glfw_key_func, callback_key)
-            _CASE(WindowCallback::glfw_char_func, callback_char)
-            _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
-            _CASE(WindowCallback::glfw_drop_func, callback_drop)
-            _CASE(WindowCallback::vk_swapchain_destroy,
-                  callback_swapchain_destroy)
-            _CASE(WindowCallback::vk_swapchain_construct,
-                  callback_swapchain_construct)
+        _CASE(WindowCallback::glfw_windowpos_func, callback_windowpos)
+        _CASE(WindowCallback::glfw_windowsize_func, callback_windowsize)
+        _CASE(WindowCallback::glfw_windowclose_func, callback_windowclose)
+        _CASE(WindowCallback::glfw_windowrefresh_func, callback_windowrefresh)
+        _CASE(WindowCallback::glfw_windowfocus_func, callback_windowfocus)
+        _CASE(WindowCallback::glfw_windowiconify_func, callback_windowiconify)
+        _CASE(WindowCallback::glfw_windowmaximize_func, callback_windowmaximize)
+        _CASE(WindowCallback::glfw_framebuffersize_func,
+              callback_framebuffersize)
+        _CASE(WindowCallback::glfw_windowcontentscale_func,
+              callback_windowcontentscale)
+        _CASE(WindowCallback::glfw_mousebutton_func, callback_mousebutton)
+        _CASE(WindowCallback::glfw_cursorpos_func, callback_cursorpos)
+        _CASE(WindowCallback::glfw_cursorenter_func, callback_cursorenter)
+        _CASE(WindowCallback::glfw_scroll_func, callback_scroll)
+        _CASE(WindowCallback::glfw_key_func, callback_key)
+        _CASE(WindowCallback::glfw_char_func, callback_char)
+        _CASE(WindowCallback::glfw_charmods_func, callback_charmods)
+        _CASE(WindowCallback::glfw_drop_func, callback_drop)
+        _CASE(WindowCallback::vk_swapchain_destroy, callback_swapchain_destroy)
+        _CASE(WindowCallback::vk_swapchain_construct,
+              callback_swapchain_construct)
 #undef _CASE
-        }
+    }
 }
+namespace _detail_init {
+#define _SETCB(e, sent)                         \
+    template <>                                 \
+    void callback_set<e>(WindowContext * ctx) { \
+        sent;                                   \
+    }
+_SETCB(CB::glfw_windowpos_func,
+       glfwSetWindowPosCallback(ctx->pWindow, __glfw_callback_windowpos))
+_SETCB(CB::glfw_windowsize_func,
+       glfwSetWindowSizeCallback(ctx->pWindow, __glfw_callback_windowsize))
+_SETCB(CB::glfw_windowclose_func,
+       glfwSetWindowCloseCallback(ctx->pWindow, __glfw_callback_windowclose))
+_SETCB(CB::glfw_windowrefresh_func,
+       glfwSetWindowRefreshCallback(ctx->pWindow,
+                                    __glfw_callback_windowrefresh))
+_SETCB(CB::glfw_windowfocus_func,
+       glfwSetWindowFocusCallback(ctx->pWindow, __glfw_callback_windowfocus))
+_SETCB(CB::glfw_windowiconify_func,
+       glfwSetWindowIconifyCallback(ctx->pWindow,
+                                    __glfw_callback_windowiconify))
+_SETCB(CB::glfw_windowmaximize_func,
+       glfwSetWindowMaximizeCallback(ctx->pWindow,
+                                     __glfw_callback_windowmaximize))
+_SETCB(CB::glfw_windowcontentscale_func,
+       glfwSetWindowContentScaleCallback(ctx->pWindow,
+                                         __glfw_callback_windowcontentscale))
+_SETCB(CB::glfw_key_func,
+       glfwSetKeyCallback(ctx->pWindow, __glfw_callback_keybord))
+_SETCB(CB::glfw_char_func,
+       glfwSetCharCallback(ctx->pWindow, __glfw_callback_charinput))
+_SETCB(CB::glfw_charmods_func,
+       glfwSetCharModsCallback(ctx->pWindow, __glfw_callback_charmods))
+_SETCB(CB::glfw_mousebutton_func,
+       glfwSetMouseButtonCallback(ctx->pWindow, __glfw_callback_mousebutton))
+_SETCB(CB::glfw_cursorpos_func,
+       glfwSetCursorPosCallback(ctx->pWindow, __glfw_callback_cursorpos))
+_SETCB(CB::glfw_cursorenter_func,
+       glfwSetCursorEnterCallback(ctx->pWindow, __glfw_callback_cursorenter))
+_SETCB(CB::glfw_scroll_func,
+       glfwSetScrollCallback(ctx->pWindow, __glfw_callback_scroll))
+_SETCB(CB::glfw_drop_func,
+       glfwSetDropCallback(ctx->pWindow, __glfw_callback_drop))
+#undef _SET_CB
+}  // namespace _detail_init
 }  // namespace BL
 #endif  //!_BL_CORE_BL_INIT_HPP_

@@ -2,7 +2,7 @@
 #define BOUNDLESS_TYPES_FILE
 #include <vulkan/vulkan.h>
 #include <bl_output.hpp>
-#include <bl_vkcontext.hpp>
+#include <core/bl_init.hpp>
 #include <cstdint>
 #include <cstring>
 namespace BL {

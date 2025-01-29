@@ -7,7 +7,7 @@ add_library(BLVKLib STATIC
 )
 # 指定库的头文件
 target_include_directories(BLVKLib PUBLIC ${CMAKE_SOURCE_DIR}/src/inc)
-target_include_directories(BLVKLib PUBLIC D:/vulkanSDK/Include)
+target_include_directories(BLVKLib PUBLIC D:/vulkanSDK/1.4.304.0/Include)
 target_link_libraries(BLVKLib PUBLIC glfw)
 target_link_libraries(BLVKLib PUBLIC VMA)
 target_link_libraries(BLVKLib PUBLIC Vulkan)
