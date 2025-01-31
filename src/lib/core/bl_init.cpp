@@ -4,96 +4,96 @@
 #include <vma/vk_mem_alloc.h>
 
 namespace BL {
-void __glfw_callback_windowpos(GLFWwindow* window, int xpos, int ypos) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowpos_func>(xpos, ypos);
-}
-void __glfw_callback_windowsize(GLFWwindow* window, int width, int height) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowsize_func>(width, height);
-}
-void __glfw_callback_windowclose(GLFWwindow* window) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowclose_func>();
-}
-void __glfw_callback_windowrefresh(GLFWwindow* window) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowrefresh_func>();
-}
-void __glfw_callback_windowfocus(GLFWwindow* window, int focused) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowfocus_func>(focused);
-}
-void __glfw_callback_windowiconify(GLFWwindow* window, int iconified) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowiconify_func>(iconified);
-}
-void __glfw_callback_windowmaximize(GLFWwindow* window, int maximized) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowmaximize_func>(maximized);
-}
-void __glfw_callback_windowcontentscale(GLFWwindow* window,
-                                        float xscale,
-                                        float yscale) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_windowcontentscale_func>(xscale,
-                                                               yscale);
-}
-void __glfw_callback_mousebutton(GLFWwindow* window,
-                                 int button,
-                                 int action,
-                                 int mods) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_mousebutton_func>(button, action,
-                                                        mods);
-}
-void __glfw_callback_cursorpos(GLFWwindow* window, double xpos, double ypos) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_cursorpos_func>(xpos, ypos);
-}
-void __glfw_callback_cursorenter(GLFWwindow* window, int entered) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_cursorenter_func>(entered);
-}
-void __glfw_callback_scroll(GLFWwindow* window,
-                            double xoffset,
-                            double yoffset) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_scroll_func>(xoffset, yoffset);
-}
-void __glfw_callback_keybord(GLFWwindow* window,
-                             int key,
-                             int scancode,
-                             int action,
-                             int mods) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_key_func>(key, scancode, action,
-                                                mods);
-}
-void __glfw_callback_charinput(GLFWwindow* window, unsigned int codepoint) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_char_func>(codepoint);
-}
-void __glfw_callback_charmods(GLFWwindow* window,
-                              unsigned int codepoint,
-                              int mods) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_charmods_func>(codepoint, mods);
-}
-void __glfw_callback_drop(GLFWwindow* window,
-                          int path_count,
-                          const char* paths[]) {
-    auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
-    ptr->iterate<WindowCallback::glfw_drop_func>(path_count, paths);
-}
-VkResult Context::acquire_vkapi_version(uint32_t& version) {
+namespace _detail {
+// void __glfw_callback_windowpos(GLFWwindow* window, int xpos, int ypos) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_windowpos.iterate(ptr, xpos, ypos);
+// }
+// void __glfw_callback_windowsize(GLFWwindow* window, int width, int height) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_windowsize.iterate(ptr, width, height);
+// }
+// void __glfw_callback_windowclose(GLFWwindow* window) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_windowclose.iterate(ptr);
+// }
+// void __glfw_callback_windowrefresh(GLFWwindow* window) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_windowrefresh.iterate(ptr);
+// }
+// void __glfw_callback_windowfocus(GLFWwindow* window, int focused) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_windowfocus.iterate(ptr, focused);
+// }
+// void __glfw_callback_windowiconify(GLFWwindow* window, int iconified) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_windowiconify.iterate(ptr, iconified);
+// }
+// void __glfw_callback_windowmaximize(GLFWwindow* window, int maximized) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_windowmaximize.iterate(ptr, maximized);
+// }
+// void __glfw_callback_windowcontentscale(GLFWwindow* window,
+//                                         float xscale,
+//                                         float yscale) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_windowcontentscale.iterate(ptr, xscale, yscale);
+// }
+// void __glfw_callback_mousebutton(GLFWwindow* window,
+//                                  int button,
+//                                  int action,
+//                                  int mods) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_mousebutton.iterate(ptr, button, action, mods);
+// }
+// void __glfw_callback_cursorpos(GLFWwindow* window, double xpos, double ypos)
+// {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_cursorpos.iterate(ptr, xpos, ypos);
+// }
+// void __glfw_callback_cursorenter(GLFWwindow* window, int entered) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_cursorenter.iterate(ptr, entered);
+// }
+// void __glfw_callback_scroll(GLFWwindow* window,
+//                             double xoffset,
+//                             double yoffset) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_scroll.iterate(ptr, xoffset, yoffset);
+// }
+// void __glfw_callback_keybord(GLFWwindow* window,
+//                              int key,
+//                              int scancode,
+//                              int action,
+//                              int mods) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_key.iterate(ptr, key, scancode, action, mods);
+// }
+// void __glfw_callback_charinput(GLFWwindow* window, unsigned int codepoint) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_char.iterate(ptr, codepoint);
+// }
+// void __glfw_callback_charmods(GLFWwindow* window,
+//                               unsigned int codepoint,
+//                               int mods) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_charmods.iterate(ptr, codepoint, mods);
+// }
+// void __glfw_callback_drop(GLFWwindow* window,
+//                           int path_count,
+//                           const char* paths[]) {
+//     auto* ptr = (WindowContext*)glfwGetWindowUserPointer(window);
+//     ptr->callback.callback_drop.iterate(ptr, path_count, paths);
+// }
+}  // namespace _detail
+VkResult ContextBase::acquire_vkapi_version(uint32_t& version) {
     if (vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"))
         return vkEnumerateInstanceVersion(&version);
     else
         version = VK_API_VERSION_1_0;
     return VK_SUCCESS;
 }
-VkResult Context::check_instance_extension(
+VkResult ContextBase::check_instance_extension(
     std::span<const char*> extensionNames,
     const char* layerName) {
     uint32_t extensionCount;
@@ -129,7 +129,7 @@ VkResult Context::check_instance_extension(
             i = nullptr;
     return VK_SUCCESS;
 }
-VkResult Context::check_instance_layer(std::span<const char*> layerNames) {
+VkResult ContextBase::check_instance_layer(std::span<const char*> layerNames) {
     uint32_t layerCount;
     std::vector<VkLayerProperties> availableLayers;
     if (VkResult result =
@@ -163,7 +163,7 @@ VkResult Context::check_instance_layer(std::span<const char*> layerNames) {
             i = nullptr;
     return VK_SUCCESS;
 }
-std::string Context::combine_debug_message(
+std::string ContextBase::combine_debug_message(
     const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData) {
     auto& sstm = acquire_local_data().local_sstm;
     if (pCallbackData->queueLabelCount) {
@@ -204,7 +204,7 @@ std::string Context::combine_debug_message(
     sstm.str("");
     return message;
 }
-VkResult Context::prepare_debugger() {
+VkResult ContextBase::prepare_debugger() {
     static PFN_vkDebugUtilsMessengerCallbackEXT DebugUtilsMessengerCallback =
         [](VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
            VkDebugUtilsMessageTypeFlagsEXT messageTypes,
@@ -232,12 +232,10 @@ VkResult Context::prepare_debugger() {
     };
     VkDebugUtilsMessengerCreateInfoEXT debugUtilsMessengerCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-        .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT |
-                           VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
+        .messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT |
                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                            VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
         .messageType =
-            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
             VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT,
@@ -256,9 +254,9 @@ VkResult Context::prepare_debugger() {
     print_error("Context",
                 "Failed to get the function pointer of "
                 "vkCreateDebugUtilsMessengerEXT!");
-    return VK_SUCCESS;
+    return VK_RESULT_MAX_ENUM;
 }
-CtxResult Context::prepare_instance(InstanceCreateInfo& info) {
+CtxResult ContextBase::prepare_instance(InstanceCreateInfo& info) {
     uint32_t current_version = 0u;
     if (acquire_vkapi_version(current_version)) {
         print_error("Context", "acquire_vkapi_version failed!");
@@ -277,6 +275,25 @@ CtxResult Context::prepare_instance(InstanceCreateInfo& info) {
         .engineVersion = VK_MAKE_API_VERSION(0, 0, 1, 0),
         .apiVersion = vulkanApiVersion,
     };
+
+    if (info.isDebuging) {
+        info.extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+        info.layerNames.push_back("VK_LAYER_KHRONOS_validation");
+    }
+
+    {
+        uint32_t extensionCount = 0;
+        const char** extensionNames;
+        extensionNames = glfwGetRequiredInstanceExtensions(&extensionCount);
+        if (!extensionNames) {
+            print_error("Context",
+                        "Vulkan is not available on this "
+                        "machine!");
+            return CtxResult::ACQUIRE_GLFW_EXT_FAILED;
+        }
+        for (size_t i = 0; i < extensionCount; i++)
+            info.extensionNames.push_back(extensionNames[i]);
+    }
 
     if (VkResult result = check_instance_extension(info.extensionNames)) {
         print_error("Context", "check_instance_extension() failed! Code:",
@@ -326,7 +343,7 @@ CtxResult Context::prepare_instance(InstanceCreateInfo& info) {
         }
     return CtxResult::SUCCESS;
 }
-CtxResult Context::prepare_glfw() {
+CtxResult ContextBase::prepare_glfw() {
     if (!glfwInit()) {
         print_error("Context", "Failed to initialize GLFW!");
         return CtxResult::INIT_GLFW_FAILED;
@@ -336,17 +353,7 @@ CtxResult Context::prepare_glfw() {
     });
     return CtxResult::SUCCESS;
 }
-CtxResult Context::create_window(const WindowCreateInfo& info,
-                                 WindowContext*& ret) {
-    auto& window = windowData.emplace_back();
-    if (CtxResult result = window.prepare_window(info);
-        result != CtxResult::SUCCESS) {
-        window.cleanup(*this);
-        return result;
-    }
-    return CtxResult::SUCCESS;
-}
-CtxResult WindowContext::prepare_window(const WindowCreateInfo& info) {
+CtxResult WindowContextBase::prepare_window(const WindowCreateInfo& info) {
     using State = WindowCreateState;
     if (info.init_state & State::UsePrimaryMonitor) {
         pMonitor = glfwGetPrimaryMonitor();
@@ -421,7 +428,7 @@ FINISH_CHOOSE:
 
     return CtxResult::SUCCESS;
 }
-VkResult Context::acquire_physical_devices(
+VkResult ContextBase::acquire_physical_devices(
     std::vector<VkPhysicalDevice>& availablePhysicalDevices) {
     uint32_t deviceCount;
     if (VkResult result =
@@ -444,9 +451,10 @@ VkResult Context::acquire_physical_devices(
                     string_VkResult(result));
     return result;
 }
-VkResult Context::acquire_queue_family_indices(
+VkResult ContextBase::acquire_queue_family_indices(
     VkPhysicalDevice physicalDevice,
     uint32_t (&queueFamilyIndices)[3],
+    std::span<WindowContext> windowData,
     bool enableGraphicsQueue,
     bool enableComputeQueue) {
     uint32_t queueFamilyCount = 0;
@@ -473,14 +481,13 @@ VkResult Context::acquire_queue_family_indices(
                 enableComputeQueue &&
                 queueFamilyPropertieses[i].queueFlags & VK_QUEUE_COMPUTE_BIT;
         // 只在创建了window surface时获取支持呈现的队列族的索引
-        if (windowData.size() > 0) {
+        if (!windowData.empty()) {
             for (auto& window : windowData)
                 if (VkResult result = vkGetPhysicalDeviceSurfaceSupportKHR(
                         physicalDevice, i, window.surface,
                         &supportPresentation)) {
                     print_error("Context",
-                                "Failed to determine if the "
-                                "queue "
+                                "Failed to determine if the queue "
                                 "family supports presentation! Code:",
                                 string_VkResult(result));
                     return result;
@@ -517,13 +524,14 @@ VkResult Context::acquire_queue_family_indices(
     queueFamilyIndex_compute = ic;
     return VK_SUCCESS;
 }
-VkResult Context::determine_physical_device(
+VkResult ContextBase::determine_physical_device(
     std::vector<VkPhysicalDevice>& availablePhysicalDevices,
     uint32_t deviceIndex,
+    std::span<WindowContext> windowData,
     bool enableGraphicsQueue,
     bool enableComputeQueue) {
     // 定义一个特殊值用于标记一个队列族索引已被找过但未找到
-    static constexpr uint32_t notFound =
+    constexpr uint32_t notFound =
         INT32_MAX;  //== VK_QUEUE_FAMILY_IGNORED & INT32_MAX
     // 定义队列族索引组合的结构体
     struct QueueFamilyIndex_combination {
@@ -538,25 +546,25 @@ VkResult Context::determine_physical_device(
 
     // 如果有任何队列族索引已被找过但未找到，返回VK_RESULT_MAX_ENUM
     if (ig == notFound && enableGraphicsQueue ||
-        ip == notFound && windowData.size() > 0 ||
+        ip == notFound && !windowData.empty() ||
         ic == notFound && enableComputeQueue)
         return VK_RESULT_MAX_ENUM;
 
     // 如果有任何队列族索引应被获取但还未被找过
     if (ig == VK_QUEUE_FAMILY_IGNORED && enableGraphicsQueue ||
-        ip == VK_QUEUE_FAMILY_IGNORED && windowData.size() > 0 ||
+        ip == VK_QUEUE_FAMILY_IGNORED && !windowData.empty() ||
         ic == VK_QUEUE_FAMILY_IGNORED && enableComputeQueue) {
         uint32_t indices[3];
         VkResult result = acquire_queue_family_indices(
-            availablePhysicalDevices[deviceIndex], indices, enableGraphicsQueue,
-            enableComputeQueue);
+            availablePhysicalDevices[deviceIndex], indices, windowData,
+            enableGraphicsQueue, enableComputeQueue);
         // 若GetQueueFamilyIndices(...)返回VK_SUCCESS或VK_RESULT_MAX_ENUM（vkGetPhysicalDeviceSurfaceSupportKHR(...)执行成功但没找齐所需队列族），
         // 说明对所需队列族索引已有结论，保存结果到queueFamilyIndexCombinations[deviceIndex]中相应变量
         // 应被获取的索引若仍为VK_QUEUE_FAMILY_IGNORED，说明未找到相应队列族，VK_QUEUE_FAMILY_IGNORED（~0u）与INT32_MAX做位与得到的数值等于notFound
         if (result == VK_SUCCESS || result == VK_RESULT_MAX_ENUM) {
             if (enableGraphicsQueue)
                 ig = indices[0] & INT32_MAX;
-            if (windowData.size() > 0)
+            if (!windowData.empty())
                 ip = indices[1] & INT32_MAX;
             if (enableComputeQueue)
                 ic = indices[2] & INT32_MAX;
@@ -570,14 +578,14 @@ VkResult Context::determine_physical_device(
         queueFamilyIndex_graphics =
             enableGraphicsQueue ? ig : VK_QUEUE_FAMILY_IGNORED;
         queueFamilyIndex_presentation =
-            windowData.size() > 0 ? ip : VK_QUEUE_FAMILY_IGNORED;
+            (!windowData.empty()) ? ip : VK_QUEUE_FAMILY_IGNORED;
         queueFamilyIndex_compute =
             enableComputeQueue ? ic : VK_QUEUE_FAMILY_IGNORED;
     }
     phyDevice = availablePhysicalDevices[deviceIndex];
     return VK_SUCCESS;
 }
-void Context::acquire_physical_divice_properties() {
+void ContextBase::acquire_physical_divice_properties() {
     //   设备属性:
     if (vulkanApiVersion >= VK_API_VERSION_1_1) {
         phyDeviceProperties = {
@@ -608,7 +616,7 @@ void Context::acquire_physical_divice_properties() {
             phyDevice, &phyDeviceMemoryProperties.memoryProperties);
     }
 }
-void Context::acquire_physical_divice_features() {
+void ContextBase::acquire_physical_divice_features() {
     //   设备特性:
     if (vulkanApiVersion >= VK_API_VERSION_1_1) {
         phyDeviceFeatures = {.sType =
@@ -629,12 +637,14 @@ void Context::acquire_physical_divice_features() {
     } else
         vkGetPhysicalDeviceFeatures(phyDevice, &phyDeviceFeatures.features);
 }
-CtxResult Context::prepare_physical_device() {
+CtxResult ContextBase::prepare_physical_device(
+    std::span<WindowContext> windowData) {
     std::vector<VkPhysicalDevice> availablePhysicalDevices;
     if (acquire_physical_devices(availablePhysicalDevices))
         return CtxResult::ACQUIRE_PHYSICAL_DEVICES_FAILED;
     for (uint32_t i = 0; i < availablePhysicalDevices.size(); ++i)
-        if (!determine_physical_device(availablePhysicalDevices, i, true, true))
+        if (!determine_physical_device(availablePhysicalDevices, i, windowData,
+                                       true, true))
             goto FIND_SUCCESS;
     print_error("Context", "Can not find any phyDevice useable!");
     return CtxResult::NO_FIT_PHYDEVICE;
@@ -643,7 +653,7 @@ FIND_SUCCESS:
     acquire_physical_divice_features();
     return CtxResult::SUCCESS;
 }
-VkResult Context::acquire_device_extensions(
+VkResult ContextBase::acquire_device_extensions(
     std::vector<VkExtensionProperties>& extensionNames,
     const char* layerName) {
     uint32_t extCount;
@@ -662,7 +672,7 @@ VkResult Context::acquire_device_extensions(
                     string_VkResult(result));
         return VK_RESULT_MAX_ENUM;
     }
-    std::vector<const char*> extensions(availableExtensions.size());
+    extensions.resize(availableExtensions.size());
     std::transform(availableExtensions.begin(), availableExtensions.end(),
                    extensions.begin(), [](VkExtensionProperties& ext) {
                        return ext.extensionName;
@@ -693,7 +703,7 @@ static constexpr std::pair<const char*, VmaAllocatorCreateFlagBits> vma_flags[]{
     // {VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME,
     //  VMA_ALLOCATOR_CREATE_KHR_EXTERNAL_MEMORY_WIN32_BIT}
 };
-VmaAllocatorCreateFlagBits Context::check_VMA_extensions(
+VmaAllocatorCreateFlagBits ContextBase::check_VMA_extensions(
     std::vector<const char*>& extensionNames) {
     auto ret = static_cast<VmaAllocatorCreateFlagBits>(0);
     for (uint32_t i = 0; i < vma_flags_count; ++i)
@@ -708,7 +718,7 @@ VmaAllocatorCreateFlagBits Context::check_VMA_extensions(
         }
     return ret;
 }
-void Context::check_device_extension(std::span<const char*> extensionNames,
+void ContextBase::check_device_extension(std::span<const char*> extensionNames,
                                          const char* layerName) {
     for (auto& i : extensionNames) {
         if (!std::binary_search(extensions.begin(), extensions.end(), i,
@@ -718,16 +728,18 @@ void Context::check_device_extension(std::span<const char*> extensionNames,
             i = nullptr;
     }
 }
-VkResult Context::prepare_VMA(DeviceCreateInfo& info) {
-    VmaAllocatorCreateInfo allocatorCreateInfo = {
-        .flags = info.vmaFlags,
-        .physicalDevice = phyDevice,
-        .device = device,
-        .instance = instance,
-        .vulkanApiVersion = vulkanApiVersion};
+VkResult ContextBase::prepare_VMA(DeviceCreateInfo& info) {
+    VmaAllocatorCreateInfo
+        allocatorCreateInfo = {.flags = info.vmaFlags,
+                               .physicalDevice = phyDevice,
+                               .device = device,
+                               .instance = instance,
+                               .vulkanApiVersion =
+                                   std::min(
+                                       VK_API_VERSION_1_3, vulkanApiVersion) /*使用= vulkanApiVersion，但VMA要求版本数值小于1.3（旧版本）作为参数检查*/};
     return vmaCreateAllocator(&allocatorCreateInfo, &allocator);
 }
-CtxResult Context::prepare_device(DeviceCreateInfo& info) {
+CtxResult ContextBase::prepare_device(DeviceCreateInfo& info) {
     // 1.构建队列创建表
     float queuePriority = 1.0f;
     VkDeviceQueueCreateInfo queue_create_infos[3] = {
@@ -765,6 +777,8 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
     check_device_extension(info.extensionNames);
     availableExtensions.clear();
     extensions.clear();
+    std::erase_if(info.extensionNames,
+                  [](const char* str) { return str == nullptr; });
     // 3.创建逻辑设备
     VkDeviceCreateInfo deviceCreateInfo = {
         .sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -773,10 +787,9 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
         .pQueueCreateInfos = queue_create_infos,
         .enabledExtensionCount = uint32_t(info.extensionNames.size()),
         .ppEnabledExtensionNames = info.extensionNames.data()};
-    vkStructureHead* last;
+    vkStructureHead* last = nullptr;
     if (vulkanApiVersion >= VK_API_VERSION_1_1) {
         auto* ptr = (vkStructureHead*)(info.pNextDivice);
-        last = ptr;
         while (ptr)
             last = ptr, ptr = (vkStructureHead*)(ptr->pNext);
         if (last) {
@@ -794,10 +807,12 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
                     "Failed to create a vulkan logical device! "
                     "Code: ",
                     string_VkResult(result));
-        last->pNext = nullptr;
+        if (last)
+            last->pNext = nullptr;
         return CtxResult::CREATE_DEVICE_FAILED;
     }
-    last->pNext = nullptr;
+    if (last)
+        last->pNext = nullptr;
     // 4.获取队列
     if (queue_index_graphics != VK_QUEUE_FAMILY_IGNORED)
         vkGetDeviceQueue(device, queue_index_graphics, 0, &queue_graphics);
@@ -811,25 +826,71 @@ CtxResult Context::prepare_device(DeviceCreateInfo& info) {
               "Renderer:", phyDeviceProperties.properties.deviceName);
     return CtxResult::SUCCESS;
 }
-void Context::update() {
+void ContextBase::update() {
     // 更新时间
     auto newtime = glfwGetTime();
     delta_time = newtime - current_time;
     current_time = newtime;
 }
-void WindowContext::cleanup(Context& ctx) {
+void WindowContextBase::cleanup() {
     if (pWindow)
         glfwDestroyWindow(pWindow);
     pWindow = nullptr;
     pMonitor = nullptr;
     title.clear();
 }
+void WindowContext::cleanup(ContextBase& ctx) {
+    if (swapchain) {
+        callback_swapchain_destroy.iterate(this);
+        for (auto& i : swapchainImageViews)
+            if (i)
+                vkDestroyImageView(ctx.device, i, nullptr);
+        vkDestroySwapchainKHR(ctx.device, swapchain, nullptr);
+        swapchainImages.clear();
+        swapchainImageViews.clear();
+        swapchain = VK_NULL_HANDLE;
+        swapchainCreateInfo = {};
+
+        availableFormats.clear();
+        callback_swapchain_destroy.clear();
+        callback_swapchain_construct.clear();
+    }
+    if (surface) {
+        vkDestroySurfaceKHR(ctx.instance, surface, nullptr);
+        surface = VK_NULL_HANDLE;
+    }
+    WindowContextBase::cleanup();
+}
+void ContextBase::cleanup() {
+    if (!instance)
+        return;
+    if (device) {
+        if (VkResult result = vkDeviceWaitIdle(device))
+            print_warning("Context", "cleanup device waitIdle failed! Code:",
+                          string_VkResult(result));
+        vkDestroyDevice(device, nullptr);
+        device = VK_NULL_HANDLE;
+    }
+    if (debugger) {
+        PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessenger =
+            reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+                vkGetInstanceProcAddr(instance,
+                                      "vkDestroyDebugUtilsMessengerEXT"));
+        if (DestroyDebugUtilsMessenger)
+            DestroyDebugUtilsMessenger(instance, debugger, nullptr);
+        debugger = VK_NULL_HANDLE;
+    }
+    vkDestroyInstance(instance, nullptr);
+    instance = VK_NULL_HANDLE;
+    glfwTerminate();
+}
 void Context::cleanup() {
     for (auto& window : windowData)
         window.cleanup(*this);
-    glfwTerminate();
+    windowData.clear();
+    ContextBase::cleanup();
 }
-VkResult WindowContext::prepare_surface(Context& ctx) {
+VkResult WindowContext::prepare_surface(ContextBase& ctx) {
     VkSurfaceKHR surface = VK_NULL_HANDLE;
     if (VkResult result =
             glfwCreateWindowSurface(ctx.instance, pWindow, nullptr, &surface)) {
@@ -843,13 +904,13 @@ VkResult WindowContext::prepare_surface(Context& ctx) {
     return VK_SUCCESS;
 }
 CtxResult WindowContext::prepare_swapchain(const SwapchainCreateInfo info,
-                                           Context& ctx) {
+                                           ContextBase& ctx) {
     if (create_swapchain(info, ctx))
         return CtxResult::SWAPCHAIN_CREATE_FAILED;
     return CtxResult::SUCCESS;
 }
 
-VkResult WindowContext::create_swapchain_Internal(Context& ctx) {
+VkResult WindowContext::create_swapchain_Internal(ContextBase& ctx) {
     auto& createInfo = swapchainCreateInfo;
     // 直接创建交换链
     if (VkResult result = vkCreateSwapchainKHR(ctx.device, &createInfo, nullptr,
@@ -898,7 +959,7 @@ VkResult WindowContext::create_swapchain_Internal(Context& ctx) {
     }
     return VK_SUCCESS;
 }
-VkResult WindowContext::acquire_surface_formats(Context& ctx) {
+VkResult WindowContext::acquire_surface_formats(ContextBase& ctx) {
     uint32_t surfaceFormatCount;
     if (VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(
             ctx.phyDevice, surface, &surfaceFormatCount, nullptr)) {
@@ -925,7 +986,7 @@ VkResult WindowContext::acquire_surface_formats(Context& ctx) {
 }
 VkResult WindowContext::acquire_present_modes(
     std::vector<VkPresentModeKHR>& presentModes,
-    Context& ctx) {
+    ContextBase& ctx) {
     uint32_t surfacePresentModeCount;
     if (VkResult result = vkGetPhysicalDeviceSurfacePresentModesKHR(
             ctx.phyDevice, surface, &surfacePresentModeCount, nullptr)) {
@@ -952,7 +1013,7 @@ VkResult WindowContext::acquire_present_modes(
     return VK_SUCCESS;
 }
 VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat,
-                                           Context& ctx) {
+                                           ContextBase& ctx) {
     bool formatIsAvailable = false;
     if (!surfaceFormat.format) {
         // 如果格式未指定，只匹配色彩空间，图像格式有啥就用啥
@@ -973,7 +1034,7 @@ VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat,
                 formatIsAvailable = true;
                 break;
             }
-    // 如果没有符合的格式，恰好有个语义相符的错误代码
+    // 如果没有符合的格式, 返回错误
     if (!formatIsAvailable)
         return VK_ERROR_FORMAT_NOT_SUPPORTED;
     // 如果交换链已存在，调用RecreateSwapchain()重建交换链
@@ -982,7 +1043,7 @@ VkResult WindowContext::set_surface_format(VkSurfaceFormatKHR surfaceFormat,
     return VK_SUCCESS;
 }
 VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
-                                         Context& ctx) {
+                                         ContextBase& ctx) {
     VkSurfaceCapabilitiesKHR surface_capabilities;
     // 获取surface支持能力
     if (VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
@@ -1076,10 +1137,10 @@ VkResult WindowContext::create_swapchain(const SwapchainCreateInfo& info,
     // ----------------
     if (VkResult result = create_swapchain_Internal(ctx))
         return result;
-    iterate<WindowCallback::vk_swapchain_construct>();
+    callback_swapchain_construct.iterate(this);
     return VK_SUCCESS;
 }
-VkResult WindowContext::recreate_swapchain(Context& ctx) {
+VkResult WindowContext::recreate_swapchain(ContextBase& ctx) {
     auto& createInfo = swapchainCreateInfo;
     VkSurfaceCapabilitiesKHR surface_capabilities = {};
     VkResult result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(
@@ -1105,7 +1166,7 @@ VkResult WindowContext::recreate_swapchain(Context& ctx) {
                     string_VkResult(result));
         return result;
     }
-    iterate<WindowCallback::vk_swapchain_destroy>();
+    callback_swapchain_destroy.iterate(this);
     for (auto& i : swapchainImageViews)
         if (i)
             vkDestroyImageView(ctx.device, i, nullptr);
@@ -1116,20 +1177,19 @@ VkResult WindowContext::recreate_swapchain(Context& ctx) {
                     "Create swapchain failed! Code:", string_VkResult(result));
         return result;
     }
-    iterate<WindowCallback::vk_swapchain_construct>();
+    callback_swapchain_construct.iterate(this);
     print_log("WindowContext", "Swapchain recreated!");
     return VK_SUCCESS;
 }
-CtxResult Context::prepare_context(
-    ContextCreateInfo& info,
-    std::span<std::pair<WindowCreateInfo, SwapchainCreateInfo>>& list,
-    std::span<WindowContext*> ret) {
+CtxResult Context::prepare_context(ContextCreateInfo& info,
+                                   std::span<WindowContext*> ret) {
     CtxResult result;
     if (result = prepare_glfw(); result != CtxResult::SUCCESS)
         return result;
-    if (result = prepare_instance(info.instance_info);
+    if (result = prepare_instance(*info.instance_info);
         result != CtxResult::SUCCESS)
         return result;
+    auto& list = info.window_info;
     for (size_t i = 0; i < list.size(); ++i) {
         if (result = create_window(list[i].first, ret[i]);
             result != CtxResult::SUCCESS)
@@ -1137,14 +1197,27 @@ CtxResult Context::prepare_context(
         if (ret[i]->prepare_surface(*this))
             return CtxResult::SURFACE_ACQUIRE_FAILED;
     }
-    if (result = prepare_physical_device(); result != CtxResult::SUCCESS)
+    if (result = prepare_physical_device(windowData);
+        result != CtxResult::SUCCESS)
         return result;
-    if (result = prepare_device(info.device_info); result != CtxResult::SUCCESS)
+    if (result = prepare_device(*info.device_info);
+        result != CtxResult::SUCCESS)
         return result;
     for (size_t i = 0; i < list.size(); ++i)
         if (result = ret[i]->prepare_swapchain(list[i].second, *this);
             result != CtxResult::SUCCESS)
             return result;
     return result;
+}
+CtxResult Context::create_window(const WindowCreateInfo& info,
+                                 WindowContext*& ret) {
+    auto& window = windowData.emplace_back();
+    if (CtxResult result = window.prepare_window(info);
+        result != CtxResult::SUCCESS) {
+        ret = nullptr;
+        return result;
+    }
+    ret = &window;
+    return CtxResult::SUCCESS;
 }
 }  // namespace BL

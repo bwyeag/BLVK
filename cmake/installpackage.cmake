@@ -7,7 +7,8 @@ CPMAddPackage(
           "GLFW_BUILD_EXAMPLES OFF"
           "GLFW_BUILD_DOCS OFF"
 )
-
+set(ENV{VULKAN_SDK} "D:/vulkanSDK/1.4.304.0/")
+find_package(Vulkan REQUIRED)
 # CPMAddPackage(
 #   NAME freetype
 #   GIT_REPOSITORY https://github.com/aseprite/freetype2.git

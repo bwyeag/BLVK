@@ -3,6 +3,7 @@ project(BLVK VERSION 0.1.0)
 
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(EXPORT_COMPILE_COMMANDS ON)
 
 add_subdirectory(subprojects)
 set(CPM_SOURCE_CACHE D:/cppprograms/cpmcache CACHE PATH "The CPM cache path")
