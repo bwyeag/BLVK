@@ -408,13 +408,13 @@ struct vkStructureHead {
 };
 /// @brief 线程本地数据，方便获取上下文
 struct ThreadData {
-    ContextBase* current_vkcontext{nullptr};
+    Context* current_vkcontext{nullptr};
     std::stringstream local_sstm;
 };
 thread_local static ThreadData local_data{};
 /// @brief 获取当前线程的Vulkan上下文
 /// @return
-inline ContextBase& cur_context() {
+inline Context& cur_context() {
     return *local_data.current_vkcontext;
 }
 /// @brief 获取线程本地数据
@@ -424,7 +424,7 @@ inline ThreadData& acquire_local_data() {
 }
 /// @brief 设置ctx为本线程的Vulkan上下文
 /// @param ctx Vulkan上下文
-inline void make_current_context(ContextBase& ctx) {
+inline void make_current_context(Context& ctx) {
     local_data.current_vkcontext = &ctx;
 }
 }  // namespace BL

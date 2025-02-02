@@ -1,33 +1,20 @@
-#include <bl_vkrenderloop.hpp>
+#include <core/bl_renderloop.hpp>
 
 namespace BL {
-const char* RenderLoopErrorCategory::name() const noexcept {
-    return "RenderLoop error";
-}
-std::string RenderLoopErrorCategory::message(int ev) const {
-    using Enum = ContextErrorEnum;
-    switch (static_cast<Enum>(ev)) {
-        case Enum::Success:
-            return "no error";
-        default:
-            return "unknown error";
-    }
-}
-static ContextErrorCategory category;
-[[nodiscard]]
-std::error_code make_error_code(ContextErrorEnum e) {
-    return {static_cast<int>(e), category};
-}
-std::error_code RenderLoop::create(const RenderLoopInit* pInit) {
+RenderLoopResult RenderLoop::prepare(const RenderLoopInfo info) {
     VkResult result;
     const char* message = nullptr;
+
+    windowContext = info.windowContext;
     auto& ctx = cur_context();
-    windowContext = pInit->windowContext;
-    currentRenderPass = curFrame = 0;
+
+    curRenderPass = curFrame = 0;
     maxImageCount = std::min(
         static_cast<uint32_t>(windowContext->swapchainImageViews.size()),
         MAX_FLIGHT_COUNT);
-    maxRenderPassCount = pInit->renderPassCount;
+    maxRenderPassCount = info.renderPassCount;
+    // curQueue = VK_QUEUE_FAMILY_IGNORED;
+
     if (ctx.queueFamilyIndex_graphics != VK_QUEUE_FAMILY_IGNORED) {
         if (result = cmdPool_graphics.create(
                 ctx.queueFamilyIndex_graphics,
@@ -55,7 +42,7 @@ std::error_code RenderLoop::create(const RenderLoopInit* pInit) {
          ctx.queueFamilyIndex_presentation != ctx.queueFamilyIndex_graphics &&
          windowContext->swapchainCreateInfo.imageSharingMode ==
              VK_SHARING_MODE_EXCLUSIVE) ||
-        pInit->force_ownership_transfer) {
+        info.force_ownership_transfer) {
         if (result = cmdPool_presentation.create(
                 ctx.queueFamilyIndex_presentation,
                 VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT)) {
@@ -77,13 +64,13 @@ std::error_code RenderLoop::create(const RenderLoopInit* pInit) {
     semaphores.resize((maxRenderPassCount + 1) * maxImageCount);
     for (auto& it : semaphores)
         it.create();
-    return make_error_code(RenderLoopErrorEnum::Success);
+    return RenderLoopResult::SUCCESS;
 CREATE_FAILED:
     print_error("RenderContext", "Initialize ", message,
-                " failed! Code:", result);
-    return make_error_code(result);
+                " failed! Code:", string_VkResult(result));
+    return RenderLoopResult::INITIALIZE_FAILED;
 }
-void RenderLoop::destroy() noexcept {
+void RenderLoop::cleanup() noexcept {
     for (size_t i = 0; i < MAX_FLIGHT_COUNT; i++) {
         std::destroy_at(&fences[i]);
         std::destroy_at(&semsOwnershipIsTransfered[i]);
@@ -92,8 +79,10 @@ void RenderLoop::destroy() noexcept {
         std::destroy_at(&cmdPool_presentation);
     }
     semaphores.clear();
+    cmdBuffers.clear();
     windowContext = nullptr;
 }
+
 VkResult RenderLoop::acquire_next_image(uint32_t* index,
                                         VkSemaphore semsImageAvaliable,
                                         VkFence fence) {
@@ -113,14 +102,14 @@ VkResult RenderLoop::acquire_next_image(uint32_t* index,
         switch (result) {
             case VK_SUBOPTIMAL_KHR:
             case VK_ERROR_OUT_OF_DATE_KHR:
-                windowContext->recreateSwapchain();
+                windowContext->recreate_swapchain(ctx);
                 print_log("RenderLoop", "New swapchain size:", t.width,
                           t.height);
                 break;
             default:
                 print_error(
                     "RenderLoop",
-                    "wait for image in swapchain failed! Code:", result);
+                    "wait for image in swapchain failed! Code:", string_VkResult(result));
                 return result;
         }
     }
@@ -132,13 +121,13 @@ VkCommandBuffer reset_and_begin_cmdbuffer(
     VkCommandBufferUsageFlags cmdbufusage) {
     if (VkResult result = cmdBuf.reset()) {
         print_error("RenderLoop", "current cmd-buffer ", "reset",
-                    " failed! Code:", result);
+                    " failed! Code:", string_VkResult(result));
         return VK_NULL_HANDLE;
     }
     if (VkResult result =
             cmdBuf.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)) {
         print_error("RenderLoop", "current cmd-buffer ", "begin",
-                    " failed! Code:", result);
+                    " failed! Code:", string_VkResult(result));
         return VK_NULL_HANDLE;
     }
     return cmdBuf;
@@ -149,30 +138,32 @@ VkCommandBuffer RenderLoop::begin_render() {
     auto& swapchainInfo = windowContext->swapchainCreateInfo;
     // 等待当前帧的栅栏，确保在这一帧的命令已完成执行
     if (VkResult result = fences[curFrame].wait_and_reset()) {
-        print_error("RenderLoop", "Wait for fence failed! Code:", result);
+        print_error("RenderLoop", "Wait for fence failed! Code:", string_VkResult(result));
         curFrame = (curFrame + 1) % maxImageCount;  // 跳过当前帧
         return VK_NULL_HANDLE;
     }
     // 请求下一张图像，确保可用
-    acquire_next_image(&image_index,
-                       semaphores[curFrame * (maxRenderPassCount + 1) + 0]);
+    if (acquire_next_image(&image_index,
+                           semaphores[curFrame * (maxRenderPassCount + 1) + 0]))
+        return VK_NULL_HANDLE;
+    // 初始化第一个命令缓冲
     auto& curBuf = cmdBuffers[curFrame * maxRenderPassCount + 0];
-    currentRenderPass = 0;
+    curRenderPass = 0;
     return reset_and_begin_cmdbuffer(
         curBuf, 0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 }
 VkCommandBuffer RenderLoop::next_render_pass() {
-#ifdef _BL_DEBUG
-    if (currentRenderPass + 1 >= maxRenderPassCount) {
+#ifndef NDEBUG
+    if (curRenderPass + 1 >= maxRenderPassCount) {
         print_error("RenderLoop", "Too many renderpass call!");
         exit(-1);
     }
-#endif  //_BL_DEBUG
-    uint32_t pos = curFrame * maxImageCount + currentRenderPass;
+#endif  //! NDEBUG
+    uint32_t pos = curFrame * maxImageCount + curRenderPass;
     auto& curBuf = cmdBuffers[pos];
     if (VkResult result = curBuf.end()) {
         print_error("RenderLoop",
-                    "current cmd-buffer end failed! Code:", result);
+                    "current cmd-buffer end failed! Code:", string_VkResult(result));
     }
     // 发送渲染命令
     VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
@@ -180,20 +171,20 @@ VkCommandBuffer RenderLoop::next_render_pass() {
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
         .pWaitSemaphores =
-            semaphores[curFrame * (maxRenderPassCount + 1) + currentRenderPass]
+            semaphores[curFrame * (maxRenderPassCount + 1) + curRenderPass]
                 .getPointer(),
         .pWaitDstStageMask = &flag,
         .commandBufferCount = 1,
         .pCommandBuffers = curBuf.getPointer(),
         .signalSemaphoreCount = 1,
-        .pSignalSemaphores = semaphores[curFrame * (maxRenderPassCount + 1) +
-                                        currentRenderPass + 1]
-                                 .getPointer()};
+        .pSignalSemaphores =
+            semaphores[curFrame * (maxRenderPassCount + 1) + curRenderPass + 1]
+                .getPointer()};
     if (VkResult result = vkQueueSubmit(cur_context().queue_graphics, 1,
                                         &submit_info, VK_NULL_HANDLE)) {
-        print_error("RenderLoop", "vkQueueSubmit() failed! Code:", result);
+        print_error("RenderLoop", "vkQueueSubmit() failed! Code:", string_VkResult(result));
     }
-    currentRenderPass++;
+    curRenderPass++;
     return reset_and_begin_cmdbuffer(
         cmdBuffers[pos + 1], 0, VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
 }
@@ -204,12 +195,12 @@ VkResult RenderLoop::present_image(VkPresentInfoKHR& presentInfo) {
             return VK_SUCCESS;
         case VK_SUBOPTIMAL_KHR:
         case VK_ERROR_OUT_OF_DATE_KHR:
-            return windowContext->recreateSwapchain();
+            return windowContext->recreate_swapchain(cur_context());
         default:
             print_error(
                 "RenderLoop",
                 "Failed to queue the image for presentation! Error code:",
-                int32_t(result));
+                string_VkResult(result));
             return result;
     }
 }
@@ -264,21 +255,26 @@ VkResult RenderLoop::submit_cmdbuffer_presentation(
         print_error("RenderLoop",
                     "Failed to submit the presentation command "
                     "buffer! Code:",
-                    int32_t(result));
+                    string_VkResult(result));
     return result;
 }
 void RenderLoop::end_render() {
-    auto& curBuf = cmdBuffers[curFrame * maxImageCount + currentRenderPass];
-    auto& waitsem =
-        semaphores[curFrame * (maxRenderPassCount + 1) + currentRenderPass];
-    auto& signalsem =
-        semaphores[curFrame * (maxRenderPassCount + 1) + currentRenderPass + 1];
+    size_t pos = curFrame * (maxRenderPassCount + 1) + curRenderPass;
+    auto& curBuf = cmdBuffers[curFrame * maxImageCount + curRenderPass];
+    auto& waitsem = semaphores[pos];
+    auto& signalsem = semaphores[pos + 1];
     if (ownership_transfer)
         cmd_transfer_image_ownership(curBuf);
     if (VkResult result = curBuf.end()) {
         print_error("RenderLoop",
-                    "current cmd-buffer end failed! Code:", result);
+                    "current cmd-buffer end failed! Code:", string_VkResult(result));
     }
+}
+void RenderLoop::present() {
+    size_t pos = curFrame * (maxRenderPassCount + 1) + curRenderPass;
+    auto& curBuf = cmdBuffers[curFrame * maxImageCount + curRenderPass];
+    auto& waitsem = semaphores[pos];
+    auto& signalsem = semaphores[pos + 1];
     // 发送渲染命令
     VkPipelineStageFlags flag = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
     VkSubmitInfo submit_info = {.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -294,7 +290,7 @@ void RenderLoop::end_render() {
     if (VkResult result = vkQueueSubmit(
             cur_context().queue_graphics, 1, &submit_info,
             ownership_transfer ? VK_NULL_HANDLE : VkFence(fences[curFrame]))) {
-        print_error("RenderLoop", "vkQueueSubmit() failed! Code:", result);
+        print_error("RenderLoop", "vkQueueSubmit() failed! Code:", string_VkResult(result));
         return;
     }
     if (ownership_transfer) {
@@ -302,13 +298,13 @@ void RenderLoop::end_render() {
                 VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT)) {
             print_error(
                 "RenderLoop",
-                "current present cmd-buffer begin failed! Code:", result);
+                "current present cmd-buffer begin failed! Code:", string_VkResult(result));
             return;
         }
         cmd_transfer_image_ownership(cmdBuffer_presentation[curFrame]);
         if (VkResult result = cmdBuffer_presentation[curFrame].end()) {
             print_error("RenderLoop",
-                        "current present cmd-buffer end failed! Code:", result);
+                        "current present cmd-buffer end failed! Code:", string_VkResult(result));
             return;
         }
         submit_cmdbuffer_presentation(
@@ -318,6 +314,5 @@ void RenderLoop::end_render() {
     } else {
         present_image_semaphore(signalsem);
     }
-    return;
 }
 }  // namespace BL

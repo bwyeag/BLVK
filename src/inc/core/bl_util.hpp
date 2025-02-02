@@ -26,8 +26,8 @@ class Callback {
     };
     size_t size() const { return items.size(); }
     Handle insert(Func&& fn) {
-        items.push_back(std::forward(fn));
-        return items.end();
+        items.push_back(fn);
+        return {items.end()};
     }
     void iterate(Args&&... call) {
         for (Func& fn : items) {
@@ -57,7 +57,7 @@ class Callback2 {
         if constexpr (_detail::has_callback_set<Tag>)
             _detail::callback_set<Tag, Series>();
         items.push_back(std::forward(fn));
-        return items.end();
+        return {items.end()};
     }
     void iterate(Args&&... call) {
         for (Func& fn : items) {

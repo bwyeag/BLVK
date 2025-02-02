@@ -1,31 +1,15 @@
-#ifndef _BL_VK_RENDERLOOP_HPP_FILE_
-#define _BL_VK_RENDERLOOP_HPP_FILE_
-#include <bl_vkcontext.hpp>
+#ifndef _BL_RENDERLOOP_HPP_FILE_
+#define _BL_RENDERLOOP_HPP_FILE_
 #include <bl_vktypes.hpp>
-#include <bl_window.hpp>
-
+#include <core/bl_constant.hpp>
+#include <core/bl_init.hpp>
 namespace BL {
-struct RenderLoopErrorEnum_t {
-    enum Type { Success = 0 };
+enum class RenderLoopResult { SUCCESS = 0, INITIALIZE_FAILED = -1 };
+struct RenderPassWithFramebuffers {
+    RenderPass renderPass;
+    std::vector<Framebuffer> framebuffers;
 };
-using RenderLoopErrorEnum = RenderLoopErrorEnum_t::Type;
-class RenderLoopErrorCategory : public std::error_category {
-   public:
-    RenderLoopErrorCategory() {}
-    [[nodiscard]]
-    const char* name() const noexcept override;
-    [[nodiscard]]
-    std::string message(int ev) const override;
-};
-[[nodiscard]]
-std::error_code make_error_code(RenderLoopErrorEnum e);
-}  // namespace BL
-namespace std {
-template <>
-struct is_error_code_enum<BL::RenderLoopErrorEnum> : public true_type {};
-}  // namespace std
-namespace BL {
-struct RenderLoopInit {
+struct RenderLoopInfo {
     WindowContext* windowContext;
     uint32_t renderPassCount{1};
     bool force_ownership_transfer{false};
@@ -53,30 +37,27 @@ struct RenderLoop {
     uint32_t image_index;         // 当前交换链图像索引
     uint32_t maxRenderPassCount;  // 最大渲染环节数
     uint32_t maxImageCount;       // 交换链图像数
-    uint32_t currentRenderPass;   // 当前渲染环节，从0开始
+    uint32_t curRenderPass;       // 当前渲染环节，从0开始
     uint32_t curFrame;            // 当前使用的 inflight 索引
+    // uint32_t curQueue;            // 当前使用的队列族, 自动做队列族所有权交换
     bool ownership_transfer;
 
-    explicit RenderLoop(const RenderLoopInit* pInit, std::error_code& ec) {
-        ec = create(pInit);
-    }
-    std::error_code create(const RenderLoopInit* pInit);
-    void destroy() noexcept;
+    RenderLoopResult prepare(const RenderLoopInfo pInit);
+    void cleanup() noexcept;
+    ~RenderLoop() {}
+
     VkCommandBuffer begin_render();
     VkCommandBuffer next_render_pass();
     void end_render();
-    ~RenderLoop() {}
+    void present();
 
+   protected:
     VkResult present_image(VkPresentInfoKHR& presentInfo);
     VkResult present_image_semaphore(
         VkSemaphore semaphore_renderingIsOver = VK_NULL_HANDLE);
     VkResult acquire_next_image(uint32_t* index,
                                 VkSemaphore semsImageAvaliable = VK_NULL_HANDLE,
                                 VkFence fence = VK_NULL_HANDLE);
-    VkCommandBuffer reset_and_begin_cmdbuffer(
-        CommandBuffer& cmdBuf,
-        VkCommandBufferResetFlags resetflags,
-        VkCommandBufferUsageFlags cmdbufusage);
     void cmd_transfer_image_ownership(VkCommandBuffer commandBuffer);
     VkResult submit_cmdbuffer_presentation(
         VkCommandBuffer commandBuffer,
@@ -84,5 +65,9 @@ struct RenderLoop {
         VkSemaphore semaphore_ownershipIsTransfered = VK_NULL_HANDLE,
         VkFence fence = VK_NULL_HANDLE);
 };
+VkCommandBuffer reset_and_begin_cmdbuffer(
+    CommandBuffer& cmdBuf,
+    VkCommandBufferResetFlags resetflags,
+    VkCommandBufferUsageFlags cmdbufusage);
 }  // namespace BL
-#endif  //!_BL_VK_RENDERLOOP_HPP_FILE_
+#endif  //!_BL_RENDERLOOP_HPP_FILE_

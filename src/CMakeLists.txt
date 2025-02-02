@@ -1,5 +1,6 @@
 set(SRCFILES 
     lib/core/bl_init.cpp 
+    lib/core/bl_renderloop.cpp 
     lib/bl_output.cpp)
 add_library(BLVKLib STATIC
     # libs/...
