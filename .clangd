@@ -1,0 +1,4 @@
+CompileFlags:
+  Add: [-Wall, -IC:\VulkanSDK\1.4.313.1\Include, -I.\inc]
+  Remove: [-W*]
+  Compiler: clang++

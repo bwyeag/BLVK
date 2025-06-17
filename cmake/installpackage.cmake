@@ -1,0 +1,11 @@
+CPMAddPackage(
+    NAME GLFW
+    GITHUB_REPOSITORY glfw/glfw
+    GIT_TAG 3.4
+    OPTIONS
+      "GLFW_BUILD_TESTS OFF"
+      "GLFW_BUILD_EXAMPLES OFF"
+      "GLFW_BUILD_DOCS OFF"
+)
+set(ENV{VULKAN_SDK} "C:/VulkanSDK/1.4.313.1/")
+find_package(Vulkan REQUIRED)
