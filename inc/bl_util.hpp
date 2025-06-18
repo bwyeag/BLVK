@@ -18,24 +18,24 @@ class Callback {
     using Iterator = typename List::iterator;
 
    private:
-    List items;
+    List m_items;
 
    public:
     struct Handle {
         Iterator it;
     };
-    size_t size() const { return items.size(); }
+    size_t size() const { return m_items.size(); }
     Handle insert(Func&& fn) {
-        items.push_back(fn);
-        return {items.end()};
+        m_items.push_back(fn);
+        return {m_items.end()};
     }
     void iterate(Args&&... call) {
-        for (Func& fn : items) {
+        for (Func& fn : m_items) {
             fn(call...);
         }
     }
-    void erase(Handle& handle) { items.erase(handle.it); }
-    void clear() { items.clear(); }
+    void erase(Handle& handle) { m_items.erase(handle.it); }
+    void clear() { m_items.clear(); }
 };
 
 template <typename Tag, size_t Series, typename... Args>
@@ -46,26 +46,26 @@ class Callback2 {
     using Iterator = typename List::iterator;
 
    private:
-    List items;
+    List m_items;
 
    public:
     struct Handle {
         Iterator it;
     };
-    size_t size() const { return items.size(); }
+    size_t size() const { return m_items.size(); }
     Handle insert(Func&& fn) {
         if constexpr (_detail::has_callback_set<Tag>)
             _detail::callback_set<Tag, Series>();
-        items.push_back(std::forward(fn));
-        return {items.end()};
+        m_items.push_back(std::forward(fn));
+        return {m_items.end()};
     }
     void iterate(Args&&... call) {
-        for (Func& fn : items) {
+        for (Func& fn : m_items) {
             fn(std::forward(call)...);
         }
     }
-    void erase(Handle& handle) { items.erase(handle.it); }
-    void clear() { items.clear(); }
+    void erase(Handle& handle) { m_items.erase(handle.it); }
+    void clear() { m_items.clear(); }
 };
 }  // namespace BL
 #endif  //!_BL_CORE_BL_UTIL_HPP_

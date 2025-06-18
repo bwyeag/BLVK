@@ -1,5 +1,11 @@
 #include <bl_output.hpp>
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
+    defined(__NT__) && !defined(__CYGWIN__)
+#define IS_WINDOWS
+#include <Windows.h>
+#endif
+
 namespace BL {
 #if IS_WINDOWS
 WORD getColorCode(ConsoleColor color) {
@@ -173,4 +179,5 @@ std::ostream& operator<<(std::ostream& os, ConsoleBackgroundColor data) {
 #endif
     return os;
 }
+#undef IS_WINDOWS
 } // namespace BL

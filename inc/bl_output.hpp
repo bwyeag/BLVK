@@ -157,4 +157,5 @@ void print_errorcode_internal(const Types &...ecs) {
 #define print_log(type, ...) _internal::print_log_internal(type, __VA_ARGS__)
 #define print_errorcode(...) _internal::print_errorcode_internal(__VA_ARGS__)
 } // namespace BL
+#undef IS_WINDOWS
 #endif //! BL_OUTPUT_HPP_FILE
