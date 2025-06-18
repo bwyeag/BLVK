@@ -24,9 +24,10 @@ SOFTWARE.
 #ifndef BL_OUTPUT_HPP_FILE
 #define BL_OUTPUT_HPP_FILE
 #include <chrono>
+#include <ctime>
 #include <initializer_list>
-#include <iomanip>
 #include <iostream>
+#include <print>
 #include <source_location>
 #include <system_error>
 
@@ -86,8 +87,8 @@ namespace _internal {
 // 打印文件位置
 inline void print_source_loc(std::ostream &stm,
                              const std::source_location &loc) {
-  stm << '[' << loc.file_name() << "->" << loc.function_name()
-      << "|L:" << loc.line() << ']';
+  std::print(stm, "[{}->{}: {}]", loc.file_name(), loc.function_name(),
+             loc.line());
 }
 // 打印时间点
 inline void print_time(std::ostream &stm) {
@@ -95,38 +96,40 @@ inline void print_time(std::ostream &stm) {
   auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
       now.time_since_epoch());
   std::time_t t = std::chrono::system_clock::to_time_t(now);
-  stm << '[';
-  stm << std::put_time(std::localtime(&t), "%Y-%m-%d %H:%M:%S.")
-      << (now_ms.count() % 1000) << ']';
+  char buf[64];
+  if (std::strftime(buf, 64, "%H:%M:%S.", std::localtime(&t)))
+    std::print(stm, "[{}]", now_ms.count());
+  else
+    std::print(stm, "[{}.{}]", buf, now_ms.count() % 1000);
 }
 // 打印错误
 template <typename... Types>
 void print_error_internal(const std::source_location loc, const char *type,
                           const Types &...args) {
-  std::cerr << ConsoleColor::red;
-  print_time(std::cerr);
-  print_source_loc(std::cerr, loc);
-  std::cerr << '[' << type << ']' << ConsoleColor::none;
-  std::initializer_list<int>{([&args] { std::cerr << args << ' '; }(), 0)...};
-  std::cerr << '\n';
+  std::cout << ConsoleColor::red;
+  print_time(std::cout);
+  print_source_loc(std::cout, loc);
+  std::cout << '[' << type << ']';
+  std::initializer_list<int>{([&args] { std::cout << args << ' '; }(), 0)...};
+  std::cout << '\n' << ConsoleColor::none;
 }
 // 打印警告
 template <typename... Types>
 void print_warning_internal(const std::source_location loc, const char *type,
                             const Types &...args) {
-  std::cerr << ConsoleColor::yellow;
-  print_time(std::cerr);
-  print_source_loc(std::cerr, loc);
-  std::cerr << '[' << type << ']' << ConsoleColor::none;
-  std::initializer_list<int>{([&args] { std::cerr << args << ' '; }(), 0)...};
-  std::cerr << '\n';
+  std::cout << ConsoleColor::yellow;
+  print_time(std::cout);
+  print_source_loc(std::cout, loc);
+  std::cout << '[' << type << ']';
+  std::initializer_list<int>{([&args] { std::cout << args << ' '; }(), 0)...};
+  std::cout << '\n' << ConsoleColor::none;
 }
 // 打印输出
 template <typename... Types>
 void print_log_internal(const char *type, const Types &...args) {
-  std::cout << ConsoleColor::green << '[' << type << ']' << ConsoleColor::none;
+  std::cout << ConsoleColor::green << '[' << type << ']';
   std::initializer_list<int>{([&args] { std::cout << args << ' '; }(), 0)...};
-  std::cout << '\n';
+  std::cout << '\n' << ConsoleColor::none;
 }
 
 template <typename T, typename Arg, typename... OtherArgs>
@@ -137,15 +140,14 @@ template <typename... Types>
 void print_errorcode_internal(const Types &...ecs) {
   static_assert(_internal::is_all_same<std::error_code, Types...>,
                 "Wrong Argument Types!");
-  std::cerr << ConsoleColor::red;
-  print_time(std::cerr);
+  std::cout << ConsoleColor::red;
+  print_time(std::cout);
   std::initializer_list<int>{(
       [&ecs] {
-        std::cerr << ConsoleColor::red << '[' << ecs.category().name() << ']'
-                  << ConsoleColor::none << ecs.message() << '\n';
+        std::println(std::cout, "[{}] {}", ecs.category().name(),ecs.message());
       }(),
       0)...};
-  std::cerr << '\n';
+  std::cout << '\n' << ConsoleColor::none;
 }
 } // namespace _internal
 #define print_error(type, ...)                                                 \

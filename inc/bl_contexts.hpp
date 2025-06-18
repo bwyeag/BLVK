@@ -289,7 +289,7 @@ struct ContextBase {
   VkPhysicalDeviceVulkan11Properties m_PhysicalDeviceVulkan11Properties;
   VkPhysicalDeviceVulkan12Properties m_PhysicalDeviceVulkan12Properties;
   VkPhysicalDeviceVulkan13Properties m_PhysicalDeviceVulkan13Properties;
-  VkPhysicalDeviceVulkan13Properties m_PhysicalDeviceVulkan14Properties;
+  VkPhysicalDeviceVulkan14Properties m_PhysicalDeviceVulkan14Properties;
 
   VkPhysicalDeviceMemoryProperties2 m_PhysicalDeviceMemoryProperties;
 
@@ -297,7 +297,7 @@ struct ContextBase {
   VkPhysicalDeviceVulkan11Features m_PhysicalDeviceVulkan11Features;
   VkPhysicalDeviceVulkan12Features m_PhysicalDeviceVulkan12Features;
   VkPhysicalDeviceVulkan13Features m_PhysicalDeviceVulkan13Features;
-  VkPhysicalDeviceVulkan13Features m_PhysicalDeviceVulkan14Features;
+  VkPhysicalDeviceVulkan14Features m_PhysicalDeviceVulkan14Features;
 
   /// @brief 当前设备可用的扩展
   std::vector<VkExtensionProperties> m_AvailableExtensions;
@@ -450,7 +450,7 @@ class ContextTraits {
   static inline VmaAllocator get_allocator() {
     return s_CurrentContext->m_Allocator;
   }
-  static inline VkPhysicalDeviceMemoryProperties
+  static inline const VkPhysicalDeviceMemoryProperties&
   get_phydevice_memory_properties() {
     return s_CurrentContext->m_PhysicalDeviceMemoryProperties.memoryProperties;
   }
@@ -478,45 +478,45 @@ class ContextTraits {
   static inline VkQueue get_queue_presentation() {
     return s_CurrentContext->m_Queue_presentation;
   }
-  static inline VkPhysicalDeviceProperties2 get_phyDeviceProperties() {
+  static inline const VkPhysicalDeviceProperties2& get_phyDeviceProperties() {
     return s_CurrentContext->m_PhysicalDeviceProperties;
   }
-  static inline VkPhysicalDeviceVulkan11Properties
+  static inline const VkPhysicalDeviceVulkan11Properties&
   get_phyDeviceVulkan11Properties() {
     return s_CurrentContext->m_PhysicalDeviceVulkan11Properties;
   }
-  static inline VkPhysicalDeviceVulkan12Properties
+  static inline const VkPhysicalDeviceVulkan12Properties&
   get_phyDeviceVulkan12Properties() {
     return s_CurrentContext->m_PhysicalDeviceVulkan12Properties;
   }
-  static inline VkPhysicalDeviceVulkan13Properties
+  static inline const VkPhysicalDeviceVulkan13Properties&
   get_phyDeviceVulkan13Properties() {
     return s_CurrentContext->m_PhysicalDeviceVulkan13Properties;
   }
-  static inline VkPhysicalDeviceVulkan14Properties
+  static inline const VkPhysicalDeviceVulkan14Properties&
   get_phyDeviceVulkan14Properties() {
     return s_CurrentContext->m_PhysicalDeviceVulkan14Properties;
   }
-  static inline VkPhysicalDeviceMemoryProperties2
+  static inline const VkPhysicalDeviceMemoryProperties2&
   get_phyDeviceMemoryProperties() {
     return s_CurrentContext->m_PhysicalDeviceMemoryProperties;
   }
-  static inline VkPhysicalDeviceFeatures2 get_phyDeviceFeatures() {
+  static inline const VkPhysicalDeviceFeatures2& get_phyDeviceFeatures() {
     return s_CurrentContext->m_PhysicalDeviceFeatures;
   }
-  static inline VkPhysicalDeviceVulkan11Features
+  static inline const VkPhysicalDeviceVulkan11Features&
   get_phyDeviceVulkan11Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan11Features;
   }
-  static inline VkPhysicalDeviceVulkan12Features
+  static inline const VkPhysicalDeviceVulkan12Features&
   get_phyDeviceVulkan12Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan12Features;
   }
-  static inline VkPhysicalDeviceVulkan13Features
+  static inline const VkPhysicalDeviceVulkan13Features&
   get_phyDeviceVulkan13Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan13Features;
   }
-  static inline VkPhysicalDeviceVulkan14Features
+  static inline const VkPhysicalDeviceVulkan14Features&
   get_phyDeviceVulkan14Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan14Features;
   }
