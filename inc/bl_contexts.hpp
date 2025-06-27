@@ -40,16 +40,16 @@ namespace BL {
 /// @brief 函数返回结果枚举
 enum class CtxResult {
   SUCCESS = 0,
+  ARGUMENT_ERROR,
+  NO_MONITOR = -7,
+  INIT_GLFW_FAILED = -6,
+
   ACQUIRE_API_VERSION_FAILED = -1,
   API_VERSION_TOO_LOW = -2,
   INSTANCE_CREATE_FAILED = -3,
   CHECK_EXT_FAILED = -4,
   CHECK_LAYER_FAILED = -5,
   DEBUG_CREATE_FAILED = -6,
-  INIT_GLFW_FAILED = -6,
-  NO_MONITOR = -7,
-  NO_MONITOR_CHOOSE_FUNCT = -8,
-  NO_FIT_MONITOR = -9,
   GET_VIDEO_MODE_FAILED = -10,
   WRONG_ARGUMENT = -11,
   WINDOW_CREATE_FAILED = -12,
@@ -146,7 +146,7 @@ struct WindowCreateState_t {
 };
 using WindowCreateState = WindowCreateState_t::Type;
 /// @brief 窗口创建信息
-struct WindowCreateInfo {
+struct WindowBaseCreateInfo {
   using State = WindowCreateState;
   State m_InitState{State(State::specified | State::decorated |
                           State::resizable | State::use_primary_monitor)};
@@ -166,7 +166,7 @@ struct SwapchainCreateInfo {
 struct ContextCreateInfo {
   InstanceCreateInfo *m_InstanceInfo;
   DeviceCreateInfo *m_DeviceInfo;
-  std::span<std::pair<WindowCreateInfo, SwapchainCreateInfo>> m_WindowInfo;
+  std::span<std::pair<WindowBaseCreateInfo, SwapchainCreateInfo>> m_WindowInfo;
 };
 
 struct WindowContext;
@@ -206,18 +206,21 @@ namespace _detail {
 
 /// @brief 窗口上下文基类, 负责与GLFW交互部分
 struct WindowContextBase {
+  static constexpr const char* s_TypeName = "WindowContextBase";
   GLFWwindow *m_pWindow{nullptr};
   GLFWmonitor *m_pMonitor{nullptr};
   std::string m_Title;
-
+  
+  static CtxResult init_glfw();
   /// @brief 创建窗口
   /// @param info 窗口创建信息
   /// @return 是否成功执行
-  CtxResult prepare_window(const WindowCreateInfo &info);
+  CtxResult prepare_window(const WindowBaseCreateInfo &info);
   void cleanup();
 };
 /// @brief 窗口上下文
 struct WindowContext : public WindowContextBase {
+  static constexpr const char* s_TypeName = "WindowContext";
   VkSurfaceKHR m_Surface{VK_NULL_HANDLE};
 
   VkSwapchainKHR m_Swapchain{VK_NULL_HANDLE};
@@ -254,6 +257,7 @@ struct WindowContext : public WindowContextBase {
                                  ContextBase &ctx);
   /// @brief 设定当前窗口表面格式
   /// @param surfaceFormat
+  /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
   VkResult set_surface_format(VkSurfaceFormatKHR surfaceFormat,
                               ContextBase &ctx);
@@ -266,7 +270,7 @@ struct WindowContext : public WindowContextBase {
   /// @param info 交换链创建信息
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
-  CtxResult prepare_swapchain(const SwapchainCreateInfo info, ContextBase &ctx);
+  CtxResult prepare_swapchain(const SwapchainCreateInfo &info, ContextBase &ctx);
 
   void cleanup(ContextBase &ctx);
 };
@@ -336,9 +340,6 @@ struct ContextBase {
   /// @param info 创建信息
   /// @return 是否正确完成
   CtxResult prepare_instance(InstanceCreateInfo &info);
-  /// @brief 初始化GLFW及其debug
-  /// @return 是否正确完成
-  CtxResult prepare_glfw();
   /// @brief 取得物理设备列表
   /// @param availablePhysicalDevices 返回该列表
   /// @return 是否正确完成
@@ -410,7 +411,7 @@ struct Context : public ContextBase {
   /// @param info 创建信息
   /// @param ret 返回窗口数据
   /// @return 是否正确完成
-  CtxResult create_window(const WindowCreateInfo &info, WindowContext *&ret);
+  CtxResult create_window(const WindowBaseCreateInfo &info, WindowContext *&ret);
   /// @brief 准备整个上下文
   /// @param info 上下文创建信息
   /// @param list 各个窗口的创建信息

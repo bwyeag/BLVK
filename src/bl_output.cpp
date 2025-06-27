@@ -29,7 +29,7 @@ SOFTWARE.
 #include <Windows.h>
 #endif
 
-namespace BL {
+namespace BLT {
 #if IS_WINDOWS
 WORD getColorCode(ConsoleColor color) {
     using CC = ConsoleColor;

@@ -36,7 +36,7 @@ SOFTWARE.
 #define IS_WINDOWS
 #include <Windows.h>
 #endif
-namespace BL {
+namespace BLT {
 enum class ConsoleColor {
   green,
   red,
