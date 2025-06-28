@@ -23,28 +23,49 @@ SOFTWARE.
 ******************************************************************************/
 #ifndef _BL_CORE_CONTEXTS_HPP_
 #define _BL_CORE_CONTEXTS_HPP_
-#include <bl_contexts.hpp>
+// 本地include
 #include <bl_output.hpp>
-#include "vulkan/vulkan_core.h"
+// 标准库include
 #include <cstdint>
 #include <functional>
 #include <list>
 #include <mutex>
-#include <psdk_inc/_ip_types.h>
+#include <span>
+// 外部库include
 #include <vma/vk_mem_alloc.h>
 #include <vulkan/vk_enum_string_helper.h>
+#include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 namespace BLT {
-
 
 #ifdef DEBUG
 constexpr int8_t is_debuging = 1;
 #else
 constexpr int8_t is_debuging = 0;
 #endif // DEBUG
-enum class CtxResult { Success = 0, Failed = -1 ,ArgumentError,GetVideoModeFailed,
-WindowCreateFailed};
+enum class CtxResult {
+  Success = 0,
+  Failed = -1,
+  ArgumentError = -2,
+  GetVideoModeFailed = -3,
+  WindowCreateFailed = -4,
+  DeviceCreateFailed,
+  GetPhysicalDeviceSurfaceCapFailed = -5,
+  FuncCreateSwapchainInternalFailed = -6,
+  AcquirePresentModesFailed = -7,
+  AcquireDeviceExtensionsFailed = -8,
+VmaCreateFailed = -9,
+AcquirePhysicalDevicesFailed,
+
+  NoFitDevice
+};
+//*****************************************************************************
+// 辅助类
+struct vkStructureHead {
+  VkStructureType sType;
+  void *pNext;
+};
 
 //*****************************************************************************
 // 回调函数类
@@ -87,6 +108,7 @@ using Callback = Callback2<Tag, 0u, Args...>;
 // WindowContextBase_*** 类
 //*****************************************************************************
 
+struct ContextBase;
 /// @brief 窗口创建的设置，可通过位运算组合
 struct _WindowCreateState_type {
   enum Type : uint16_t {
@@ -130,11 +152,13 @@ struct WindowContextBase_glfw {
   static void cleanup_glfw() noexcept;
   CtxResult create(const WindowCreateInfo_glfw &info);
   void cleanup() noexcept;
+
+  VkResult make_surface(ContextBase &ctx, VkSurfaceKHR &surface);
+  void get_window_size(uint32_t &width, uint32_t &height);
 };
 //*****************************************************************************
 // WindowContext 模板类
 //*****************************************************************************
-struct ContextBase;
 
 struct SwapchainCreateInfo {
   bool m_isFrameRateLimited;
@@ -154,14 +178,14 @@ template <class BaseCtx> struct WindowContext : BaseCtx {
   Callback<WindowContext, WindowContext *> m_CallbackSwapchainDestroy;
   Callback<WindowContext, WindowContext *> m_CallbackSwapchainConstruct;
 
-  CtxResult create(const SwapchainCreateInfo& info, ContextBase& ctx);
-  void cleanup() noexcept;
+  CtxResult create(const SwapchainCreateInfo &info, ContextBase &ctx);
+  void cleanup(ContextBase &ctx) noexcept;
 
 protected:
   /// @brief 创建窗口表面, 应当委托到BaseCtx执行
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
-  VkResult prepare_surface(ContextBase &ctx);
+  VkResult create_surface(ContextBase &ctx);
   /// @brief 重建交换链
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
@@ -187,11 +211,35 @@ protected:
   VkResult set_surface_format(VkSurfaceFormatKHR surfaceFormat,
                               ContextBase &ctx);
 };
-
+} // namespace BLT
+// 包含模板函数的实现
+#include <bl_ctx_internal.hpp>
+namespace BLT {
 //*****************************************************************************
 // Context 类
 //*****************************************************************************
+
+/// @brief 实例阶段创建信息
+struct InstanceCreateInfo {
+  const char *m_pAppName{nullptr};
+  uint32_t m_AppVersion{0u};
+  uint32_t m_MinApiVersion{0u};
+  bool m_isDebuging{true};
+  std::vector<const char *> m_LayerNames{};
+  std::vector<const char *> m_ExtensionNames{};
+  VkInstanceCreateFlags m_InstanceFlags = 0;
+  void *m_pNextInstance{nullptr};
+};
+/// @brief 设备阶段创建信息
+struct DeviceCreateInfo {
+  VkDeviceCreateFlags m_DiviceFlags = 0u;
+  VmaAllocatorCreateFlags m_VmaFlags = 0u;
+  std::vector<const char *> m_ExtensionNames{};
+  void *m_pNextDivice{nullptr};
+};
 struct ContextBase {
+  static constexpr const char *s_TypeName = "ContextBase";
+
   double m_CurrentTime{0.0}, m_DeltaTime{0.0};
 
   uint32_t m_VulkanApiVersion;
@@ -228,10 +276,197 @@ struct ContextBase {
 #ifdef DEBUG
   VkDebugUtilsMessengerEXT m_Debugger{VK_NULL_HANDLE};
 #endif // DEBUG
-  VmaAllocator m_Allocator;
-  
+  VmaAllocator m_Allocator{VK_NULL_HANDLE};
+
   CtxResult m_ErrorState{CtxResult::Success};
-   
+
+  CtxResult create_instance(const InstanceCreateInfo &info);
+  CtxResult create_device(const DeviceCreateInfo &info);
+
+protected:
+  /// @brief 获取VulkanAPI的版本
+  /// @param version 返回版本
+  /// @return 是否正确查询
+  VkResult acquire_vkapi_version(uint32_t &version);
+  /// @brief 检查实例扩展是否可用
+  /// @param extensionNames 被检查的数组
+  /// @param layerName 扩展所在的层级, 一律为nullptr
+  /// @return 是否正确检查
+  VkResult check_instance_extension(std::span<const char *> extensionNames,
+                                    const char *layerName = nullptr);
+  /// @brief 检查实例层级是否可用
+  /// @param layerNames 被检查的数组
+  /// @return 是否正确检查
+  VkResult check_instance_layer(std::span<const char *> layerNames);
+  /// @brief 合并pCallbackData内容为一个字符串输出
+  /// @param pCallbackData 被合并的debug数据
+  /// @return 表示debug信息的字符串
+  static std::string combine_debug_message(
+      const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData);
+  /// @brief 初始化debug部分
+  /// @return 是否正确完成
+  VkResult prepare_debugger();
+
+protected:
+  /// @brief 取得物理设备列表
+  /// @param availablePhysicalDevices 返回该列表
+  /// @return 是否正确完成
+  VkResult acquire_physical_devices(
+      std::vector<VkPhysicalDevice> &availablePhysicalDevices);
+  /// @brief 获取设备所用的队列族
+  /// @param physicalDevice 被获取的设备
+  /// @param enableGraphicsQueue 是否查找图形队列
+  /// @param enableComputeQueue 是否查找计算队列
+  /// @param queueFamilyIndices 返回队列族索引, 依次为图形,呈现,计算
+  /// @return 是否正确完成
+  VkResult acquire_queue_family_indices(VkPhysicalDevice physicalDevice,
+                                        uint32_t (&queueFamilyIndices)[3],
+                                        std::span<VkSurfaceKHR> windowData,
+                                        bool enableGraphicsQueue = true,
+                                        bool enableComputeQueue = true);
+  /// @brief 决定使用的物理设备, 呈现队列取决于当前是否创建窗口
+  /// @param availablePhysicalDevices 可用的物理设备
+  /// @param deviceIndex 被决定的设备索引
+  /// @param enableGraphicsQueue 是否启用图形队列
+  /// @param enableComputeQueue 是否启用计算队列
+  /// @return 是否正确完成
+  VkResult determine_physical_device(
+      std::vector<VkPhysicalDevice> &availablePhysicalDevices,
+      uint32_t deviceIndex = 0, std::span<VkSurfaceKHR> windowData = {},
+      bool enableGraphicsQueue = true, bool enableComputeQueue = true);
+  /// @brief 获取物理设备属性
+  void acquire_physical_divice_properties();
+  /// @brief 获取物理设备特性
+  void acquire_physical_divice_features();
+  /// @brief 初始化物理设备
+  /// @param windowData 当前需要与设备匹配的各个窗口
+  /// @return 是否正确完成
+  CtxResult prepare_physical_device(std::span<VkSurfaceKHR> windowData);
+  VkResult
+  acquire_device_extensions(std::vector<VkExtensionProperties> &extensionNames,
+                            const char *layerName = nullptr);
+  VmaAllocatorCreateFlagBits
+  check_VMA_extensions(std::vector<const char *> &extensionNames);
+
+  /// @brief 检查设备扩展
+  /// @param extensionNames 扩展名称
+  /// @param layerName 被检查的层级, 一律为nullptr
+  /// @return 是否正确完成
+  void check_device_extension(std::span<const char *> extensionNames,
+                              const char *layerName = nullptr);
+  /// @brief 初始化VMA库(内存分配)
+  /// @param info 创建信息
+  /// @return 是否正确完成
+  VkResult prepare_VMA(const DeviceCreateInfo &info);
+};
+
+//*****************************************************************************
+// LocalData 部分
+//*****************************************************************************
+
+/// @brief 线程本地数据，方便获取上下文
+struct ThreadData {
+  std::stringstream m_LocalSstream;
+};
+/// @brief 获取线程本地数据
+/// @return 线程本地数据
+inline ThreadData &acquire_local_data() {
+  static thread_local ThreadData local_data;
+  return local_data;
+}
+/// @brief 默认使用的获取当前上下文的静态类和各种常数设置
+class ContextTraits {
+  inline static ContextBase *s_CurrentContext{nullptr};
+  static inline void set_current_context(ContextBase &ctx) {
+    s_CurrentContext = &ctx;
+  }
+
+  static inline VkInstance get_instance() {
+    return s_CurrentContext->m_Instance;
+  }
+  static inline VkDevice get_device() { return s_CurrentContext->m_Device; }
+  static inline VmaAllocator get_allocator() {
+    return s_CurrentContext->m_Allocator;
+  }
+  static inline const VkPhysicalDeviceMemoryProperties &
+  get_phydevice_memory_properties() {
+    return s_CurrentContext->m_PhysicalDeviceMemoryProperties.memoryProperties;
+  }
+  static inline uint32_t get_vulkanApiVersion() {
+    return s_CurrentContext->m_VulkanApiVersion;
+  }
+  static inline VkPhysicalDevice get_phyDevice() {
+    return s_CurrentContext->m_PhysicalDevice;
+  }
+  static inline uint32_t get_queueFamilyIndex_graphics() {
+    return s_CurrentContext->m_QueueFamilyIndex_graphics;
+  }
+  static inline uint32_t get_queueFamilyIndex_compute() {
+    return s_CurrentContext->m_QueueFamilyIndex_compute;
+  }
+  static inline uint32_t get_queueFamilyIndex_presentation() {
+    return s_CurrentContext->m_QueueFamilyIndex_presentation;
+  }
+  static inline VkQueue get_queue_graphics() {
+    return s_CurrentContext->m_Queue_graphics;
+  }
+  static inline VkQueue get_queue_compute() {
+    return s_CurrentContext->m_Queue_compute;
+  }
+  static inline VkQueue get_queue_presentation() {
+    return s_CurrentContext->m_Queue_presentation;
+  }
+  static inline const VkPhysicalDeviceProperties2 &get_phyDeviceProperties() {
+    return s_CurrentContext->m_PhysicalDeviceProperties;
+  }
+  static inline const VkPhysicalDeviceVulkan11Properties &
+  get_phyDeviceVulkan11Properties() {
+    return s_CurrentContext->m_PhysicalDeviceVulkan11Properties;
+  }
+  static inline const VkPhysicalDeviceVulkan12Properties &
+  get_phyDeviceVulkan12Properties() {
+    return s_CurrentContext->m_PhysicalDeviceVulkan12Properties;
+  }
+  static inline const VkPhysicalDeviceVulkan13Properties &
+  get_phyDeviceVulkan13Properties() {
+    return s_CurrentContext->m_PhysicalDeviceVulkan13Properties;
+  }
+  static inline const VkPhysicalDeviceVulkan14Properties &
+  get_phyDeviceVulkan14Properties() {
+    return s_CurrentContext->m_PhysicalDeviceVulkan14Properties;
+  }
+  static inline const VkPhysicalDeviceMemoryProperties2 &
+  get_phyDeviceMemoryProperties() {
+    return s_CurrentContext->m_PhysicalDeviceMemoryProperties;
+  }
+  static inline const VkPhysicalDeviceFeatures2 &get_phyDeviceFeatures() {
+    return s_CurrentContext->m_PhysicalDeviceFeatures;
+  }
+  static inline const VkPhysicalDeviceVulkan11Features &
+  get_phyDeviceVulkan11Features() {
+    return s_CurrentContext->m_PhysicalDeviceVulkan11Features;
+  }
+  static inline const VkPhysicalDeviceVulkan12Features &
+  get_phyDeviceVulkan12Features() {
+    return s_CurrentContext->m_PhysicalDeviceVulkan12Features;
+  }
+  static inline const VkPhysicalDeviceVulkan13Features &
+  get_phyDeviceVulkan13Features() {
+    return s_CurrentContext->m_PhysicalDeviceVulkan13Features;
+  }
+  static inline const VkPhysicalDeviceVulkan14Features &
+  get_phyDeviceVulkan14Features() {
+    return s_CurrentContext->m_PhysicalDeviceVulkan14Features;
+  }
+  static inline VkDebugUtilsMessengerEXT get_debugger() {
+    return s_CurrentContext->m_Debugger;
+  }
+  static inline double get_current_time() {
+    return s_CurrentContext->m_CurrentTime;
+  }
+  static inline double get_delta_time() {
+    return s_CurrentContext->m_DeltaTime;
+  }
 };
 } // namespace BLT
 #endif // !_BL_CORE_CONTEXTS_HPP_
