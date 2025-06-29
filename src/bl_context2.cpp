@@ -21,15 +21,21 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#include "GLFW/glfw3.h"
-#include "vulkan/vulkan_core.h"
-#include <algorithm>
+// 本地include
+#include <bl_output.hpp>
 #include <bl_contexts2.hpp>
+// 标准库include
+#include <algorithm>
 #include <cstring>
+#include <vector>
+#define VMA_IMPLEMENTATION
+#include <vma/vk_mem_alloc.h>
 namespace BLT {
 //*****************************************************************************
 // WindowContextBase_*** 类
 //*****************************************************************************
+
+std::once_flag WindowContextBase_glfw::s_InitOnce{};
 CtxResult WindowContextBase_glfw::init_glfw() {
   static bool init_successful = false;
   std::call_once(s_InitOnce, [] {
@@ -45,7 +51,8 @@ CtxResult WindowContextBase_glfw::init_glfw() {
   return init_successful ? CtxResult::Success : CtxResult::Failed;
 }
 void WindowContextBase_glfw::cleanup_glfw() noexcept { glfwTerminate(); }
-CtxResult WindowContextBase_glfw::create(const WindowCreateInfo_glfw &info) {
+CtxResult
+WindowContextBase_glfw::create_base(const WindowCreateInfo_glfw &info) {
   using State = WindowCreateState;
   if (CtxResult result = init_glfw(); result != CtxResult::Success)
     return result;
@@ -133,7 +140,7 @@ CtxResult WindowContextBase_glfw::create(const WindowCreateInfo_glfw &info) {
                         info.m_MinSizeY, info.m_MaxSizeX, info.m_MaxSizeY));
   return CtxResult::Success;
 }
-void WindowContextBase_glfw::cleanup() noexcept {
+void WindowContextBase_glfw::cleanup_base() noexcept {
   if (m_pWindow)
     glfwDestroyWindow(m_pWindow), m_pWindow = nullptr;
   m_pMonitor = nullptr, m_Title.clear();
@@ -154,7 +161,100 @@ void WindowContextBase_glfw::get_window_size(uint32_t &width,
 //*****************************************************************************
 // create_instance() 部分
 
-CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {}
+CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
+  uint32_t current_version = 0u;
+  if (acquire_vkapi_version(current_version)) {
+    print_error(s_TypeName, "acquire_vkapi_version failed!");
+    return CtxResult::AcquireApiVersionFailed;
+  }
+  if (current_version < info.m_MinApiVersion) {
+    print_error(s_TypeName, "Vulkan API version too low!");
+    return CtxResult::VkapiVersionTooLow;
+  }
+  m_VulkanApiVersion = std::max(current_version, info.m_MinApiVersion);
+  VkApplicationInfo app_info = {
+      .sType = VK_STRUCTURE_TYPE_APPLICATION_INFO,
+      .pApplicationName = info.m_pAppName,
+      .applicationVersion = info.m_AppVersion,
+      .pEngineName = "BLVK",
+      .engineVersion = BL_VERSION,
+      .apiVersion = m_VulkanApiVersion,
+  };
+
+  auto extension_names = info.m_ExtensionNames;
+  auto layer_names = info.m_LayerNames;
+  if (info.m_isDebuging)
+    insert_debug_ext_layers(layer_names, extension_names);
+
+  {
+    uint32_t extension_count = 0;
+    const char **ppExtensionNames;
+    ppExtensionNames = glfwGetRequiredInstanceExtensions(&extension_count);
+    if (!ppExtensionNames) {
+      print_error(s_TypeName, "Vulkan is not available on this "
+                              "machine!");
+      return CtxResult::AcquireGlfwExtFailed;
+    }
+    extension_names.append_range(
+        std::span<const char *>(ppExtensionNames, extension_count));
+    // for (size_t i = 0; i < extensionCount; i++)
+    //  info.m_ExtensionNames.push_back(extensionNames[i]);
+  }
+
+  if (VkResult result = check_instance_extension(extension_names)) {
+    print_error(s_TypeName, "check_instance_extension() failed! Code:",
+                string_VkResult(result));
+    return CtxResult::CheckExtFailed;
+  }
+  if (VkResult result = check_instance_layer(layer_names)) {
+    print_error(s_TypeName, "check_instance_layer() failed! Code:",
+                string_VkResult(result));
+    return CtxResult::CheckLayerFailed;
+  }
+
+  VkInstanceCreateInfo createInfo = {
+      .sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
+      .pNext = info.m_pNextInstance,
+      .flags = info.m_InstanceFlags,
+      .pApplicationInfo = &app_info,
+      .enabledLayerCount = uint32_t(layer_names.size()),
+      .ppEnabledLayerNames = layer_names.data(),
+      .enabledExtensionCount = uint32_t(extension_names.size()),
+      .ppEnabledExtensionNames = extension_names.data()};
+
+  auto print = [](const char *dec, std::vector<const char *> names) {
+    for (auto name : names) {
+      print_log(s_TypeName, dec, name ? name : "Null");
+    };
+  };
+  if (VkResult result = vkCreateInstance(&createInfo, nullptr, &m_Instance)) {
+    switch (result) {
+    case VK_ERROR_LAYER_NOT_PRESENT:
+    case VK_ERROR_EXTENSION_NOT_PRESENT:
+      print_warning(s_TypeName,
+                    "Vulkan instance some ext/layer not useable! Code:",
+                    string_VkResult(result));
+      print("Layer", layer_names);
+      print("Ext", extension_names);
+      break;
+    default:
+      print_error(s_TypeName, "Vulkan instance create failed! Code:",
+                  string_VkResult(result));
+      return CtxResult::InstanceCreateFailed;
+    }
+  }
+  print_log(s_TypeName,
+            "Vulkan API Version:", VK_API_VERSION_MAJOR(m_VulkanApiVersion),
+            VK_API_VERSION_MINOR(m_VulkanApiVersion),
+            VK_API_VERSION_PATCH(m_VulkanApiVersion));
+  if (info.m_isDebuging)
+    if (VkResult result = create_debugger()) {
+      print_error(s_TypeName,
+                  "create debug failed! Code:", string_VkResult(result));
+      return CtxResult::DebugCreateFailed;
+    }
+  return CtxResult::Success;
+}
 VkResult ContextBase::acquire_vkapi_version(uint32_t &version) {
   if (vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"))
     return vkEnumerateInstanceVersion(&version);
@@ -222,8 +322,7 @@ VkResult ContextBase::check_instance_layer(std::span<const char *> layerNames) {
           it == available_layers.end())
         i = nullptr;
   } else
-    for (auto &i : layerNames)
-      i = nullptr;
+    std::fill(layerNames.begin(), layerNames.end(), nullptr);
   return VK_SUCCESS;
 }
 std::string ContextBase::combine_debug_message(
@@ -298,9 +397,9 @@ VkResult ContextBase::create_debugger() {
                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
                          VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
       .messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
-                     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT |
-                     VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT,
+                     VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
       .pfnUserCallback = DebugUtilsMessengerCallback};
+  // VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT
   PFN_vkCreateDebugUtilsMessengerEXT vkCreateDebugUtilsMessenger =
       reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
           vkGetInstanceProcAddr(m_Instance, "vkCreateDebugUtilsMessengerEXT"));
@@ -316,10 +415,19 @@ VkResult ContextBase::create_debugger() {
                           "vkCreateDebugUtilsMessengerEXT!");
   return VK_RESULT_MAX_ENUM;
 }
+void ContextBase::insert_debug_ext_layers(
+    std::vector<const char *> &layerNames,
+    std::vector<const char *> &extensionNames) {
+  layerNames.push_back("VK_LAYER_KHRONOS_validation");
+  extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+  // extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+}
 //*****************************************************************************
 // create_device() 部分
 
-CtxResult ContextBase::create_device(const DeviceCreateInfo &info) {
+CtxResult ContextBase::create_device(const DeviceCreateInfo &info,
+                                     std::span<VkSurfaceKHR> surfaces) {
+  init_physical_device(surfaces);
   // 1.构建队列创建表
   float queue_priority = 1.0f;
   VkDeviceQueueCreateInfo queue_create_infos[3] = {
@@ -411,7 +519,7 @@ CtxResult ContextBase::create_device(const DeviceCreateInfo &info) {
     vkGetDeviceQueue(m_Device, queue_index_present, 0, &m_Queue_presentation);
   if (queue_index_compute != VK_QUEUE_FAMILY_IGNORED)
     vkGetDeviceQueue(m_Device, queue_index_compute, 0, &m_Queue_compute);
-  if (init_vma(info))
+  if (init_vma(vma_flags))
     return CtxResult::VmaCreateFailed;
   print_log(s_TypeName,
             "Renderer:", m_PhysicalDeviceProperties.properties.deviceName);
@@ -643,8 +751,8 @@ ContextBase::init_physical_device(std::span<VkSurfaceKHR> surfacesData) {
   if (acquire_physical_devices(available_physical_devices))
     return CtxResult::AcquirePhysicalDevicesFailed;
   for (uint32_t i = 0; i < available_physical_devices.size(); ++i)
-    if (!determine_physical_device(available_physical_devices, i, surfacesData,
-                                   true, true))
+    if (determine_physical_device(available_physical_devices, i, surfacesData,
+                                  true, true) == VK_SUCCESS)
       goto FIND_SUCCESS;
   print_error(s_TypeName, "Can not find any phyDevice fits all conditions!");
   return CtxResult::NoFitDevice;
@@ -727,13 +835,40 @@ void ContextBase::check_device_extension(std::span<const char *> extensionNames,
       i = nullptr;
   }
 }
-VkResult ContextBase::init_vma(const DeviceCreateInfo &info) {
+VkResult ContextBase::init_vma(VmaAllocatorCreateFlagBits vmaFlags) {
   VmaAllocatorCreateInfo allocatorCreateInfo = {
-      .flags = info.m_VmaFlags,
+      .flags = vmaFlags,
       .physicalDevice = m_PhysicalDevice,
       .device = m_Device,
       .instance = m_Instance,
       .vulkanApiVersion = m_VulkanApiVersion};
   return vmaCreateAllocator(&allocatorCreateInfo, &m_Allocator);
+}
+void ContextBase::cleanup() noexcept {
+  if (!m_Instance)
+    return;
+  if (m_Device) {
+    if (VkResult result = vkDeviceWaitIdle(m_Device))
+      print_warning(s_TypeName, "cleanup device waitIdle failed! Code:",
+                    string_VkResult(result));
+    vkDestroyDevice(m_Device, nullptr);
+    m_Device = VK_NULL_HANDLE;
+  }
+  if (m_Debugger) {
+    PFN_vkDestroyDebugUtilsMessengerEXT DestroyDebugUtilsMessenger =
+        reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+            vkGetInstanceProcAddr(m_Instance,
+                                  "vkDestroyDebugUtilsMessengerEXT"));
+    if (DestroyDebugUtilsMessenger)
+      DestroyDebugUtilsMessenger(m_Instance, m_Debugger, nullptr);
+    m_Debugger = VK_NULL_HANDLE;
+  }
+  vkDestroyInstance(m_Instance, nullptr);
+  m_Instance = VK_NULL_HANDLE;
+}
+void ContextBase::update() {
+  double time_now = glfwGetTime();
+  m_DeltaTime = time_now - m_CurrentTime;
+  m_CurrentTime = time_now;
 }
 } // namespace BLT

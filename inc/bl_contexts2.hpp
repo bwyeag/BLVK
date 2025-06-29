@@ -26,20 +26,22 @@ SOFTWARE.
 // 本地include
 #include <bl_output.hpp>
 // 标准库include
+#include <algorithm>
 #include <cstdint>
 #include <functional>
 #include <list>
 #include <mutex>
 #include <span>
-#include <algorithm>
+#include <utility>
 // 外部库include
-#include <vma/vk_mem_alloc.h>
+#include <vector>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
+#include <vma/vk_mem_alloc.h>
 namespace BLT {
-
+#define BL_VERSION VK_MAKE_API_VERSION(0, 0, 1, 0)
 #ifdef DEBUG
 constexpr int8_t is_debuging = 1;
 #else
@@ -52,13 +54,20 @@ enum class CtxResult {
   GetVideoModeFailed = -3,
   WindowCreateFailed = -4,
   DeviceCreateFailed,
+  InstanceCreateFailed,
+  DebugCreateFailed,
   GetPhysicalDeviceSurfaceCapFailed = -5,
   FuncCreateSwapchainInternalFailed = -6,
   AcquirePresentModesFailed = -7,
   AcquireDeviceExtensionsFailed = -8,
   VmaCreateFailed = -9,
   AcquirePhysicalDevicesFailed,
-  NoFitDevice
+  NoFitDevice,
+  AcquireApiVersionFailed,
+  VkapiVersionTooLow,
+  AcquireGlfwExtFailed,
+  CheckExtFailed,
+  CheckLayerFailed
 };
 //*****************************************************************************
 // 辅助类
@@ -96,7 +105,7 @@ public:
   }
   void iterate(Args &&...call) {
     for (Func &fn : m_Items) {
-      fn(std::forward(call)...);
+      fn(std::forward<Args>(call)...);
     }
   }
   void erase(Handle &handle) { m_Items.erase(handle.m_it); }
@@ -138,7 +147,7 @@ struct WindowCreateInfo_glfw {
   uint32_t m_InitPosX{~0u}, m_InitPosY{~0u};
   uint32_t m_MaxSizeX = GLFW_DONT_CARE, m_MaxSizeY = GLFW_DONT_CARE,
            m_MinSizeX = GLFW_DONT_CARE, m_MinSizeY = GLFW_DONT_CARE;
-  const char *m_InitTitle;
+  const char *m_InitTitle{"Window"};
   std::function<bool(GLFWmonitor *)> m_MonitorPred;
 };
 struct WindowContextBase_glfw {
@@ -150,8 +159,8 @@ struct WindowContextBase_glfw {
 
   static CtxResult init_glfw();
   static void cleanup_glfw() noexcept;
-  CtxResult create(const WindowCreateInfo_glfw &info);
-  void cleanup() noexcept;
+  CtxResult create_base(const WindowCreateInfo_glfw &info);
+  void cleanup_base() noexcept;
 
   VkResult make_surface(ContextBase &ctx, VkSurfaceKHR &surface);
   void get_window_size(uint32_t &width, uint32_t &height);
@@ -164,7 +173,7 @@ struct SwapchainCreateInfo {
   bool m_isFrameRateLimited;
   VkSwapchainCreateFlagsKHR m_flags;
 };
-template <class BaseCtx> struct WindowContext : BaseCtx {
+template <class BaseCtx> struct WindowContext : public BaseCtx {
   static constexpr const char *s_TypeName = "WindowContext";
   VkSurfaceKHR m_Surface{VK_NULL_HANDLE};
 
@@ -181,11 +190,12 @@ template <class BaseCtx> struct WindowContext : BaseCtx {
   CtxResult create(const SwapchainCreateInfo &info, ContextBase &ctx);
   void cleanup(ContextBase &ctx) noexcept;
 
-protected:
   /// @brief 创建窗口表面, 应当委托到BaseCtx执行
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
   VkResult create_surface(ContextBase &ctx);
+
+protected:
   /// @brief 重建交换链
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
@@ -277,7 +287,10 @@ struct ContextBase {
   CtxResult m_ErrorState{CtxResult::Success};
 
   CtxResult create_instance(const InstanceCreateInfo &info);
-  CtxResult create_device(const DeviceCreateInfo &info);
+  CtxResult create_device(const DeviceCreateInfo &info,
+                          std::span<VkSurfaceKHR> surfaces);
+  void cleanup() noexcept;
+  void update();
 
 protected:
   /// @brief 获取VulkanAPI的版本
@@ -302,6 +315,8 @@ protected:
   /// @brief 初始化debug部分
   /// @return 是否正确完成
   VkResult create_debugger();
+  void insert_debug_ext_layers(std::vector<const char *> &layerNames,
+                               std::vector<const char *> &extensionNames);
 
 protected:
   /// @brief 取得物理设备列表
@@ -355,7 +370,7 @@ protected:
   /// @brief 初始化VMA库(内存分配)
   /// @param info 创建信息
   /// @return 是否正确完成
-  VkResult init_vma(const DeviceCreateInfo &info);
+  VkResult init_vma(VmaAllocatorCreateFlagBits vmaFlags);
 };
 
 //*****************************************************************************
@@ -564,7 +579,7 @@ CtxResult WindowContext<BaseCtx>::create(const SwapchainCreateInfo &info,
   cInfo.oldSwapchain = VK_NULL_HANDLE;
   cInfo.pNext = nullptr;
   //---------------------------------------------------------------------------
-  if (VkResult result = create_swapchain_Internal(ctx))
+  if (create_swapchain_Internal(ctx))
     return CtxResult::FuncCreateSwapchainInternalFailed;
   m_CallbackSwapchainConstruct.iterate(this);
   return CtxResult::Success;
@@ -589,7 +604,7 @@ void WindowContext<BaseCtx>::cleanup(ContextBase &ctx) noexcept {
   if (m_Surface) {
     vkDestroySurfaceKHR(ctx.m_Instance, m_Surface, nullptr);
     m_Surface = VK_NULL_HANDLE;
-    BaseCtx::cleanup();
+    BaseCtx::cleanup_base();
   }
 }
 template <class BaseCtx>
@@ -688,6 +703,7 @@ VkResult WindowContext<BaseCtx>::create_swapchain_Internal(ContextBase &ctx) {
       return result;
     }
   }
+  return VK_SUCCESS;
 }
 template <class BaseCtx>
 VkResult WindowContext<BaseCtx>::acquire_surface_formats(ContextBase &ctx) {

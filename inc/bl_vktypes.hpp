@@ -28,11 +28,11 @@ SOFTWARE.
 #include "vulkan/vulkan_core.h"
 #include <cstdint>
 #include <cstring>
-#include <bl_contexts.hpp>
+#include <bl_contexts2.hpp>
 #include <bl_output.hpp>
 #include <vulkan/vulkan.h>
 
-namespace BL {
+namespace BLT {
 /*
  * Vulkan类型封装
  */
@@ -659,7 +659,7 @@ public:
     return result;
   }
 };
-template <typename _Context = Context>
+template <typename _Context = ContextTraits>
 class VertexBuffer : protected Buffer<_Context> {
 public:
   VertexBuffer() = default;
@@ -914,7 +914,7 @@ public:
     return result;
   }
 };
-template <typename _Context = Context> class ImageView {
+template <typename _Context = ContextTraits> class ImageView {
   VkImageView handle = VK_NULL_HANDLE;
 
 public:
@@ -1018,7 +1018,7 @@ public:
   }
 };
 template <typename _Context> class DescriptorPool;
-template <typename _Context = Context> class DescriptorSet {
+template <typename _Context = ContextTraits> class DescriptorSet {
   friend class DescriptorPool<_Context>;
   VkDescriptorSet handle = VK_NULL_HANDLE;
 

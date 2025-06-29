@@ -7,5 +7,5 @@ CPMAddPackage(
       "GLFW_BUILD_EXAMPLES OFF"
       "GLFW_BUILD_DOCS OFF"
 )
-set(ENV{VULKAN_SDK} "C:/VulkanSDK/1.4.313.1/")
+set(ENV{VULKAN_SDK} "C:/VulkanSDK/1.4.313.2/")
 find_package(Vulkan REQUIRED)

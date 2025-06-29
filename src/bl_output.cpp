@@ -30,7 +30,7 @@ SOFTWARE.
 #endif
 
 namespace BLT {
-#if IS_WINDOWS
+#ifdef IS_WINDOWS
 WORD getColorCode(ConsoleColor color) {
     using CC = ConsoleColor;
     switch (color) {
@@ -56,7 +56,7 @@ WORD getColorCode(ConsoleColor color) {
             return FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_GREEN;
         case CC::green_intensity:
             return FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-        case CC::BlackIntensity:
+        case CC::black_intensity:
             return 0;
         case CC::blue_intensity:
             return FOREGROUND_BLUE | FOREGROUND_INTENSITY;
@@ -126,29 +126,29 @@ std::string getColorCode(ConsoleColor color) {
 }
 #endif
 
-#if IS_WINDOWS
+#ifdef IS_WINDOWS
 WORD getBackgroundColorCode(ConsoleBackgroundColor color) {
     using BC = ConsoleBackgroundColor;
     switch (color) {
-        case BC::Green:
+        case BC::green:
             return BACKGROUND_GREEN;
-        case BC::Black:
+        case BC::black:
             return 0;
-        case BC::Blue:
+        case BC::blue:
             return BACKGROUND_BLUE;
-        case BC::Gray:
+        case BC::gray:
             return 0;
-        case BC::Purple:
+        case BC::purple:
             return BACKGROUND_RED | BACKGROUND_BLUE;
-        case BC::Red:
+        case BC::red:
             return BACKGROUND_RED;
-        case BC::White:
+        case BC::white:
             return BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_GREEN;
-        case BC::Cyan:
+        case BC::cyan:
             return BACKGROUND_BLUE | BACKGROUND_GREEN;
-        case BC::Yellow:
+        case BC::yellow:
             return BACKGROUND_RED | BACKGROUND_GREEN;
-        case BC::None:
+        case BC::none:
             return 0;
         default:
             return 0;
@@ -184,7 +184,7 @@ const char* getBackgroundColorCode(ConsoleBackgroundColor color) {
 }
 #endif
 std::ostream& operator<<(std::ostream& os, ConsoleColor data) {
-#if IS_WINDOWS
+#ifdef IS_WINDOWS
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(handle, getColorCode(data));
 #else
@@ -194,7 +194,7 @@ std::ostream& operator<<(std::ostream& os, ConsoleColor data) {
     return os;
 }
 std::ostream& operator<<(std::ostream& os, ConsoleBackgroundColor data) {
-#if IS_WINDOWS
+#ifdef IS_WINDOWS
     HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
     SetConsoleTextAttribute(handle, getBackgroundColorCode(data));
 #else
