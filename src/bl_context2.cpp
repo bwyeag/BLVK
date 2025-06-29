@@ -25,6 +25,7 @@ SOFTWARE.
 #include "vulkan/vulkan_core.h"
 #include <algorithm>
 #include <bl_contexts2.hpp>
+#include <cstring>
 namespace BLT {
 //*****************************************************************************
 // WindowContextBase_*** 类
@@ -214,14 +215,12 @@ VkResult ContextBase::check_instance_layer(std::span<const char *> layerNames) {
                   string_VkResult(result));
       return result;
     }
-    for (auto &i : layerNames) {
-      for (auto &j : available_layers)
-        if (!strcmp(i, j.layerName))
-          goto CHECK_FOUND;
-      i = nullptr;
-    CHECK_FOUND:
-      continue;
-    }
+    for (auto &i : layerNames)
+      if (auto it = std::find_if(
+              available_layers.begin(), available_layers.end(),
+              [i](VkLayerProperties &j) { return !strcmp(i, j.layerName); });
+          it == available_layers.end())
+        i = nullptr;
   } else
     for (auto &i : layerNames)
       i = nullptr;
@@ -267,7 +266,7 @@ std::string ContextBase::combine_debug_message(
   sstm.str("");
   return message;
 }
-VkResult ContextBase::prepare_debugger() {
+VkResult ContextBase::create_debugger() {
   static PFN_vkDebugUtilsMessengerCallbackEXT DebugUtilsMessengerCallback =
       [](VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
          VkDebugUtilsMessageTypeFlagsEXT messageTypes,
@@ -357,7 +356,7 @@ CtxResult ContextBase::create_device(const DeviceCreateInfo &info) {
   auto extension_names = info.m_ExtensionNames;
   extension_names.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
   auto vma_flags = static_cast<VmaAllocatorCreateFlagBits>(
-      info.m_VmaFlags | check_VMA_extensions(extension_names));
+      info.m_VmaFlags | acquire_vma_extensions(extension_names));
   check_device_extension(extension_names);
   m_AvailableExtensions.clear();
   m_Extensions.clear();
@@ -371,7 +370,6 @@ CtxResult ContextBase::create_device(const DeviceCreateInfo &info) {
     }
     extension_names.resize(extension_names.size() - length);
   }();
-  // 删除多余的扩展名称，但调用创建时可以包括空指针，故可以不写
   // std::erase_if(extension_names,
   //              [](const char *str) { return str == nullptr; });
   // 3.创建逻辑设备
@@ -413,7 +411,7 @@ CtxResult ContextBase::create_device(const DeviceCreateInfo &info) {
     vkGetDeviceQueue(m_Device, queue_index_present, 0, &m_Queue_presentation);
   if (queue_index_compute != VK_QUEUE_FAMILY_IGNORED)
     vkGetDeviceQueue(m_Device, queue_index_compute, 0, &m_Queue_compute);
-  if (prepare_VMA(info))
+  if (init_vma(info))
     return CtxResult::VmaCreateFailed;
   print_log(s_TypeName,
             "Renderer:", m_PhysicalDeviceProperties.properties.deviceName);
@@ -491,8 +489,8 @@ VkResult ContextBase::acquire_queue_family_indices(
       // 除非ig和ic都已取得且相同，否则将它们的值覆写为i，以确保两个队列族索引相同
       if (ig != ic || ig == VK_QUEUE_FAMILY_IGNORED)
         ig = ic = i;
-      // 如果不需要呈现，那么已经可以break了
-      if (surfacesData.size() == 0)
+      // 如果不需要呈现，则break
+      if (surfacesData.empty())
         break;
     }
     // 若任何一个队列族索引可以被取得但尚未被取得，将其值覆写为i
@@ -640,7 +638,7 @@ void ContextBase::acquire_physical_divice_features() {
                                 &m_PhysicalDeviceFeatures.features);
 }
 CtxResult
-ContextBase::prepare_physical_device(std::span<VkSurfaceKHR> surfacesData) {
+ContextBase::init_physical_device(std::span<VkSurfaceKHR> surfacesData) {
   std::vector<VkPhysicalDevice> available_physical_devices;
   if (acquire_physical_devices(available_physical_devices))
     return CtxResult::AcquirePhysicalDevicesFailed;
@@ -706,7 +704,7 @@ static constexpr std::pair<const char *, VmaAllocatorCreateFlagBits>
         //  VMA_ALLOCATOR_CREATE_KHR_EXTERNAL_MEMORY_WIN32_BIT}
     };
 VmaAllocatorCreateFlagBits
-ContextBase::check_VMA_extensions(std::vector<const char *> &extensionNames) {
+ContextBase::acquire_vma_extensions(std::vector<const char *> &extensionNames) {
   auto ret = static_cast<VmaAllocatorCreateFlagBits>(0);
   for (uint32_t i = 0; i < vma_flags_count; ++i)
     if (!std::binary_search(m_Extensions.begin(), m_Extensions.end(),
@@ -720,8 +718,8 @@ ContextBase::check_VMA_extensions(std::vector<const char *> &extensionNames) {
   return ret;
 }
 
-void ContextBase::check_device_extension(
-    std::span<const char *> extensionNames, const char *layerName) {
+void ContextBase::check_device_extension(std::span<const char *> extensionNames,
+                                         const char *layerName) {
   for (auto &i : extensionNames) {
     if (!std::binary_search(
             m_Extensions.begin(), m_Extensions.end(), i,
@@ -729,7 +727,7 @@ void ContextBase::check_device_extension(
       i = nullptr;
   }
 }
-VkResult ContextBase::prepare_VMA(const DeviceCreateInfo &info) {
+VkResult ContextBase::init_vma(const DeviceCreateInfo &info) {
   VmaAllocatorCreateInfo allocatorCreateInfo = {
       .flags = info.m_VmaFlags,
       .physicalDevice = m_PhysicalDevice,
