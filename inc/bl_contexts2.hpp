@@ -24,16 +24,15 @@ SOFTWARE.
 #ifndef _BL_CORE_CONTEXTS_HPP_
 #define _BL_CORE_CONTEXTS_HPP_
 // 本地include
-#include <bl_output.hpp>
+#include <bl_util.hpp>
 // 标准库include
 #include <algorithm>
 #include <cstdint>
 #include <functional>
-#include <list>
 #include <mutex>
 #include <span>
-#include <utility>
 // 外部库include
+#include <string>
 #include <vector>
 #include <vulkan/vk_enum_string_helper.h>
 #include <vulkan/vulkan_core.h>
@@ -77,43 +76,6 @@ struct vkStructureHead {
 };
 
 //*****************************************************************************
-// 回调函数类
-//*****************************************************************************
-namespace _detail {
-template <typename Tag> static constexpr bool has_callback_set = false;
-template <typename Tag, size_t Series> void callback_set() {}
-} // namespace _detail
-template <typename Tag, size_t Series, typename... Args> class Callback2 {
-public:
-  using Func = std::function<void(Args...)>;
-  using List = typename std::list<Func>;
-  using Iterator = typename List::iterator;
-
-private:
-  List m_Items;
-
-public:
-  struct Handle {
-    Iterator m_it;
-  };
-  size_t size() const { return m_Items.size(); }
-  Handle insert(Func &&fn) {
-    if constexpr (_detail::has_callback_set<Tag>)
-      _detail::callback_set<Tag, Series>();
-    m_Items.push_back(std::forward(fn));
-    return {m_Items.end()};
-  }
-  void iterate(Args &&...call) {
-    for (Func &fn : m_Items) {
-      fn(std::forward<Args>(call)...);
-    }
-  }
-  void erase(Handle &handle) { m_Items.erase(handle.m_it); }
-  void clear() { m_Items.clear(); }
-};
-template <typename Tag, typename... Args>
-using Callback = Callback2<Tag, 0u, Args...>;
-//*****************************************************************************
 // WindowContextBase_*** 类
 //*****************************************************************************
 
@@ -143,6 +105,7 @@ struct WindowCreateInfo_glfw {
   using State = WindowCreateState;
   State m_InitState{State(State::specified | State::decorated |
                           State::resizable | State::use_primary_monitor)};
+  // X = width, Y = height
   uint32_t m_InitSizeX, m_InitSizeY;
   uint32_t m_InitPosX{~0u}, m_InitPosY{~0u};
   uint32_t m_MaxSizeX = GLFW_DONT_CARE, m_MaxSizeY = GLFW_DONT_CARE,
@@ -151,7 +114,7 @@ struct WindowCreateInfo_glfw {
   std::function<bool(GLFWmonitor *)> m_MonitorPred;
 };
 struct WindowContextBase_glfw {
-  static std::once_flag s_InitOnce;
+  static std::once_flag s_InitOnce_glfw;
   static constexpr const char *s_TypeName = "WindowContextBase_glfw";
   GLFWwindow *m_pWindow{nullptr};
   GLFWmonitor *m_pMonitor{nullptr};
@@ -163,7 +126,20 @@ struct WindowContextBase_glfw {
   void cleanup_base() noexcept;
 
   VkResult make_surface(ContextBase &ctx, VkSurfaceKHR &surface);
-  void get_window_size(uint32_t &width, uint32_t &height);
+  void get_window_size(uint32_t &width, uint32_t &height) {
+    glfwGetWindowSize(m_pWindow, (int *)&width, (int *)&height);
+  }
+  void set_window_size(uint32_t width, uint32_t height) {
+    glfwSetWindowSize(m_pWindow, width, height);
+  }
+  const char *get_window_title() const { return m_Title.c_str(); }
+  const std::string get_window_title_str() const { return m_Title; }
+  void set_window_title(const char *newTitle) {
+    glfwSetWindowTitle(m_pWindow, newTitle);
+  }
+  void set_window_title(const std::string &newTitle) {
+    set_window_title(newTitle.c_str());
+  }
 };
 //*****************************************************************************
 // WindowContext 模板类
@@ -245,6 +221,9 @@ struct DeviceCreateInfo {
 };
 struct ContextBase {
   static constexpr const char *s_TypeName = "ContextBase";
+  static void base_init() {
+    WindowContextBase_glfw::init_glfw();
+  }
 
   double m_CurrentTime{0.0}, m_DeltaTime{0.0};
 
@@ -285,6 +264,7 @@ struct ContextBase {
   VmaAllocator m_Allocator{VK_NULL_HANDLE};
 
   CtxResult m_ErrorState{CtxResult::Success};
+  Callback<ContextBase, ContextBase*> m_CallbackUpdate;
 
   CtxResult create_instance(const InstanceCreateInfo &info);
   CtxResult create_device(const DeviceCreateInfo &info,
@@ -307,6 +287,7 @@ protected:
   /// @param layerNames 被检查的数组
   /// @return 是否正确检查
   VkResult check_instance_layer(std::span<const char *> layerNames);
+#ifdef DEBUG
   /// @brief 合并pCallbackData内容为一个字符串输出
   /// @param pCallbackData 被合并的debug数据
   /// @return 表示debug信息的字符串
@@ -317,6 +298,7 @@ protected:
   VkResult create_debugger();
   void insert_debug_ext_layers(std::vector<const char *> &layerNames,
                                std::vector<const char *> &extensionNames);
+#endif // DEBUG
 
 protected:
   /// @brief 取得物理设备列表
@@ -471,9 +453,11 @@ class ContextTraits {
   get_phyDeviceVulkan14Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan14Features;
   }
+#ifdef DEBUG
   static inline VkDebugUtilsMessengerEXT get_debugger() {
     return s_CurrentContext->m_Debugger;
   }
+#endif // DEBUG
   static inline double get_current_time() {
     return s_CurrentContext->m_CurrentTime;
   }

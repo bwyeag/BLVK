@@ -25,7 +25,6 @@ SOFTWARE.
 #define BL_OUTPUT_HPP_FILE
 #include <chrono>
 #include <ctime>
-#include <initializer_list>
 #include <iostream>
 #include <print>
 #include <source_location>
@@ -84,13 +83,13 @@ std::ostream &operator<<(std::ostream &os, ConsoleColor data);
 std::ostream &operator<<(std::ostream &os, ConsoleBackgroundColor data);
 
 namespace _internal {
-// 打印文件位置
+/// @brief 打印文件位置
 inline void print_source_loc(std::ostream &stm,
                              const std::source_location &loc) {
   std::print(stm, "[{}->{}: {}]", loc.file_name(), loc.function_name(),
              loc.line());
 }
-// 打印时间点
+/// @brief 打印时间点
 inline void print_time(std::ostream &stm) {
   auto now = std::chrono::system_clock::now();
   auto now_ms = std::chrono::duration_cast<std::chrono::milliseconds>(
@@ -102,34 +101,35 @@ inline void print_time(std::ostream &stm) {
   else
     std::print(stm, "[{}.{}]", buf, now_ms.count() % 1000);
 }
-// 打印错误
+/// @brief 打印错误
 template <typename... Types>
 void print_error_internal(const std::source_location loc, const char *type,
                           const Types &...args) {
   std::cout << ConsoleColor::red;
   print_time(std::cout);
   print_source_loc(std::cout, loc);
-  std::cout << '[' << type << ']';
-  std::initializer_list<int>{([&args] { std::cout << args << ' '; }(), 0)...};
-  std::cout << '\n' << ConsoleColor::none;
+  std::cout << '[' << type << ']'
+            << ((std::cout << ... << (std::cout << args, ' ')), '\n')
+            << ConsoleColor::none;
 }
-// 打印警告
+/// @brief 打印警告
 template <typename... Types>
 void print_warning_internal(const std::source_location loc, const char *type,
                             const Types &...args) {
   std::cout << ConsoleColor::yellow;
   print_time(std::cout);
   print_source_loc(std::cout, loc);
-  std::cout << '[' << type << ']';
-  std::initializer_list<int>{([&args] { std::cout << args << ' '; }(), 0)...};
-  std::cout << '\n' << ConsoleColor::none;
+  std::cout << '[' << type << ']'
+            << ((std::cout << ... << (std::cout << args, ' ')), '\n')
+            << ConsoleColor::none;
 }
-// 打印输出
+/// @brief 打印输出
 template <typename... Types>
 void print_log_internal(const char *type, const Types &...args) {
-  std::cout << ConsoleColor::green << '[' << type << ']';
-  std::initializer_list<int>{([&args] { std::cout << args << ' '; }(), 0)...};
-  std::cout << '\n' << ConsoleColor::none;
+  std::cout << ConsoleColor::green;
+  std::cout << '[' << type << ']'
+            << ((std::cout << ... << (std::cout << args, ' ')), '\n')
+            << ConsoleColor::none;
 }
 
 template <typename T, typename Arg, typename... OtherArgs>
@@ -138,16 +138,15 @@ constexpr static bool is_all_same =
     (sizeof...(OtherArgs) > 0 ? is_all_same<T, OtherArgs...> : true);
 template <typename... Types>
 void print_errorcode_internal(const Types &...ecs) {
-  static_assert(_internal::is_all_same<std::error_code, Types...>,
+  static_assert(is_all_same<std::error_code, Types...>,
                 "Wrong Argument Types!");
   std::cout << ConsoleColor::red;
   print_time(std::cout);
-  std::initializer_list<int>{(
-      [&ecs] {
-        std::println(std::cout, "[{}] {}", ecs.category().name(),ecs.message());
-      }(),
-      0)...};
-  std::cout << '\n' << ConsoleColor::none;
+  (std::cout << ...
+             << (std::cout << '[' << ecs.category().name() << ']',
+                 ecs.message()))
+      << '\n'
+      << ConsoleColor::none;
 }
 } // namespace _internal
 #define print_error(type, ...)                                                 \
@@ -158,6 +157,6 @@ void print_errorcode_internal(const Types &...ecs) {
                                   __VA_ARGS__)
 #define print_log(type, ...) _internal::print_log_internal(type, __VA_ARGS__)
 #define print_errorcode(...) _internal::print_errorcode_internal(__VA_ARGS__)
-} // namespace BL
+} // namespace BLT
 #undef IS_WINDOWS
 #endif //! BL_OUTPUT_HPP_FILE

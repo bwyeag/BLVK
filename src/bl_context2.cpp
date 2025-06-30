@@ -22,11 +22,12 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
 // 本地include
-#include <bl_output.hpp>
 #include <bl_contexts2.hpp>
+#include <bl_output.hpp>
 // 标准库include
 #include <algorithm>
 #include <cstring>
+#include <mutex>
 #include <vector>
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
@@ -35,10 +36,10 @@ namespace BLT {
 // WindowContextBase_*** 类
 //*****************************************************************************
 
-std::once_flag WindowContextBase_glfw::s_InitOnce{};
+std::once_flag WindowContextBase_glfw::s_InitOnce_glfw{};
 CtxResult WindowContextBase_glfw::init_glfw() {
   static bool init_successful = false;
-  std::call_once(s_InitOnce, [] {
+  std::call_once(s_InitOnce_glfw, [] {
     if (!glfwInit() || !glfwVulkanSupported()) {
       print_error(s_TypeName, "Failed to initialize GLFW!");
       return;
@@ -149,11 +150,6 @@ VkResult WindowContextBase_glfw::make_surface(ContextBase &ctx,
                                               VkSurfaceKHR &surface) {
   return glfwCreateWindowSurface(ctx.m_Instance, m_pWindow, nullptr, &surface);
 }
-void WindowContextBase_glfw::get_window_size(uint32_t &width,
-                                             uint32_t &height) {
-  glfwGetWindowSize(m_pWindow, (int *)&width, (int *)&height);
-}
-
 //*****************************************************************************
 // Context 类
 //*****************************************************************************
@@ -162,6 +158,8 @@ void WindowContextBase_glfw::get_window_size(uint32_t &width,
 // create_instance() 部分
 
 CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
+  base_init();
+
   uint32_t current_version = 0u;
   if (acquire_vkapi_version(current_version)) {
     print_error(s_TypeName, "acquire_vkapi_version failed!");
@@ -183,14 +181,15 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
 
   auto extension_names = info.m_ExtensionNames;
   auto layer_names = info.m_LayerNames;
+#ifdef DEBUG
   if (info.m_isDebuging)
     insert_debug_ext_layers(layer_names, extension_names);
-
+#endif // DEBUG
   {
     uint32_t extension_count = 0;
     const char **ppExtensionNames;
     ppExtensionNames = glfwGetRequiredInstanceExtensions(&extension_count);
-    if (!ppExtensionNames) {
+    if (!ppExtensionNames && !glfwVulkanSupported()) {
       print_error(s_TypeName, "Vulkan is not available on this "
                               "machine!");
       return CtxResult::AcquireGlfwExtFailed;
@@ -247,12 +246,14 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
             "Vulkan API Version:", VK_API_VERSION_MAJOR(m_VulkanApiVersion),
             VK_API_VERSION_MINOR(m_VulkanApiVersion),
             VK_API_VERSION_PATCH(m_VulkanApiVersion));
+#ifdef DEBUG
   if (info.m_isDebuging)
     if (VkResult result = create_debugger()) {
       print_error(s_TypeName,
                   "create debug failed! Code:", string_VkResult(result));
       return CtxResult::DebugCreateFailed;
     }
+#endif // DEBUG
   return CtxResult::Success;
 }
 VkResult ContextBase::acquire_vkapi_version(uint32_t &version) {
@@ -325,6 +326,7 @@ VkResult ContextBase::check_instance_layer(std::span<const char *> layerNames) {
     std::fill(layerNames.begin(), layerNames.end(), nullptr);
   return VK_SUCCESS;
 }
+#ifdef DEBUG
 std::string ContextBase::combine_debug_message(
     const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData) {
   auto &sstm = acquire_local_data().m_LocalSstream;
@@ -420,8 +422,8 @@ void ContextBase::insert_debug_ext_layers(
     std::vector<const char *> &extensionNames) {
   layerNames.push_back("VK_LAYER_KHRONOS_validation");
   extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
-  // extensionNames.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 }
+#endif // DEBUG
 //*****************************************************************************
 // create_device() 部分
 
@@ -870,5 +872,6 @@ void ContextBase::update() {
   double time_now = glfwGetTime();
   m_DeltaTime = time_now - m_CurrentTime;
   m_CurrentTime = time_now;
+  m_CallbackUpdate.iterate(this);
 }
 } // namespace BLT

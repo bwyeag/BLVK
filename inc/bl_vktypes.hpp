@@ -19,18 +19,20 @@ FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
 AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE. 
+SOFTWARE.
 ******************************************************************************/
 #ifndef BOUNDLESS_TYPES_FILE
 #define BOUNDLESS_TYPES_FILE
+// 本地include
+#include <bl_contexts2.hpp>
+#include <bl_util.hpp>
+// 外部库include
 #include "vma/vk_mem_alloc.h"
 #include "vulkan/vk_enum_string_helper.h"
 #include "vulkan/vulkan_core.h"
+// 标准库include
 #include <cstdint>
 #include <cstring>
-#include <bl_contexts2.hpp>
-#include <bl_output.hpp>
-#include <vulkan/vulkan.h>
 
 namespace BLT {
 /*
@@ -1365,7 +1367,7 @@ public:
     return create(createInfo);
   }
 };
-} // namespace BL
+} // namespace BLT
 #ifdef forceinline
 #undef forceinline
 #endif
