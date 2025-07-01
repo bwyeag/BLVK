@@ -37,6 +37,10 @@ namespace BLT {
 //*****************************************************************************
 
 std::once_flag WindowContextBase_glfw::s_InitOnce_glfw{};
+VkResult WindowContextBase_glfw::make_surface(VkInstance instance,
+                                              VkSurfaceKHR &surface) {
+  return glfwCreateWindowSurface(instance, m_pWindow, nullptr, &surface);
+}
 CtxResult WindowContextBase_glfw::init_glfw() {
   static bool init_successful = false;
   std::call_once(s_InitOnce_glfw, [] {
@@ -146,10 +150,6 @@ void WindowContextBase_glfw::cleanup_base() noexcept {
     glfwDestroyWindow(m_pWindow), m_pWindow = nullptr;
   m_pMonitor = nullptr, m_Title.clear();
 }
-VkResult WindowContextBase_glfw::make_surface(ContextBase &ctx,
-                                              VkSurfaceKHR &surface) {
-  return glfwCreateWindowSurface(ctx.m_Instance, m_pWindow, nullptr, &surface);
-}
 //*****************************************************************************
 // Context 类
 //*****************************************************************************
@@ -158,8 +158,6 @@ VkResult WindowContextBase_glfw::make_surface(ContextBase &ctx,
 // create_instance() 部分
 
 CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
-  base_init();
-
   uint32_t current_version = 0u;
   if (acquire_vkapi_version(current_version)) {
     print_error(s_TypeName, "acquire_vkapi_version failed!");
@@ -186,6 +184,7 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
     insert_debug_ext_layers(layer_names, extension_names);
 #endif // DEBUG
   {
+    WindowContextBase_glfw::init_glfw();
     uint32_t extension_count = 0;
     const char **ppExtensionNames;
     ppExtensionNames = glfwGetRequiredInstanceExtensions(&extension_count);

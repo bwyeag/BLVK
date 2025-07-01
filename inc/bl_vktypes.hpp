@@ -21,8 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#ifndef BOUNDLESS_TYPES_FILE
-#define BOUNDLESS_TYPES_FILE
+#ifndef _BL_VKTYPES_FILE_ 
+#define _BL_VKTYPES_FILE_
 // 本地include
 #include <bl_contexts2.hpp>
 #include <bl_util.hpp>
@@ -42,7 +42,7 @@ constexpr VkFenceCreateInfo
 make_fence_createinfo(VkFenceCreateFlags flags = 0) {
   return {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = flags};
 }
-template <typename _Context = ContextTraits> class Fence {
+template <typename _Ctx = ContextTraits> class Fence {
   VkFence handle = VK_NULL_HANDLE;
 
 public:
@@ -55,21 +55,21 @@ public:
   }
   ~Fence() {
     if (handle)
-      vkDestroyFence(_Context::get_device(), handle, nullptr);
+      vkDestroyFence(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkFence() { return handle; }
   VkFence *get_pointer() { return &handle; }
   VkResult wait(uint64_t time = UINT64_MAX) const {
     VkResult result =
-        vkWaitForFences(_Context::get_device(), 1, &handle, false, time);
+        vkWaitForFences(_Ctx::get_device(), 1, &handle, false, time);
     if (result)
       print_error("Fence", "Failed to wait for the fence! Code:",
                   string_VkResult(result));
     return result;
   }
   VkResult reset() const {
-    VkResult result = vkResetFences(_Context::get_device(), 1, &handle);
+    VkResult result = vkResetFences(_Ctx::get_device(), 1, &handle);
     if (result)
       print_error("Fence", "Failed to reset for the fence! Code:",
                   string_VkResult(result));
@@ -80,7 +80,7 @@ public:
     return result;
   }
   VkResult status() const {
-    VkResult result = vkGetFenceStatus(_Context::get_device(), handle);
+    VkResult result = vkGetFenceStatus(_Ctx::get_device(), handle);
     if (result <
         0) // vkGetFenceStatus(...)成功时有两种结果，所以不能仅仅判断result是否非0
       print_error("Fence", "Failed to get the status of the fence! Code:",
@@ -89,7 +89,7 @@ public:
   }
   VkResult create(VkFenceCreateInfo &createInfo) {
     VkResult result =
-        vkCreateFence(_Context::get_device(), &createInfo, nullptr, &handle);
+        vkCreateFence(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result)
       print_error("Fence",
                   "Failed to create a fence! Code:", string_VkResult(result));
@@ -104,7 +104,7 @@ public:
 constexpr VkSemaphoreCreateInfo make_semaphore_createinfo() {
   return {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 }
-template <typename _Context = ContextTraits> class Semaphore {
+template <typename _Ctx = ContextTraits> class Semaphore {
   VkSemaphore handle = VK_NULL_HANDLE;
 
 public:
@@ -116,13 +116,13 @@ public:
   }
   ~Semaphore() {
     if (handle)
-      vkDestroySemaphore(_Context::get_device(), handle, nullptr);
+      vkDestroySemaphore(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkSemaphore() { return handle; }
   VkSemaphore *get_pointer() { return &handle; }
   VkResult create(VkSemaphoreCreateInfo &createInfo) {
-    VkResult result = vkCreateSemaphore(_Context::get_device(), &createInfo,
+    VkResult result = vkCreateSemaphore(_Ctx::get_device(), &createInfo,
                                         nullptr, &handle);
     if (result)
       print_error("Semaphore", "Failed to create a semaphore! Code:",
@@ -135,9 +135,9 @@ public:
     return create(createInfo);
   }
 };
-template <typename _Context> class CommandPool;
-template <typename _Context = ContextTraits> class CommandBuffer {
-  friend class CommandPool<_Context>;
+template <typename _Ctx> class CommandPool;
+template <typename _Ctx = ContextTraits> class CommandBuffer {
+  friend class CommandPool<_Ctx>;
   VkCommandBuffer handle = VK_NULL_HANDLE;
 
 public:
@@ -175,11 +175,11 @@ make_commandpool_createinfo(uint32_t queueFamilyIndex,
           .flags = flags,
           .queueFamilyIndex = queueFamilyIndex};
 }
-template <typename _Context = ContextTraits> class CommandPool {
+template <typename _Ctx = ContextTraits> class CommandPool {
   VkCommandPool handle = VK_NULL_HANDLE;
 
 public:
-  typedef CommandBuffer<_Context> CmdBuffer;
+  using CmdBuffer = CommandBuffer<_Ctx>;
   CommandPool() = default;
   explicit CommandPool(VkCommandPoolCreateInfo &createInfo) {
     create(createInfo);
@@ -193,7 +193,7 @@ public:
   }
   ~CommandPool() {
     if (handle)
-      vkDestroyCommandPool(_Context::get_device(), handle, nullptr);
+      vkDestroyCommandPool(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkCommandPool() { return handle; }
@@ -207,7 +207,7 @@ public:
         .level = level,
         .commandBufferCount = 1};
     VkResult result = vkAllocateCommandBuffers(
-        _Context::get_device(), &allocateInfo, (VkCommandBuffer *)pBuffer);
+        _Ctx::get_device(), &allocateInfo, (VkCommandBuffer *)pBuffer);
     if (result) {
       print_error("CommandPool", "Failed to allocate", 1,
                   "command buffer(s)! Code:", string_VkResult(result));
@@ -223,7 +223,7 @@ public:
         .level = level,
         .commandBufferCount = count};
     VkResult result = vkAllocateCommandBuffers(
-        _Context::get_device(), &allocateInfo, (VkCommandBuffer *)pBuffers);
+        _Ctx::get_device(), &allocateInfo, (VkCommandBuffer *)pBuffers);
     if (result) {
       print_error("CommandPool", "Failed to allocate", count,
                   "command buffer(s)! Code:", string_VkResult(result));
@@ -231,17 +231,17 @@ public:
     return result;
   }
   void free_buffer(CmdBuffer *pBuffer) const {
-    vkFreeCommandBuffers(_Context::get_device(), handle, 1,
+    vkFreeCommandBuffers(_Ctx::get_device(), handle, 1,
                          pBuffer->get_pointer());
     pBuffer->handle = VK_NULL_HANDLE;
   }
   void free_buffers(CmdBuffer *pBuffers, uint32_t count) const {
-    vkFreeCommandBuffers(_Context::get_device(), handle, count,
+    vkFreeCommandBuffers(_Ctx::get_device(), handle, count,
                          (VkCommandBuffer *)pBuffers);
     std::memset((void *)pBuffers, 0, sizeof(VkCommandBuffer) * count);
   }
   VkResult create(VkCommandPoolCreateInfo &createInfo) {
-    VkResult result = vkCreateCommandPool(_Context::get_device(), &createInfo,
+    VkResult result = vkCreateCommandPool(_Ctx::get_device(), &createInfo,
                                           nullptr, &handle);
     if (result) {
       print_error("commandPool", "Failed to create a command pool! Code:",
@@ -258,7 +258,7 @@ public:
     return create(createInfo);
   }
 };
-template <typename _Context = ContextTraits> class RenderPass {
+template <typename _Ctx = ContextTraits> class RenderPass {
   VkRenderPass handle = VK_NULL_HANDLE;
 
 public:
@@ -273,7 +273,7 @@ public:
   VkRenderPass *get_pointer() { return &handle; }
   void destroy() {
     if (handle)
-      vkDestroyRenderPass(_Context::get_device(), handle, nullptr);
+      vkDestroyRenderPass(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   void cmd_begin(
@@ -302,7 +302,7 @@ public:
   }
   void cmd_end(VkCommandBuffer cmdBuf) const { vkCmdEndRenderPass(cmdBuf); }
   VkResult create(VkRenderPassCreateInfo &createInfo) {
-    VkResult result = vkCreateRenderPass(_Context::get_device(), &createInfo,
+    VkResult result = vkCreateRenderPass(_Ctx::get_device(), &createInfo,
                                          nullptr, &handle);
     if (result) {
       print_error("renderPass", "Failed to create a render pass! Code:",
@@ -311,7 +311,7 @@ public:
     return result;
   }
 };
-template <typename _Context = ContextTraits> class Framebuffer {
+template <typename _Ctx = ContextTraits> class Framebuffer {
   VkFramebuffer handle = VK_NULL_HANDLE;
 
 public:
@@ -325,7 +325,7 @@ public:
   operator VkFramebuffer() { return handle; }
   VkFramebuffer *get_pointer() { return &handle; }
   VkResult create(VkFramebufferCreateInfo &createInfo) {
-    VkResult result = vkCreateFramebuffer(_Context::get_device(), &createInfo,
+    VkResult result = vkCreateFramebuffer(_Ctx::get_device(), &createInfo,
                                           nullptr, &handle);
     if (result) {
       print_error("framebuffer", "Failed to create a framebuffer Code:",
@@ -335,7 +335,7 @@ public:
   }
   void destroy() {
     if (handle)
-      vkDestroyFramebuffer(_Context::get_device(), handle, nullptr);
+      vkDestroyFramebuffer(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
 };
@@ -458,7 +458,7 @@ private:
     dynamicStateCi.pDynamicStates = dynamicStates.data();
   }
 };
-template <typename _Context = ContextTraits> class PipelineLayout {
+template <typename _Ctx = ContextTraits> class PipelineLayout {
   VkPipelineLayout handle = VK_NULL_HANDLE;
 
 public:
@@ -470,14 +470,14 @@ public:
   }
   ~PipelineLayout() {
     if (handle)
-      vkDestroyPipelineLayout(_Context::get_device(), handle, nullptr);
+      vkDestroyPipelineLayout(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkPipelineLayout() { return handle; }
   VkPipelineLayout *get_pointer() { return &handle; }
 
   VkResult create(VkPipelineLayoutCreateInfo &createInfo) {
-    VkResult result = vkCreatePipelineLayout(_Context::get_device(),
+    VkResult result = vkCreatePipelineLayout(_Ctx::get_device(),
                                              &createInfo, nullptr, &handle);
     if (result) {
       print_error("pipelineLayout", "create pipelineLayout failed! Code: ",
@@ -486,7 +486,7 @@ public:
     return result;
   }
 };
-template <typename _Context = ContextTraits> class Pipeline {
+template <typename _Ctx = ContextTraits> class Pipeline {
   VkPipeline handle = VK_NULL_HANDLE;
 
 public:
@@ -497,12 +497,12 @@ public:
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
-  ~Pipeline() { vkDestroyPipeline(_Context::get_device(), handle, nullptr); }
+  ~Pipeline() { vkDestroyPipeline(_Ctx::get_device(), handle, nullptr); }
   operator VkPipeline() { return handle; }
   VkPipeline *get_pointer() { return &handle; }
   VkResult create(VkGraphicsPipelineCreateInfo &createInfo) {
     VkResult result =
-        vkCreateGraphicsPipelines(_Context::get_device(), VK_NULL_HANDLE, 1,
+        vkCreateGraphicsPipelines(_Ctx::get_device(), VK_NULL_HANDLE, 1,
                                   &createInfo, nullptr, &handle);
     if (result) {
       print_error("pipeline", "Failed to create a graphics pipeline! Code:",
@@ -512,7 +512,7 @@ public:
   }
   VkResult create(VkComputePipelineCreateInfo &createInfo) {
     VkResult result =
-        vkCreateComputePipelines(_Context::get_device(), VK_NULL_HANDLE, 1,
+        vkCreateComputePipelines(_Ctx::get_device(), VK_NULL_HANDLE, 1,
                                  &createInfo, nullptr, &handle);
     if (result) {
       print_error("pipeline", "Failed to create a compute pipeline! Code:",
@@ -522,7 +522,7 @@ public:
     return result;
   }
 };
-template <typename _Context = ContextTraits> class Buffer {
+template <typename _Ctx = ContextTraits> class Buffer {
 protected:
   VkBuffer handle = VK_NULL_HANDLE;
   VmaAllocation allocation = VK_NULL_HANDLE;
@@ -549,14 +549,14 @@ public:
   operator VmaAllocation() { return allocation; }
   VmaAllocation getAllocation() { return allocation; }
   ~Buffer() {
-    vmaDestroyBuffer(_Context::get_allocator(), handle, allocation);
+    vmaDestroyBuffer(_Ctx::get_allocator(), handle, allocation);
     handle = VK_NULL_HANDLE;
     allocation = VK_NULL_HANDLE;
   }
   VkResult transfer_data(const void *pData, VkDeviceSize length,
                          VkDeviceSize offset = 0) {
     VkResult result = vmaCopyMemoryToAllocation(
-        _Context::get_allocator(), pData, allocation, offset, length);
+        _Ctx::get_allocator(), pData, allocation, offset, length);
     if (result) {
       print_error("Buffer",
                   "transfer_data() failed! Code:", string_VkResult(result));
@@ -566,7 +566,7 @@ public:
   VkResult retrieve_data(void *pData, VkDeviceSize length,
                          VkDeviceSize offset = 0) {
     VkResult result = vmaCopyAllocationToMemory(
-        _Context::get_allocator(), allocation, offset, pData, length);
+        _Ctx::get_allocator(), allocation, offset, pData, length);
     if (result) {
       print_error("Buffer",
                   "retrieve_data() failed! Code:", string_VkResult(result));
@@ -576,17 +576,17 @@ public:
   void *map_data() {
     void *data = nullptr;
     VkResult result =
-        vmaMapMemory(_Context::get_allocator(), allocation, &data);
+        vmaMapMemory(_Ctx::get_allocator(), allocation, &data);
     if (result) {
       print_error("Buffer",
                   "map_data() failed! Code:", string_VkResult(result));
     }
     return data;
   }
-  void unmap_data() { vmaUnmapMemory(_Context::get_allocator(), allocation); }
+  void unmap_data() { vmaUnmapMemory(_Ctx::get_allocator(), allocation); }
   VkResult flush_data(VkDeviceSize offset = 0,
                       VkDeviceSize length = VK_WHOLE_SIZE) {
-    VkResult result = vmaFlushAllocation(_Context::get_allocator(), allocation,
+    VkResult result = vmaFlushAllocation(_Ctx::get_allocator(), allocation,
                                          offset, length);
     if (result) {
       print_error("Buffer",
@@ -596,7 +596,7 @@ public:
   }
   VkResult invalidate_data(VkDeviceSize offset = 0,
                            VkDeviceSize length = VK_WHOLE_SIZE) {
-    VkResult result = vmaInvalidateAllocation(_Context::get_allocator(),
+    VkResult result = vmaInvalidateAllocation(_Ctx::get_allocator(),
                                               allocation, offset, length);
     if (result) {
       print_error("Buffer",
@@ -607,7 +607,7 @@ public:
   VkResult allocate(VkBufferCreateInfo &createInfo,
                     VmaAllocationCreateInfo &allocInfo) {
     VkResult result =
-        vmaCreateBuffer(_Context::get_allocator(), &createInfo, &allocInfo,
+        vmaCreateBuffer(_Ctx::get_allocator(), &createInfo, &allocInfo,
                         &handle, &allocation, nullptr);
     if (result) {
       print_error("Buffer", "VMA error when create Buffer. Code:",
@@ -629,15 +629,15 @@ public:
     return allocate(createInfo, allocInfo);
   }
 };
-template <typename _Context>
+template <typename _Ctx>
 VkDeviceSize calculate_block_alignment(VkDeviceSize size) {
   static const VkDeviceSize uniformAlignment =
-      _Context::get_phydevice_memory_properties()
+      _Ctx::get_phydevice_memory_properties()
           .properties.limits.minUniformBufferOffsetAlignment;
   return ((uniformAlignment + size - 1) & ~(uniformAlignment - 1));
 }
-template <typename _Context = ContextTraits>
-class IndexBuffer : public Buffer<_Context> {
+template <typename _Ctx = ContextTraits>
+class IndexBuffer : public Buffer<_Ctx> {
 public:
   IndexBuffer() = default;
   IndexBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
@@ -646,7 +646,7 @@ public:
     create(block_size, flags, other_usage, sharing_mode);
   }
   IndexBuffer(IndexBuffer &&other) noexcept
-      : Buffer<_Context>(std::move(other)) {}
+      : Buffer<_Ctx>(std::move(other)) {}
   operator VkBuffer() { return this->handle; }
   VkBuffer *get_pointer() { return &this->handle; }
   ~IndexBuffer() {}
@@ -661,8 +661,8 @@ public:
     return result;
   }
 };
-template <typename _Context = ContextTraits>
-class VertexBuffer : protected Buffer<_Context> {
+template <typename _Ctx = ContextTraits>
+class VertexBuffer : protected Buffer<_Ctx> {
 public:
   VertexBuffer() = default;
   VertexBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
@@ -671,7 +671,7 @@ public:
     create(block_size, flags, other_usage, sharing_mode);
   }
   VertexBuffer(VertexBuffer &&other) noexcept
-      : Buffer<_Context>(std::move(other)) {}
+      : Buffer<_Ctx>(std::move(other)) {}
   operator VkBuffer() { return this->handle; }
   VkBuffer *get_pointer() { return &this->handle; }
   ~VertexBuffer() {}
@@ -686,8 +686,8 @@ public:
     return result;
   }
 };
-template <typename _Context = ContextTraits>
-class TransferBuffer : protected Buffer<_Context> {
+template <typename _Ctx = ContextTraits>
+class TransferBuffer : protected Buffer<_Ctx> {
 protected:
   void *pBufferData;
   VkDeviceSize bufferSize;
@@ -700,7 +700,7 @@ public:
     create(block_size, flags, other_usage, sharing_mode);
   }
   TransferBuffer(TransferBuffer &&other) noexcept
-      : Buffer<_Context>(std::move(other)) {}
+      : Buffer<_Ctx>(std::move(other)) {}
   operator VkBuffer() { return this->handle; }
   VkBuffer *get_pointer() { return &this->handle; }
   void *get_pdata() { return pBufferData; }
@@ -711,7 +711,7 @@ public:
     if (bufferSize >= new_size)
       return VK_SUCCESS;
     else {
-      vmaDestroyBuffer(_Context::get_allocator(), this->handle,
+      vmaDestroyBuffer(_Ctx::get_allocator(), this->handle,
                        this->allocation);
       return create(new_size, flags, other_usage, sharing_mode);
     }
@@ -772,15 +772,15 @@ public:
             VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
         VMA_MEMORY_USAGE_AUTO_PREFER_HOST, sharing_mode);
     VmaAllocationInfo allocInfo;
-    vmaGetAllocationInfo(_Context::get_allocator(), this->allocation,
+    vmaGetAllocationInfo(_Ctx::get_allocator(), this->allocation,
                          &allocInfo);
     pBufferData = allocInfo.pMappedData;
     bufferSize = allocInfo.size;
     return result;
   }
 };
-template <typename _Context = ContextTraits>
-class UniformBuffer : protected Buffer<_Context> {
+template <typename _Ctx = ContextTraits>
+class UniformBuffer : protected Buffer<_Ctx> {
 protected:
   void *pBufferData;
   VkDeviceSize blockOffset, blockSize;
@@ -793,7 +793,7 @@ public:
     create(blockSize, flags, other_usage, sharing_mode);
   }
   UniformBuffer(UniformBuffer &&other) noexcept
-      : Buffer<_Context>(std::move(other)) {
+      : Buffer<_Ctx>(std::move(other)) {
     pBufferData = other.pBufferData;
     other.pBufferData = nullptr;
     blockOffset = other.blockOffset;
@@ -803,14 +803,14 @@ public:
   VkBuffer *get_pointer() { return &this->handle; }
   ~UniformBuffer() { pBufferData = nullptr; }
   void transfer_data(const void *pData) {
-    for (uint32_t i = 0; i < _Context::get_inflight_maxnum(); i++) {
+    for (uint32_t i = 0; i < _Ctx::get_inflight_maxnum(); i++) {
       memcpy((uint8_t *)pBufferData + i * blockOffset, pData, blockSize);
     }
     this->flush_data();
   }
   void transfer_data(const void *pData, uint32_t size, uint32_t offset) {
     uint32_t d;
-    for (uint32_t i = 0; i < _Context::get_inflight_maxnum(); i++) {
+    for (uint32_t i = 0; i < _Ctx::get_inflight_maxnum(); i++) {
       d = i * blockOffset + offset;
       memcpy((uint8_t *)pBufferData + d, pData, size);
       this->flush_data(d, size);
@@ -823,22 +823,22 @@ public:
   VkResult create(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
                   VkBufferUsageFlags other_usage = 0,
                   VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
-    blockOffset = calculate_block_alignment<_Context>(block_size);
+    blockOffset = calculate_block_alignment<_Ctx>(block_size);
     blockSize = block_size;
     VkResult result = this->allocate(
-        blockOffset * _Context::get_inflight_maxnum(), flags,
+        blockOffset * _Ctx::get_inflight_maxnum(), flags,
         VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT | other_usage,
         VMA_ALLOCATION_CREATE_MAPPED_BIT |
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO, sharing_mode);
     VmaAllocationInfo allocInfo;
-    vmaGetAllocationInfo(_Context::get_allocator(), this->allocation,
+    vmaGetAllocationInfo(_Ctx::get_allocator(), this->allocation,
                          &allocInfo);
     pBufferData = allocInfo.pMappedData;
     return result;
   }
 };
-template <typename _Context = ContextTraits> class BufferView {
+template <typename _Ctx = ContextTraits> class BufferView {
   VkBufferView handle = VK_NULL_HANDLE;
 
 public:
@@ -854,13 +854,13 @@ public:
   }
   ~BufferView() {
     if (handle)
-      vkDestroyBufferView(_Context::get_device(), handle, nullptr);
+      vkDestroyBufferView(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkBufferView() { return handle; }
   VkBufferView *get_pointer() { return &handle; }
   VkResult create(VkBufferViewCreateInfo &createInfo) {
-    VkResult result = vkCreateBufferView(_Context::get_device(), &createInfo,
+    VkResult result = vkCreateBufferView(_Ctx::get_device(), &createInfo,
                                          nullptr, &handle);
     if (result) {
       print_error("BufferView", "Failed to create a buffer view! Code:",
@@ -881,7 +881,7 @@ public:
 };
 // 图像数据类
 // 指定格式时使用 vk_format_utils.h 的内容
-template <typename _Context = ContextTraits> class Image {
+template <typename _Ctx = ContextTraits> class Image {
   VkImage handle = VK_NULL_HANDLE;
   VmaAllocation allocation = VK_NULL_HANDLE;
 
@@ -897,7 +897,7 @@ public:
     other.allocation = VK_NULL_HANDLE;
   }
   ~Image() {
-    vmaDestroyImage(_Context::get_allocator(), handle, allocation);
+    vmaDestroyImage(_Ctx::get_allocator(), handle, allocation);
     handle = VK_NULL_HANDLE;
     allocation = VK_NULL_HANDLE;
   }
@@ -907,7 +907,7 @@ public:
   VmaAllocation getAllocation() { return allocation; }
   VkResult create(VkImageCreateInfo &createInfo,
                   VmaAllocationCreateInfo &allocInfo) {
-    VkResult result = vmaCreateImage(_Context::get_allocator(), &createInfo,
+    VkResult result = vmaCreateImage(_Ctx::get_allocator(), &createInfo,
                                      &allocInfo, &handle, &allocation, nullptr);
     if (result) {
       print_error("image",
@@ -916,7 +916,7 @@ public:
     return result;
   }
 };
-template <typename _Context = ContextTraits> class ImageView {
+template <typename _Ctx = ContextTraits> class ImageView {
   VkImageView handle = VK_NULL_HANDLE;
 
 public:
@@ -933,13 +933,13 @@ public:
   }
   ~ImageView() {
     if (handle)
-      vkDestroyImageView(_Context::get_device(), handle, nullptr);
+      vkDestroyImageView(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkImageView() { return handle; }
   VkImageView *get_pointer() { return &handle; }
   VkResult allocate(VkImageViewCreateInfo &createInfo) {
-    VkResult result = vkCreateImageView(_Context::get_device(), &createInfo,
+    VkResult result = vkCreateImageView(_Ctx::get_device(), &createInfo,
                                         nullptr, &handle);
     if (result) {
       print_error("ImageView",
@@ -962,7 +962,7 @@ public:
     return allocate(createInfo);
   }
 };
-template <typename _Context = ContextTraits> class Sampler {
+template <typename _Ctx = ContextTraits> class Sampler {
   VkSampler handle = VK_NULL_HANDLE;
 
 public:
@@ -974,14 +974,14 @@ public:
   }
   ~Sampler() {
     if (handle)
-      vkDestroySampler(_Context::get_device(), handle, nullptr);
+      vkDestroySampler(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkSampler() { return handle; }
   VkSampler *get_pointer() { return &handle; }
   VkResult create(VkSamplerCreateInfo &createInfo) {
     VkResult result =
-        vkCreateSampler(_Context::get_device(), &createInfo, nullptr, &handle);
+        vkCreateSampler(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
       print_error("Sampler",
                   "Failed to create a Sampler! Code:", string_VkResult(result));
@@ -989,7 +989,7 @@ public:
     return result;
   }
 };
-template <typename _Context = ContextTraits> class DescriptorSetLayout {
+template <typename _Ctx = ContextTraits> class DescriptorSetLayout {
   VkDescriptorSetLayout handle = VK_NULL_HANDLE;
 
 public:
@@ -1003,14 +1003,14 @@ public:
   }
   ~DescriptorSetLayout() {
     if (handle)
-      vkDestroyDescriptorSetLayout(_Context::get_device(), handle, nullptr);
+      vkDestroyDescriptorSetLayout(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkDescriptorSetLayout() { return handle; }
   VkDescriptorSetLayout *get_pointer() { return &handle; }
   VkResult create(VkDescriptorSetLayoutCreateInfo &createInfo) {
     VkResult result = vkCreateDescriptorSetLayout(
-        _Context::get_device(), &createInfo, nullptr, &handle);
+        _Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
       print_error("DescriptorSetLayout",
                   "Failed to create a descriptor set layout! Code:",
@@ -1019,9 +1019,9 @@ public:
     return result;
   }
 };
-template <typename _Context> class DescriptorPool;
-template <typename _Context = ContextTraits> class DescriptorSet {
-  friend class DescriptorPool<_Context>;
+template <typename _Ctx> class DescriptorPool;
+template <typename _Ctx = ContextTraits> class DescriptorSet {
+  friend class DescriptorPool<_Ctx>;
   VkDescriptorSet handle = VK_NULL_HANDLE;
 
 public:
@@ -1072,19 +1072,19 @@ public:
     update(&writeDescriptorSet);
   }
   static void update(VkWriteDescriptorSet *write) {
-    vkUpdateDescriptorSets(_Context::get_device(), 1, write, 0, nullptr);
+    vkUpdateDescriptorSets(_Ctx::get_device(), 1, write, 0, nullptr);
   }
   static void update(VkWriteDescriptorSet *write, VkCopyDescriptorSet *copy) {
-    vkUpdateDescriptorSets(_Context::get_device(), 1, write, 1, copy);
+    vkUpdateDescriptorSets(_Ctx::get_device(), 1, write, 1, copy);
   }
   static void update(uint32_t writeCount, VkWriteDescriptorSet *writes,
                      uint32_t copiesCount = 0,
                      VkCopyDescriptorSet *copies = nullptr) {
-    vkUpdateDescriptorSets(_Context::get_device(), writeCount, writes,
+    vkUpdateDescriptorSets(_Ctx::get_device(), writeCount, writes,
                            copiesCount, copies);
   }
 };
-template <typename _Context = ContextTraits> class DescriptorPool {
+template <typename _Ctx = ContextTraits> class DescriptorPool {
   VkDescriptorPool handle = VK_NULL_HANDLE;
 
 public:
@@ -1103,7 +1103,7 @@ public:
   }
   ~DescriptorPool() {
     if (handle) {
-      vkDestroyDescriptorPool(_Context::get_device(), handle, nullptr);
+      vkDestroyDescriptorPool(_Ctx::get_device(), handle, nullptr);
     }
     handle = VK_NULL_HANDLE;
   }
@@ -1119,7 +1119,7 @@ public:
         .descriptorSetCount = setCount,
         .pSetLayouts = setLayouts};
     VkResult result =
-        vkAllocateDescriptorSets(_Context::get_device(), &allocateInfo, sets);
+        vkAllocateDescriptorSets(_Ctx::get_device(), &allocateInfo, sets);
     if (result) {
       print_error("DescriptorPool",
                   "Failed to allocate descriptor "
@@ -1130,12 +1130,12 @@ public:
   }
   VkResult free_sets(uint32_t setCount, VkDescriptorSet *sets) const {
     VkResult result =
-        vkFreeDescriptorSets(_Context::get_device(), handle, setCount, sets);
+        vkFreeDescriptorSets(_Ctx::get_device(), handle, setCount, sets);
     memset(sets, 0, setCount * sizeof(VkDescriptorSet));
     return result;
   }
   VkResult create(const VkDescriptorPoolCreateInfo &createInfo) {
-    VkResult result = vkCreateDescriptorPool(_Context::get_device(),
+    VkResult result = vkCreateDescriptorPool(_Ctx::get_device(),
                                              &createInfo, nullptr, &handle);
     if (result) {
       print_error("DescriptorPool",
@@ -1157,7 +1157,7 @@ public:
     return create(createInfo);
   }
 };
-template <typename _Context = ContextTraits> class QueryPool {
+template <typename _Ctx = ContextTraits> class QueryPool {
   VkQueryPool handle = VK_NULL_HANDLE;
 
 public:
@@ -1174,7 +1174,7 @@ public:
   }
   ~QueryPool() {
     if (handle)
-      vkDestroyQueryPool(_Context::get_device(), handle, nullptr);
+      vkDestroyQueryPool(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkQueryPool() { return handle; }
@@ -1206,7 +1206,7 @@ public:
                        size_t dataSize, void *pData_dst, VkDeviceSize stride,
                        VkQueryResultFlags flags = 0) const {
     VkResult result =
-        vkGetQueryPoolResults(_Context::get_device(), handle, firstQueryIndex,
+        vkGetQueryPoolResults(_Ctx::get_device(), handle, firstQueryIndex,
                               queryCount, dataSize, pData_dst, stride, flags);
     if (result) {
       result > 0
@@ -1219,11 +1219,11 @@ public:
     return result;
   }
   void reset(uint32_t firstQueryIndex, uint32_t queryCount) {
-    vkResetQueryPool(_Context::get_device(), handle, firstQueryIndex,
+    vkResetQueryPool(_Ctx::get_device(), handle, firstQueryIndex,
                      queryCount);
   }
   VkResult create(VkQueryPoolCreateInfo &createInfo) {
-    VkResult result = vkCreateQueryPool(_Context::get_device(), &createInfo,
+    VkResult result = vkCreateQueryPool(_Ctx::get_device(), &createInfo,
                                         nullptr, &handle);
     if (result) {
       print_error("QueryPool", "Failed to create a query pool! Code:",
@@ -1242,9 +1242,9 @@ public:
     return create(createInfo);
   }
 };
-template <typename _Context = ContextTraits> class OcclusionQueries {
+template <typename _Ctx = ContextTraits> class OcclusionQueries {
 protected:
-  QueryPool<_Context> queryPool;
+  QueryPool<_Ctx> queryPool;
   std::vector<uint32_t> occlusionResults;
 
 public:
@@ -1288,7 +1288,7 @@ public:
                                  occlusionResults.data(), 4);
   }
 };
-template <typename _Context = ContextTraits> class Event {
+template <typename _Ctx = ContextTraits> class Event {
   VkEvent handle = VK_NULL_HANDLE;
 
 public:
@@ -1300,7 +1300,7 @@ public:
   }
   ~Event() {
     if (handle)
-      vkDestroyEvent(_Context::get_device(), handle, nullptr);
+      vkDestroyEvent(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
   operator VkEvent() { return handle; }
@@ -1326,7 +1326,7 @@ public:
                     imageMemoryBarrierCount, imageMemoryBarriers);
   }
   VkResult set() const {
-    VkResult result = vkSetEvent(_Context::get_device(), handle);
+    VkResult result = vkSetEvent(_Ctx::get_device(), handle);
     if (result) {
       print_error("Event",
                   "Failed to singal the event! Code:", string_VkResult(result));
@@ -1334,7 +1334,7 @@ public:
     return result;
   }
   VkResult reset() const {
-    VkResult result = vkResetEvent(_Context::get_device(), handle);
+    VkResult result = vkResetEvent(_Ctx::get_device(), handle);
     if (result) {
       print_error("Event", "Failed to unsingal the event! Code:",
                   string_VkResult(result));
@@ -1342,7 +1342,7 @@ public:
     return result;
   }
   VkResult status() const {
-    VkResult result = vkGetEventStatus(_Context::get_device(), handle);
+    VkResult result = vkGetEventStatus(_Ctx::get_device(), handle);
     if (result < 0) // vkGetEventStatus(...)成功时有两种结果
     {
       print_error("Event",
@@ -1354,7 +1354,7 @@ public:
   }
   VkResult create(VkEventCreateInfo &createInfo) {
     VkResult result =
-        vkCreateEvent(_Context::get_device(), &createInfo, nullptr, &handle);
+        vkCreateEvent(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
       print_error("Event",
                   "Failed to create a event! Code:", string_VkResult(result));
@@ -1371,4 +1371,5 @@ public:
 #ifdef forceinline
 #undef forceinline
 #endif
-#endif //! BOUNDLESS_TYPES_FILE
+#endif //! _BL_VKTYPES_FILE_
+
