@@ -43,6 +43,7 @@ make_fence_createinfo(VkFenceCreateFlags flags = 0) {
   return {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = flags};
 }
 template <typename _Ctx = ContextTraits> class Fence {
+  static constexpr const char* s_TypeName = "Fence";
   VkFence handle = VK_NULL_HANDLE;
 
 public:
@@ -64,14 +65,14 @@ public:
     VkResult result =
         vkWaitForFences(_Ctx::get_device(), 1, &handle, false, time);
     if (result)
-      print_error("Fence", "Failed to wait for the fence! Code:",
+      print_error(s_TypeName, "Failed to wait for the fence! Code:",
                   string_VkResult(result));
     return result;
   }
   VkResult reset() const {
     VkResult result = vkResetFences(_Ctx::get_device(), 1, &handle);
     if (result)
-      print_error("Fence", "Failed to reset for the fence! Code:",
+      print_error(s_TypeName, "Failed to reset for the fence! Code:",
                   string_VkResult(result));
     return result;
   }
@@ -83,7 +84,7 @@ public:
     VkResult result = vkGetFenceStatus(_Ctx::get_device(), handle);
     if (result <
         0) // vkGetFenceStatus(...)成功时有两种结果，所以不能仅仅判断result是否非0
-      print_error("Fence", "Failed to get the status of the fence! Code:",
+      print_error(s_TypeName, "Failed to get the status of the fence! Code:",
                   string_VkResult(result));
     return result;
   }
@@ -91,7 +92,7 @@ public:
     VkResult result =
         vkCreateFence(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result)
-      print_error("Fence",
+      print_error(s_TypeName,
                   "Failed to create a fence! Code:", string_VkResult(result));
     return result;
   }
@@ -105,6 +106,7 @@ constexpr VkSemaphoreCreateInfo make_semaphore_createinfo() {
   return {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 }
 template <typename _Ctx = ContextTraits> class Semaphore {
+  static constexpr const char* s_TypeName = "Semaphore";
   VkSemaphore handle = VK_NULL_HANDLE;
 
 public:
@@ -125,7 +127,7 @@ public:
     VkResult result = vkCreateSemaphore(_Ctx::get_device(), &createInfo,
                                         nullptr, &handle);
     if (result)
-      print_error("Semaphore", "Failed to create a semaphore! Code:",
+      print_error(s_TypeName, "Failed to create a semaphore! Code:",
                   string_VkResult(result));
     return result;
   }
@@ -137,6 +139,7 @@ public:
 };
 template <typename _Ctx> class CommandPool;
 template <typename _Ctx = ContextTraits> class CommandBuffer {
+  static constexpr const char* s_TypeName = s_TypeName;
   friend class CommandPool<_Ctx>;
   VkCommandBuffer handle = VK_NULL_HANDLE;
 
@@ -176,6 +179,7 @@ make_commandpool_createinfo(uint32_t queueFamilyIndex,
           .queueFamilyIndex = queueFamilyIndex};
 }
 template <typename _Ctx = ContextTraits> class CommandPool {
+  static constexpr const char* s_TypeName = "CommandPool";
   VkCommandPool handle = VK_NULL_HANDLE;
 
 public:
@@ -209,7 +213,7 @@ public:
     VkResult result = vkAllocateCommandBuffers(
         _Ctx::get_device(), &allocateInfo, (VkCommandBuffer *)pBuffer);
     if (result) {
-      print_error("CommandPool", "Failed to allocate", 1,
+      print_error(s_TypeName, "Failed to allocate", 1,
                   "command buffer(s)! Code:", string_VkResult(result));
     }
     return result;
@@ -225,7 +229,7 @@ public:
     VkResult result = vkAllocateCommandBuffers(
         _Ctx::get_device(), &allocateInfo, (VkCommandBuffer *)pBuffers);
     if (result) {
-      print_error("CommandPool", "Failed to allocate", count,
+      print_error(s_TypeName, "Failed to allocate", count,
                   "command buffer(s)! Code:", string_VkResult(result));
     }
     return result;
@@ -259,6 +263,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class RenderPass {
+  static constexpr const char* s_TypeName = "RenderPass";
   VkRenderPass handle = VK_NULL_HANDLE;
 
 public:
@@ -312,6 +317,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class Framebuffer {
+  static constexpr const char* s_TypeName = "Framebuffer";
   VkFramebuffer handle = VK_NULL_HANDLE;
 
 public:
@@ -340,6 +346,7 @@ public:
   }
 };
 struct PipelineCreateInfosPack {
+  static constexpr const char* s_TypeName = "PipelineCreateInfosPack";
   VkGraphicsPipelineCreateInfo createInfo = {
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -459,6 +466,7 @@ private:
   }
 };
 template <typename _Ctx = ContextTraits> class PipelineLayout {
+  static constexpr const char* s_TypeName = "PipelineLayout";
   VkPipelineLayout handle = VK_NULL_HANDLE;
 
 public:
@@ -487,6 +495,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class Pipeline {
+  static constexpr const char* s_TypeName = "Pipeline";
   VkPipeline handle = VK_NULL_HANDLE;
 
 public:
@@ -523,6 +532,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class Buffer {
+  static constexpr const char* s_TypeName = "Buffer";
 protected:
   VkBuffer handle = VK_NULL_HANDLE;
   VmaAllocation allocation = VK_NULL_HANDLE;
@@ -558,7 +568,7 @@ public:
     VkResult result = vmaCopyMemoryToAllocation(
         _Ctx::get_allocator(), pData, allocation, offset, length);
     if (result) {
-      print_error("Buffer",
+      print_error(s_TypeName,
                   "transfer_data() failed! Code:", string_VkResult(result));
     }
     return result;
@@ -568,7 +578,7 @@ public:
     VkResult result = vmaCopyAllocationToMemory(
         _Ctx::get_allocator(), allocation, offset, pData, length);
     if (result) {
-      print_error("Buffer",
+      print_error(s_TypeName,
                   "retrieve_data() failed! Code:", string_VkResult(result));
     }
     return result;
@@ -578,7 +588,7 @@ public:
     VkResult result =
         vmaMapMemory(_Ctx::get_allocator(), allocation, &data);
     if (result) {
-      print_error("Buffer",
+      print_error(s_TypeName,
                   "map_data() failed! Code:", string_VkResult(result));
     }
     return data;
@@ -589,7 +599,7 @@ public:
     VkResult result = vmaFlushAllocation(_Ctx::get_allocator(), allocation,
                                          offset, length);
     if (result) {
-      print_error("Buffer",
+      print_error(s_TypeName,
                   "flush_data() failed! Code:", string_VkResult(result));
     }
     return result;
@@ -599,7 +609,7 @@ public:
     VkResult result = vmaInvalidateAllocation(_Ctx::get_allocator(),
                                               allocation, offset, length);
     if (result) {
-      print_error("Buffer",
+      print_error(s_TypeName,
                   "invalidate_data() failed! Code:", string_VkResult(result));
     }
     return result;
@@ -610,7 +620,7 @@ public:
         vmaCreateBuffer(_Ctx::get_allocator(), &createInfo, &allocInfo,
                         &handle, &allocation, nullptr);
     if (result) {
-      print_error("Buffer", "VMA error when create Buffer. Code:",
+      print_error(s_TypeName, "VMA error when create Buffer. Code:",
                   string_VkResult(result));
     }
     return result;
@@ -638,6 +648,7 @@ VkDeviceSize calculate_block_alignment(VkDeviceSize size) {
 }
 template <typename _Ctx = ContextTraits>
 class IndexBuffer : public Buffer<_Ctx> {
+  static constexpr const char* s_TypeName = "IndexBuffer";
 public:
   IndexBuffer() = default;
   IndexBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
@@ -663,6 +674,7 @@ public:
 };
 template <typename _Ctx = ContextTraits>
 class VertexBuffer : protected Buffer<_Ctx> {
+  static constexpr const char* s_TypeName = "VertexBuffer";
 public:
   VertexBuffer() = default;
   VertexBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
@@ -688,6 +700,7 @@ public:
 };
 template <typename _Ctx = ContextTraits>
 class TransferBuffer : protected Buffer<_Ctx> {
+  static constexpr const char* s_TypeName = "TransferBuffer";
 protected:
   void *pBufferData;
   VkDeviceSize bufferSize;
@@ -741,14 +754,14 @@ public:
         .flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT};
     VkResult result = vkBeginCommandBuffer(cmdBuf, &beginInfo);
     if (result) {
-      print_error("TransferBuffer", "Failed to begin a command buffer! Code:",
+      print_error(s_TypeName, "Failed to begin a command buffer! Code:",
                   string_VkResult(result));
       return result;
     }
     vkCmdCopyBuffer(cmdBuf, this->handle, dstBuf, count, copyInfos);
     result = vkEndCommandBuffer(cmdBuf);
     if (result) {
-      print_error("TransferBuffer", "Failed to end a command buffer! Code:",
+      print_error(s_TypeName, "Failed to end a command buffer! Code:",
                   string_VkResult(result));
       return result;
     }
@@ -757,7 +770,7 @@ public:
                                .pCommandBuffers = &cmdBuf};
     result = vkQueueSubmit(cmdPool, 1, &submitInfo, fence);
     if (result) {
-      print_error("TransferBuffer",
+      print_error(s_TypeName,
                   "Failed to submit command! Code:", string_VkResult(result));
       return result;
     }
@@ -781,6 +794,7 @@ public:
 };
 template <typename _Ctx = ContextTraits>
 class UniformBuffer : protected Buffer<_Ctx> {
+  static constexpr const char* s_TypeName = "UniformBuffer";
 protected:
   void *pBufferData;
   VkDeviceSize blockOffset, blockSize;
@@ -882,6 +896,7 @@ public:
 // 图像数据类
 // 指定格式时使用 vk_format_utils.h 的内容
 template <typename _Ctx = ContextTraits> class Image {
+  static constexpr const char* s_TypeName = "Image";
   VkImage handle = VK_NULL_HANDLE;
   VmaAllocation allocation = VK_NULL_HANDLE;
 
@@ -917,6 +932,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class ImageView {
+  static constexpr const char* s_TypeName = "ImageView";
   VkImageView handle = VK_NULL_HANDLE;
 
 public:
@@ -942,7 +958,7 @@ public:
     VkResult result = vkCreateImageView(_Ctx::get_device(), &createInfo,
                                         nullptr, &handle);
     if (result) {
-      print_error("ImageView",
+      print_error(s_TypeName,
                   "Failed to create an image view! "
                   "Code:",
                   string_VkResult(result));
@@ -963,6 +979,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class Sampler {
+  static constexpr const char* s_TypeName = "Sampler";
   VkSampler handle = VK_NULL_HANDLE;
 
 public:
@@ -983,13 +1000,14 @@ public:
     VkResult result =
         vkCreateSampler(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
-      print_error("Sampler",
+      print_error(s_TypeName,
                   "Failed to create a Sampler! Code:", string_VkResult(result));
     }
     return result;
   }
 };
 template <typename _Ctx = ContextTraits> class DescriptorSetLayout {
+  static constexpr const char* s_TypeName = "DescriptorSetLayout";
   VkDescriptorSetLayout handle = VK_NULL_HANDLE;
 
 public:
@@ -1012,7 +1030,7 @@ public:
     VkResult result = vkCreateDescriptorSetLayout(
         _Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
-      print_error("DescriptorSetLayout",
+      print_error(s_TypeName,
                   "Failed to create a descriptor set layout! Code:",
                   string_VkResult(result));
     }
@@ -1021,6 +1039,7 @@ public:
 };
 template <typename _Ctx> class DescriptorPool;
 template <typename _Ctx = ContextTraits> class DescriptorSet {
+  static constexpr const char* s_TypeName = "DescriptorSet";
   friend class DescriptorPool<_Ctx>;
   VkDescriptorSet handle = VK_NULL_HANDLE;
 
@@ -1085,6 +1104,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class DescriptorPool {
+  static constexpr const char* s_TypeName = "DescriptorPool";
   VkDescriptorPool handle = VK_NULL_HANDLE;
 
 public:
@@ -1121,7 +1141,7 @@ public:
     VkResult result =
         vkAllocateDescriptorSets(_Ctx::get_device(), &allocateInfo, sets);
     if (result) {
-      print_error("DescriptorPool",
+      print_error(s_TypeName,
                   "Failed to allocate descriptor "
                   "sets! Code:",
                   string_VkResult(result));
@@ -1138,7 +1158,7 @@ public:
     VkResult result = vkCreateDescriptorPool(_Ctx::get_device(),
                                              &createInfo, nullptr, &handle);
     if (result) {
-      print_error("DescriptorPool",
+      print_error(s_TypeName,
                   "Failed to create a descriptor "
                   "pool! Code:",
                   string_VkResult(result));
@@ -1158,6 +1178,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class QueryPool {
+  static constexpr const char* s_TypeName = "QueryPool";
   VkQueryPool handle = VK_NULL_HANDLE;
 
 public:
@@ -1211,9 +1232,9 @@ public:
     if (result) {
       result > 0
           ? // 若返回值为VK_NOT_READY，则查询尚未结束，有查询结果尚不可获
-          print_error("QueryPool", "Not all queries are available! Code:",
+          print_error(s_TypeName, "Not all queries are available! Code:",
                       string_VkResult(result))
-          : print_error("QueryPool", "Failed to get query pool results! Code:",
+          : print_error(s_TypeName, "Failed to get query pool results! Code:",
                         string_VkResult(result));
     }
     return result;
@@ -1226,7 +1247,7 @@ public:
     VkResult result = vkCreateQueryPool(_Ctx::get_device(), &createInfo,
                                         nullptr, &handle);
     if (result) {
-      print_error("QueryPool", "Failed to create a query pool! Code:",
+      print_error(s_TypeName, "Failed to create a query pool! Code:",
                   string_VkResult(result));
     }
     return result;
@@ -1243,6 +1264,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class OcclusionQueries {
+  static constexpr const char* s_TypeName = "OcclusionQueries";
 protected:
   QueryPool<_Ctx> queryPool;
   std::vector<uint32_t> occlusionResults;
@@ -1289,6 +1311,7 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class Event {
+  static constexpr const char* s_TypeName = s_TypeName;
   VkEvent handle = VK_NULL_HANDLE;
 
 public:
@@ -1328,7 +1351,7 @@ public:
   VkResult set() const {
     VkResult result = vkSetEvent(_Ctx::get_device(), handle);
     if (result) {
-      print_error("Event",
+      print_error(s_TypeName,
                   "Failed to singal the event! Code:", string_VkResult(result));
     }
     return result;
@@ -1336,7 +1359,7 @@ public:
   VkResult reset() const {
     VkResult result = vkResetEvent(_Ctx::get_device(), handle);
     if (result) {
-      print_error("Event", "Failed to unsingal the event! Code:",
+      print_error(s_TypeName, "Failed to unsingal the event! Code:",
                   string_VkResult(result));
     }
     return result;
@@ -1345,7 +1368,7 @@ public:
     VkResult result = vkGetEventStatus(_Ctx::get_device(), handle);
     if (result < 0) // vkGetEventStatus(...)成功时有两种结果
     {
-      print_error("Event",
+      print_error(s_TypeName,
                   "Failed to get the status of the "
                   "event! Code:",
                   string_VkResult(result));
@@ -1356,7 +1379,7 @@ public:
     VkResult result =
         vkCreateEvent(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
-      print_error("Event",
+      print_error(s_TypeName,
                   "Failed to create a event! Code:", string_VkResult(result));
     }
     return result;
