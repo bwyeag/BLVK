@@ -1,3 +1,2 @@
-add_executable(vktest main.cpp)
-target_include_directories(vktest PUBLIC ./test)
-target_link_libraries(vktest PUBLIC LIB_STATIC)
+add_subdirectory(./test/window-clear-color)
+add_subdirectory(./test/window-first-triangle)
