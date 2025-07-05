@@ -54,6 +54,7 @@ template <class BaseCtx> void FpsTitle<BaseCtx>::title_fps() {
       sstm.unsetf(std::ios::fixed);
       m_WindowCtx->set_window_title(sstm.str());
       sstm.str("");
+      m_FrameCount = 0;
     }
     m_LastTime = m_Context->m_CurrentTime;
   } else

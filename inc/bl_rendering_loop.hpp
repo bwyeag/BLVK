@@ -32,6 +32,7 @@ SOFTWARE.
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <winnt.h>
 namespace BLT {
 enum class RenderResult {
   Success = 0,
@@ -78,7 +79,7 @@ template <typename _Ctx = ContextTraits> struct RenderingLoop {
 //*****************************************************************************
 
 struct __WindowRenderCtxFlagBits_t {
-  enum Flags { ForceInfight = 0x1, ForceG2PMemBarrier = 0x2 };
+  enum Flags { none = 0, ForceInfight = 0x1, ForceG2PMemBarrier = 0x2 };
 };
 using WindowRenderCtxFlagBits = __WindowRenderCtxFlagBits_t::Flags;
 struct WindowRenderCtxCreateInfo {
@@ -89,7 +90,7 @@ struct WindowRenderCtxCreateInfo {
 template <typename BaseCtx, typename _Ctx = ContextTraits>
 struct WindowRenderCtx {
   static constexpr const char *s_TypeName = "WindowRenderCtx";
-  WindowContext<BaseCtx> *m_WindowCtx{nullptr};
+  WindowContext<BaseCtx> *m_pWindowCtx{nullptr};
   RenderingLoop<_Ctx> m_RenderLoop;
   uint32_t m_CurrentImageIndex{0};
   WindowRenderCtxFlagBits m_Flags;
@@ -111,11 +112,16 @@ struct WindowRenderCtx {
 protected:
   VkResult present_image(VkPresentInfoKHR &presentInfo);
   VkResult present_image(VkSemaphore semaphore_rendering_over);
-  VkResult swap_image(Semaphore<_Ctx> semaphore_to_set,
-                      Fence<_Ctx> fence_to_set, uint64_t timeout = UINT64_MAX);
-  void g2p_membarrier_release(cmd_buf_t buf);
-  void g2p_membarrier_acquire(cmd_buf_t buf);
+  VkResult swap_image(VkSemaphore semaphore_to_set, VkFence fence_to_set,
+                      uint64_t timeout = UINT64_MAX);
+  void g2p_membarrier_release(VkCommandBuffer buf);
+  void g2p_membarrier_acquire(VkCommandBuffer buf);
 };
+
+//*****************************************************************************
+// RenderSection 相关
+//*****************************************************************************
+
 } // namespace BLT
 namespace BLT {
 //*****************************************************************************
@@ -135,13 +141,12 @@ RenderingLoop<_Ctx>::create(uint32_t stages_count, uint32_t resource_count) {
   auto semaphore_ci = make_semaphore_createinfo();
   for (uint32_t i = 0; i < semaphores_size; ++i)
     m_Semaphores[i].create(semaphore_ci);
-  m_CmdPool_graphics.create(make_commandpool_createinfo(
-      _Ctx::get_queueFamilyIndex_graphics(),
-      VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT));
+  m_CmdPool_graphics.create(_Ctx::get_queueFamilyIndex_graphics(),
+                            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
   m_CmdPool_graphics.allocate_buffers(m_CmdBufs.get(), cmdbufs_size);
-  m_CmdPool_presentation.create(make_commandpool_createinfo(
+  m_CmdPool_presentation.create(
       _Ctx::get_queueFamilyIndex_presentation(),
-      VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT));
+      VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT);
   m_CmdPool_presentation.allocate_buffers(m_CmdBufs.get() + cmdbufs_size,
                                           resource_count);
 
@@ -155,10 +160,12 @@ RenderingLoop<_Ctx>::create(uint32_t stages_count, uint32_t resource_count) {
     obj.m_CmdBufs_p = m_CmdBufs.get() + cmdbufs_size + i;
   }
   m_Objects[resource_count - 1].m_Next = m_CurrentObject = m_Objects.get();
+  return RenderResult::Success;
 }
 template <typename _Ctx> void RenderingLoop<_Ctx>::cleanup() noexcept {
-  m_Objects.release(), m_Semaphores.release(), m_CmdPool_graphics.~cmd_buf_t(),
-      m_CmdBufs.release(), m_CurrentObject = nullptr;
+  m_Objects.release(), m_Semaphores.release(), m_CmdPool_graphics.~cmd_pool_t(),
+      m_CmdPool_presentation.~cmd_pool_t(), m_CmdBufs.release(),
+      m_CurrentObject = nullptr;
 }
 //*****************************************************************************
 // WindowRenderCtx 类实现
@@ -169,19 +176,24 @@ RenderResult WindowRenderCtx<BaseCtx, _Ctx>::create(
     const WindowRenderCtx<BaseCtx, _Ctx>::CreateInfo &info) {
   if (!info.m_pWindowCtx)
     return RenderResult::NullPointer;
-  m_Flags = info.m_Flags;
-  m_WindowCtx = reinterpret_cast<decltype(m_WindowCtx)>(info.m_pWindowCtx);
-  m_RenderLoop.create(
-      info.m_StagesNum +
-          static_cast<bool>(m_Flags &
-                            WindowRenderCtxFlagBits::ForceG2PMemBarrier),
-      (m_Flags & WindowRenderCtxFlagBits::ForceInfight)
-          ? m_WindowCtx->m_SwapchainImages.size()
-          : 1);
+  bool g2p_membarrier_flag =
+      (m_Flags & WindowRenderCtxFlagBits::ForceG2PMemBarrier) ||
+      _Ctx::get_queueFamilyIndex_graphics() !=
+          _Ctx::get_queueFamilyIndex_presentation();
+  m_Flags = WindowRenderCtxFlagBits(
+      info.m_Flags |
+      (g2p_membarrier_flag ? WindowRenderCtxFlagBits::ForceG2PMemBarrier
+                           : WindowRenderCtxFlagBits::none));
+  m_pWindowCtx = reinterpret_cast<decltype(m_pWindowCtx)>(info.m_pWindowCtx);
+  m_RenderLoop.create(info.m_StagesNum + g2p_membarrier_flag,
+                      (m_Flags & WindowRenderCtxFlagBits::ForceInfight)
+                          ? m_pWindowCtx->m_SwapchainImages.size()
+                          : 1);
+  return RenderResult::Success;
 }
 template <typename BaseCtx, typename _Ctx>
 void WindowRenderCtx<BaseCtx, _Ctx>::cleanup() noexcept {
-  m_WindowCtx = nullptr;
+  m_pWindowCtx = nullptr;
   m_RenderLoop.cleanup();
 }
 template <typename BaseCtx, typename _Ctx>
@@ -190,13 +202,14 @@ RenderResult
 WindowRenderCtx<BaseCtx, _Ctx>::begin(VkPipelineStageFlags wait_flag,
                                       Callable func, bool final_stage) {
   static_assert(
-      requires(Callable fn, cmd_buf_t buf) {
-        { fn(buf) } -> std::same_as<void>;
-      }, "'fn' must be callable as void(cmd_buf_t)");
+      requires(Callable fn, VkCommandBuffer buf, uint32_t i) {
+        { fn(buf, i) } -> std::same_as<void>;
+      }, "'fn' must be callable as void(cmd_buf_t, i)");
   m_RenderLoop.m_CurrentStages = 0;
   FrameInfo &objects = *m_RenderLoop.get_current_objects();
   objects.m_Fence.wait_and_reset();
-  auto semaphore_to_signal = objects.m_Semaphores[m_RenderLoop.m_CurrentStages];
+  auto &semaphore_to_signal =
+      objects.m_Semaphores[m_RenderLoop.m_CurrentStages];
   if (swap_image(semaphore_to_signal, VK_NULL_HANDLE))
     return RenderResult::SwapImageFailed;
   next(wait_flag, func, final_stage);
@@ -208,16 +221,16 @@ RenderResult
 WindowRenderCtx<BaseCtx, _Ctx>::next(VkPipelineStageFlags wait_flag,
                                      Callable func, bool final_stage) {
   static_assert(
-      requires(Callable fn, cmd_buf_t buf) {
-        { fn(buf) } -> std::same_as<void>;
-      }, "'fn' must be callable");
+      requires(Callable fn, VkCommandBuffer buf, uint32_t i) {
+        { fn(buf, i) } -> std::same_as<void>;
+      }, "'fn' must be callable as void(cmd_buf_t, i)");
   FrameInfo &object = *m_RenderLoop.get_current_objects();
-  auto semaphore_to_wait = object.m_Semaphores[m_RenderLoop.m_CurrentStages];
-  auto semaphore_to_signal =
+  auto &semaphore_to_wait = object.m_Semaphores[m_RenderLoop.m_CurrentStages];
+  auto &semaphore_to_signal =
       object.m_Semaphores[m_RenderLoop.m_CurrentStages + 1];
-  cmd_buf_t buf = object.m_CmdBufs[m_RenderLoop.m_CurrentStages];
+  auto &buf = object.m_CmdBufs_g[m_RenderLoop.m_CurrentStages];
   buf.begin(VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT);
-  func(buf);
+  func(buf, m_CurrentImageIndex);
   if (final_stage && (_Ctx::get_queueFamilyIndex_graphics() !=
                           _Ctx::get_queueFamilyIndex_presentation() ||
                       (m_Flags & WindowRenderCtxFlagBits::ForceG2PMemBarrier)))
@@ -226,12 +239,12 @@ WindowRenderCtx<BaseCtx, _Ctx>::next(VkPipelineStageFlags wait_flag,
   VkSubmitInfo submit{
       .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
       .waitSemaphoreCount = 1,
-      .pWaitSemaphores = &semaphore_to_wait,
+      .pWaitSemaphores = semaphore_to_wait.get_pointer(),
       .pWaitDstStageMask = &wait_flag,
       .commandBufferCount = 1,
-      .pCommandBuffers = &buf,
+      .pCommandBuffers = buf.get_pointer(),
       .signalSemaphoreCount = 1,
-      .signalSemaphoreCount = &semaphore_to_signal,
+      .pSignalSemaphores = semaphore_to_signal.get_pointer(),
   };
   if (VkResult result =
           vkQueueSubmit(_Ctx::get_queue_graphics(), 1, &submit,
@@ -245,23 +258,25 @@ WindowRenderCtx<BaseCtx, _Ctx>::next(VkPipelineStageFlags wait_flag,
 template <typename BaseCtx, typename _Ctx>
 RenderResult WindowRenderCtx<BaseCtx, _Ctx>::end_and_present(
     VkPipelineStageFlags wait_flag) {
+  int offset = 0;
   if (_Ctx::get_queueFamilyIndex_graphics() !=
           _Ctx::get_queueFamilyIndex_presentation() ||
       (m_Flags & WindowRenderCtxFlagBits::ForceG2PMemBarrier)) {
     FrameInfo &object = *m_RenderLoop.get_current_objects();
-    cmd_buf_t buf = *(object->m_CmdBufs_p);
+    cmd_buf_t &buf = *(object.m_CmdBufs_p);
     buf.begin();
     g2p_membarrier_acquire(buf);
     buf.end();
     VkSubmitInfo submit{
         .sType = VK_STRUCTURE_TYPE_SUBMIT_INFO,
         .waitSemaphoreCount = 1,
-        .pWaitSemaphores = &object.m_Semaphores[m_RenderLoop.m_CurrentStages],
+        .pWaitSemaphores =
+            object.m_Semaphores->get_pointer() + m_RenderLoop.m_CurrentStages,
         .commandBufferCount = 1,
-        .pCommandBuffers = &buf,
+        .pCommandBuffers = buf.get_pointer(),
         .signalSemaphoreCount = 1,
-        .signalSemaphoreCount =
-            &object.m_Semaphores[m_RenderLoop.m_CurrentStages + 1],
+        .pSignalSemaphores = object.m_Semaphores->get_pointer() +
+                             m_RenderLoop.m_CurrentStages + 1,
     };
     if (VkResult result = vkQueueSubmit(_Ctx::get_queue_graphics(), 1, &submit,
                                         VK_NULL_HANDLE)) {
@@ -269,9 +284,11 @@ RenderResult WindowRenderCtx<BaseCtx, _Ctx>::end_and_present(
                   "vkQueueSubmit() failed:", string_VkResult(result));
       return RenderResult::QueueSubmitFailed;
     }
+    offset = 1;
   }
   FrameInfo &object = *m_RenderLoop.get_current_objects();
-  if (present_image(object.m_Semaphores[m_RenderLoop.m_CurrentStages])) {
+  if (present_image(
+          object.m_Semaphores[m_RenderLoop.m_CurrentStages + offset])) {
     print_error(s_TypeName, "present_image() failed!");
     return RenderResult::PresentImageFailed;
   }
@@ -287,7 +304,7 @@ WindowRenderCtx<BaseCtx, _Ctx>::present_image(VkPresentInfoKHR &presentInfo) {
     return VK_SUCCESS;
   case VK_SUBOPTIMAL_KHR:
   case VK_ERROR_OUT_OF_DATE_KHR:
-    return m_WindowCtx->recreate_swapchain();
+    return m_pWindowCtx->recreate_swapchain();
   default:
     print_error(s_TypeName,
                 "vkQueuePresentKHR() failed:", string_VkResult(result));
@@ -299,7 +316,7 @@ VkResult WindowRenderCtx<BaseCtx, _Ctx>::present_image(
     VkSemaphore semaphore_rendering_over) {
   VkPresentInfoKHR presentInfo = {.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
                                   .swapchainCount = 1,
-                                  .pSwapchains = &m_WindowCtx->m_Swapchain,
+                                  .pSwapchains = &m_pWindowCtx->m_Swapchain,
                                   .pImageIndices = &m_CurrentImageIndex};
   if (semaphore_rendering_over)
     presentInfo.waitSemaphoreCount = 1,
@@ -307,22 +324,20 @@ VkResult WindowRenderCtx<BaseCtx, _Ctx>::present_image(
   return present_image(presentInfo);
 }
 template <typename BaseCtx, typename _Ctx>
-VkResult
-WindowRenderCtx<BaseCtx, _Ctx>::swap_image(Semaphore<_Ctx> semaphore_to_set,
-                                           Fence<_Ctx> fence_to_set,
-                                           uint64_t timeout) {
-  VkSwapchainCreateInfoKHR &cInfo = m_WindowCtx->m_SwapchainCreateInfo;
-  if (cInfo.oldSwapchain && cInfo.oldSwapchain != m_WindowCtx->m_Swapcahin) {
+VkResult WindowRenderCtx<BaseCtx, _Ctx>::swap_image(
+    VkSemaphore semaphore_to_set, VkFence fence_to_set, uint64_t timeout) {
+  VkSwapchainCreateInfoKHR &cInfo = m_pWindowCtx->m_SwapchainCreateInfo;
+  if (cInfo.oldSwapchain && cInfo.oldSwapchain != m_pWindowCtx->m_Swapchain) {
     vkDestroySwapchainKHR(_Ctx::get_device(), cInfo.oldSwapchain, nullptr);
     cInfo.oldSwapchain = VK_NULL_HANDLE;
   }
   while (VkResult result = vkAcquireNextImageKHR(
-             _Ctx::get_device(), m_WindowCtx->m_Swapcahin, timeout,
+             _Ctx::get_device(), m_pWindowCtx->m_Swapchain, timeout,
              semaphore_to_set, fence_to_set, &m_CurrentImageIndex))
     switch (result) {
     case VK_SUBOPTIMAL_KHR:
     case VK_ERROR_OUT_OF_DATE_KHR:
-      if (VkResult result = m_WindowCtx->recreate_swapchain())
+      if (VkResult result = m_pWindowCtx->recreate_swapchain())
         return result;
       break;
     case VK_TIMEOUT:
@@ -338,7 +353,8 @@ WindowRenderCtx<BaseCtx, _Ctx>::swap_image(Semaphore<_Ctx> semaphore_to_set,
   return VK_SUCCESS;
 }
 template <typename BaseCtx, typename _Ctx>
-void WindowRenderCtx<BaseCtx, _Ctx>::g2p_membarrier_release(cmd_buf_t buf) {
+void WindowRenderCtx<BaseCtx, _Ctx>::g2p_membarrier_release(
+    VkCommandBuffer buf) {
   VkImageMemoryBarrier image_memory_barrier_g2p_release = {
       .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
       .srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -349,7 +365,7 @@ void WindowRenderCtx<BaseCtx, _Ctx>::g2p_membarrier_release(cmd_buf_t buf) {
       .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
       .srcQueueFamilyIndex = _Ctx::get_queueFamilyIndex_graphics(),
       .dstQueueFamilyIndex = _Ctx::get_queueFamilyIndex_presentation(),
-      .image = m_WindowCtx->m_SwapchainImages[m_CurrentImageIndex],
+      .image = m_pWindowCtx->m_SwapchainImages[m_CurrentImageIndex],
       .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
   vkCmdPipelineBarrier((VkCommandBuffer)buf,
                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -357,14 +373,15 @@ void WindowRenderCtx<BaseCtx, _Ctx>::g2p_membarrier_release(cmd_buf_t buf) {
                        nullptr, 1, &image_memory_barrier_g2p_release);
 }
 template <typename BaseCtx, typename _Ctx>
-void WindowRenderCtx<BaseCtx, _Ctx>::g2p_membarrier_acquire(cmd_buf_t buf) {
+void WindowRenderCtx<BaseCtx, _Ctx>::g2p_membarrier_acquire(
+    VkCommandBuffer buf) {
   VkImageMemoryBarrier imageMemoryBarrier_g2p_acquire = {
       .sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
       .oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
       .newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,
       .srcQueueFamilyIndex = _Ctx::get_queueFamilyIndex_graphics(),
       .dstQueueFamilyIndex = _Ctx::get_queueFamilyIndex_presentation(),
-      .image = m_WindowCtx->m_SwapchainImages[m_CurrentImageIndex],
+      .image = m_pWindowCtx->m_SwapchainImages[m_CurrentImageIndex],
       .subresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}};
   vkCmdPipelineBarrier((VkCommandBuffer)buf, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0, 0, nullptr, 0,

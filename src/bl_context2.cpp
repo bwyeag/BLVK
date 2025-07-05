@@ -138,11 +138,12 @@ WindowContextBase_glfw::create_base(const WindowCreateInfo_glfw &info) {
                           info.m_MaxSizeX, info.m_MaxSizeY);
   glfwSetWindowUserPointer(m_pWindow, this);
   print_log(s_TypeName,
-            std::format("Window created! Title:{} Position:{},{} Size:{},{} "
-                        "with Size limits:{},{}~{},{}\n",
-                        m_Title, info.m_InitPosX, info.m_InitPosY,
-                        info.m_InitSizeX, info.m_InitSizeY, info.m_MinSizeX,
-                        info.m_MinSizeY, info.m_MaxSizeX, info.m_MaxSizeY));
+            std::format(
+                "Window created!\n Title:{}\n Position:{},{}\n Extent:{},{}\n  "
+                "with Size limits:{},{}~{},{}",
+                m_Title, info.m_InitPosX, info.m_InitPosY, info.m_InitSizeX,
+                info.m_InitSizeY, info.m_MinSizeX, info.m_MinSizeY,
+                info.m_MaxSizeX, info.m_MaxSizeY));
   return CtxResult::Success;
 }
 void WindowContextBase_glfw::cleanup_base() noexcept {

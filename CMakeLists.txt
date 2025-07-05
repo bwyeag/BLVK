@@ -15,17 +15,11 @@ add_compile_options(-std=c++23 -Wall -DDEBUG -g)
 
 # 生成boundlessvk库文件
 aux_source_directory(./src/ LIB_SRC)
-add_library(LIB_SHARED SHARED ${LIB_SRC})
 add_library(LIB_STATIC STATIC ${LIB_SRC})
-target_include_directories(LIB_SHARED PUBLIC ./inc/)
 target_include_directories(LIB_STATIC PUBLIC ./inc/)
-target_link_libraries(LIB_SHARED glfw)
-target_link_libraries(LIB_SHARED Vulkan::Vulkan)
-target_include_directories(LIB_SHARED PUBLIC $ENV{VULKAN_SDK}/Include)
 target_link_libraries(LIB_STATIC glfw)
 target_link_libraries(LIB_STATIC Vulkan::Vulkan)
 target_include_directories(LIB_STATIC PUBLIC $ENV{VULKAN_SDK}/Include)
-set_target_properties(LIB_SHARED PROPERTIES OUTPUT_NAME "boundlessvk")
 set_target_properties(LIB_STATIC PROPERTIES OUTPUT_NAME "boundlessvk")
 set(LIBRARY_OUTPUT_PATH ./lib/)
 

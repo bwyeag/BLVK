@@ -618,8 +618,8 @@ VkResult WindowContext<BaseCtx, _Ctx>::recreate_swapchain() {
   cInfo.oldSwapchain = m_Swapchain;
   VkResult result = vkQueueWaitIdle(_Ctx::get_queue_graphics());
   // 仅在等待图形队列成功，且图形与呈现所用队列不同时等待呈现队列
-  if (!result && _Ctx::get_queue_graphics() != _Ctx::_get_queue_presentation())
-    result = vkQueueWaitIdle(_Ctx::_get_queue_presentation());
+  if (!result && _Ctx::get_queue_graphics() != _Ctx::get_queue_presentation())
+    result = vkQueueWaitIdle(_Ctx::get_queue_presentation());
   if (result) {
     print_error(s_TypeName, "Failed to wait for the queue to be idle! Code:",
                 string_VkResult(result));
@@ -636,7 +636,9 @@ VkResult WindowContext<BaseCtx, _Ctx>::recreate_swapchain() {
     return result;
   }
   m_CallbackSwapchainConstruct.iterate(this);
-  print_log(s_TypeName, "Swapchain recreated!");
+  print_log(s_TypeName, std::format("Swapchain recreated! New extent:{},{}",
+                                    m_SwapchainCreateInfo.imageExtent.width,
+                                    m_SwapchainCreateInfo.imageExtent.height));
   return VK_SUCCESS;
 }
 template <typename BaseCtx, typename _Ctx>
