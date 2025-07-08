@@ -40,34 +40,6 @@ SOFTWARE.
 #include <GLFW/glfw3.h>
 #include <vma/vk_mem_alloc.h>
 namespace BLT {
-#define BL_VERSION VK_MAKE_API_VERSION(0, 0, 1, 0)
-#ifdef DEBUG
-constexpr int8_t is_debuging = 1;
-#else
-constexpr int8_t is_debuging = 0;
-#endif // DEBUG
-enum class CtxResult {
-  Success = 0,
-  Failed = -1,
-  ArgumentError = -2,
-  GetVideoModeFailed = -3,
-  WindowCreateFailed = -4,
-  DeviceCreateFailed,
-  InstanceCreateFailed,
-  DebugCreateFailed,
-  GetPhysicalDeviceSurfaceCapFailed = -5,
-  FuncCreateSwapchainInternalFailed = -6,
-  AcquirePresentModesFailed = -7,
-  AcquireDeviceExtensionsFailed = -8,
-  VmaCreateFailed = -9,
-  AcquirePhysicalDevicesFailed,
-  NoFitDevice,
-  AcquireApiVersionFailed,
-  VkapiVersionTooLow,
-  AcquireGlfwExtFailed,
-  CheckExtFailed,
-  CheckLayerFailed
-};
 //*****************************************************************************
 // 辅助类
 struct vkStructureHead {
@@ -481,7 +453,7 @@ WindowContext<BaseCtx, _Ctx>::create(const SwapchainCreateInfo &info) {
     print_error(s_TypeName,
                 "Failed to get physical device surface capabilities! Code:",
                 string_VkResult(result));
-    return CtxResult::GetPhysicalDeviceSurfaceCapFailed;
+    return CtxResult::FuncGetPhysicalDeviceSurfaceCapFailed;
   }
   auto &cInfo = m_SwapchainCreateInfo;
   // 如果容许的最大数量与最小数量不等，那么使用最小数量+1
@@ -526,7 +498,7 @@ WindowContext<BaseCtx, _Ctx>::create(const SwapchainCreateInfo &info) {
                   "VK_IMAGE_USAGE_TRANSFER_DST_BIT isn't supported!");
   // 指定图像格式
   if (m_AvailableFormats.empty() && acquire_surface_formats())
-    return CtxResult::Failed;
+    return CtxResult::AcquireSurfaceFormatsFailed;
   if (!cInfo.imageFormat)
     if (set_surface_format(
             {VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}) &&

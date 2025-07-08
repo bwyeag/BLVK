@@ -53,7 +53,7 @@ CtxResult WindowContextBase_glfw::init_glfw() {
     });
     init_successful = true;
   });
-  return init_successful ? CtxResult::Success : CtxResult::Failed;
+  return init_successful ? CtxResult::Success : CtxResult::GLFWInitFailed;
 }
 void WindowContextBase_glfw::cleanup_glfw() noexcept { glfwTerminate(); }
 CtxResult
@@ -83,7 +83,7 @@ WindowContextBase_glfw::create_base(const WindowCreateInfo_glfw &info) {
     use_primary_monitor();
   } else {
     print_error(s_TypeName, "No Monitor select function!");
-    return CtxResult::ArgumentError;
+    return CtxResult::WrongArgument;
   }
   // 2. 创建窗口
   m_Title = info.m_InitTitle;
@@ -106,7 +106,7 @@ WindowContextBase_glfw::create_base(const WindowCreateInfo_glfw &info) {
   const GLFWvidmode *pMode = glfwGetVideoMode(m_pMonitor);
   if (!pMode) {
     print_error("WindowContext", "Get video mode failed!");
-    return CtxResult::GetVideoModeFailed;
+    return CtxResult::FuncGetVideoModeFailed;
   }
   switch (size_state) {
   case State::full_screen:
@@ -125,7 +125,7 @@ WindowContextBase_glfw::create_base(const WindowCreateInfo_glfw &info) {
   default:
     m_pMonitor = nullptr;
     m_Title.clear();
-    return CtxResult::ArgumentError;
+    return CtxResult::WrongArgument;
   }
   if (!m_pWindow) {
     m_pMonitor = nullptr, m_pWindow = nullptr;
@@ -166,7 +166,7 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
   }
   if (current_version < info.m_MinApiVersion) {
     print_error(s_TypeName, "Vulkan API version too low!");
-    return CtxResult::VkapiVersionTooLow;
+    return CtxResult::VulkanAPIVersionTooLow;
   }
   m_VulkanApiVersion = std::max(current_version, info.m_MinApiVersion);
   VkApplicationInfo app_info = {

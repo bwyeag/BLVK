@@ -24,7 +24,7 @@ SOFTWARE.
 #ifndef _BL_RENDERING_LOOP_FLLE_
 #define _BL_RENDERING_LOOP_FLLE_
 // 本地include
-#include "bl_output.hpp"
+#include <bl_util.hpp>
 #include <bl_contexts2.hpp>
 #include <bl_vktypes.hpp>
 // 标准库include
@@ -34,13 +34,7 @@ SOFTWARE.
 #include <memory>
 #include <winnt.h>
 namespace BLT {
-enum class RenderResult {
-  Success = 0,
-  NullPointer = -1,
-  SwapImageFailed,
-  QueueSubmitFailed,
-  PresentImageFailed
-};
+
 //*****************************************************************************
 // RenderingLoop 类
 //*****************************************************************************
@@ -50,7 +44,6 @@ template <typename _Ctx = ContextTraits> struct RenderingLoop {
   using semaphore_t = Semaphore<_Ctx>;
   using cmd_pool_t = CommandPool<_Ctx>;
   using cmd_buf_t = cmd_pool_t::CmdBuffer;
-  using Result = RenderResult;
   struct objects_per_frame {
     objects_per_frame *m_Next;
     fence_t m_Fence;
@@ -69,7 +62,7 @@ template <typename _Ctx = ContextTraits> struct RenderingLoop {
   std::unique_ptr<cmd_buf_t[]> m_CmdBufs;
   objects_per_frame *m_CurrentObject;
 
-  Result create(uint32_t stages_count, uint32_t resource_count);
+  RenderResult create(uint32_t stages_count, uint32_t resource_count);
   void cleanup() noexcept;
   objects_per_frame *get_current_objects() { return m_CurrentObject; }
   void next_frame() noexcept { m_CurrentObject = m_CurrentObject->m_Next; }
@@ -129,7 +122,7 @@ namespace BLT {
 //*****************************************************************************
 
 template <typename _Ctx>
-RenderingLoop<_Ctx>::Result
+RenderResult
 RenderingLoop<_Ctx>::create(uint32_t stages_count, uint32_t resource_count) {
   m_StagesCount = stages_count, m_ResCount = resource_count;
   m_Objects = std::make_unique<objects_per_frame[]>(resource_count);
