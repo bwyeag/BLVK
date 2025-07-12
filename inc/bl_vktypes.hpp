@@ -24,7 +24,7 @@ SOFTWARE.
 #ifndef _BL_VKTYPES_FILE_ 
 #define _BL_VKTYPES_FILE_
 // 本地include
-#include <bl_contexts2.hpp>
+#include <bl_contexts.hpp>
 #include <bl_util.hpp>
 // 外部库include
 #include "vma/vk_mem_alloc.h"
