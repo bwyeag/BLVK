@@ -71,14 +71,6 @@ enum class ConsoleBackgroundColor {
   none
 };
 
-#ifdef IS_WINDOWS
-WORD getColorCode(ConsoleColor color);
-WORD getBackgroundColorCode(ConsoleBackgroundColor color);
-#else
-const char *getColorCode(ConsoleColor color);
-const char *getBackgroundColorCode(ConsoleBackgroundColor color);
-#endif
-
 std::ostream &operator<<(std::ostream &os, ConsoleColor data);
 std::ostream &operator<<(std::ostream &os, ConsoleBackgroundColor data);
 
@@ -86,7 +78,7 @@ namespace _internal {
 /// @brief 打印文件位置
 inline void print_source_loc(std::ostream &stm,
                              const std::source_location &loc) {
-  std::print(stm, "[{}->{}: {}]", loc.file_name(), loc.function_name(),
+  std::print(stm, "[{0}:{2}@{1}]", loc.file_name(), loc.function_name(),
              loc.line());
 }
 /// @brief 打印时间点
@@ -96,10 +88,10 @@ inline void print_time(std::ostream &stm) {
       now.time_since_epoch());
   std::time_t t = std::chrono::system_clock::to_time_t(now);
   char buf[64];
-  if (std::strftime(buf, 64, "%H:%M:%S.", std::localtime(&t)))
-    std::print(stm, "[{}]", now_ms.count());
+  if (!std::strftime(buf, 64, "%H:%M:%S.", std::localtime(&t)))
+    std::print(stm, "[{0}ms]", now_ms.count());
   else
-    std::print(stm, "[{}.{}]", buf, now_ms.count() % 1000);
+    std::print(stm, "[{0}.{1}]", buf, now_ms.count() % 1000);
 }
 /// @brief 打印错误
 template <typename... Types>
