@@ -21,24 +21,27 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#ifndef _BL_CORE_BL_UTIL_HPP_
-#define _BL_CORE_BL_UTIL_HPP_
-// 第三方库include
-#include <vulkan/vulkan.h>
+#ifndef BL_UTIL_RESULT_TYPE_FILE
 // 标准库include
 #include <cstdint>
 namespace BLT {
-#define BL_VERSION VK_MAKE_API_VERSION(0, 0, 1, 0)
-#ifdef DEBUG
-constexpr int8_t is_debuging = 1;
-#else
-constexpr int8_t is_debuging = 0;
-#endif // DEBUG
+//*****************************************************************************
+// 字节序反转函数
+//*****************************************************************************
+constexpr uint16_t byte_reverse(uint16_t x) {
+  x = (x & 0x00fful) << 8 | (x & 0xff00ul) >> 8;
+  return x;
+}
+constexpr uint32_t byte_reverse(uint32_t x) {
+  x = (x & 0x0000fffful) << 16 | (x & 0xffff0000ul) >> 16;
+  x = (x & 0x00ff00fful) << 8 | (x & 0xff00ff00ul) >> 8;
+  return x;
+}
+constexpr uint64_t byte_reverse(uint64_t x) {
+  x = (x & 0x00000000ffffffffull) << 32 | (x & 0xffffffff00000000ull) >> 32;
+  x = (x & 0x0000ffff0000ffffull) << 16 | (x & 0xffff0000ffff0000ull) >> 16;
+  x = (x & 0x00ff00ff00ff00ffull) << 8 | (x & 0xff00ff00ff00ff00ull) >> 8;
+  return x;
+}
 } // namespace BLT
-// 本地include
-#include <utils/bl_byte_magic.hpp>
-#include <utils/bl_callback_type.hpp>
-#include <utils/bl_output.hpp>
-#include <utils/bl_result_type.hpp>
-#include <utils/bl_timer_type.hpp>
-#endif //!_BL_CORE_BL_UTIL_HPP_
+#endif // !BL_UTIL_RESULT_TYPE_FILE
