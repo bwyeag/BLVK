@@ -1,7 +1,8 @@
 #include "bl_rendering_loop.hpp"
+#include "bl_util.hpp"
 #include "bl_vktypes.hpp"
 #include "render_section.hpp"
-#include <bl_contexts2.hpp>
+#include <bl_contexts.hpp>
 #include <bl_debug_utils.hpp>
 #include <cstdint>
 using namespace BLT;
@@ -14,6 +15,7 @@ const char *s_LogType = "Test";
 int main() {
   print_log(s_LogType, "Start Program");
   {
+    AutoScopedTimer timer("Initial Timer");
     using wState = WindowCreateState;
     InstanceCreateInfo ci_inst{.m_pAppName = "test",
                                .m_AppVersion = VK_MAKE_API_VERSION(0, 0, 1, 0),

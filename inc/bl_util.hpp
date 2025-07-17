@@ -40,7 +40,7 @@ constexpr int8_t is_debuging = 1;
 #else
 constexpr int8_t is_debuging = 0;
 #endif // DEBUG
-enum class CtxResult : int32_t{
+enum class CtxResult : int32_t {
   Success = 0,
   WrongArgument = -1,
 
@@ -74,6 +74,11 @@ enum class RenderResult : int32_t {
   SwapImageFailed,
   QueueSubmitFailed,
   PresentImageFailed
+};
+enum class LoadResult:int32_t {
+  Success = 0,
+  FileNotFound = -1,
+  FileStructError = -2
 };
 struct result_t {
   uint32_t m_category : 32;
@@ -167,5 +172,22 @@ public:
   }
 };
 
+//*****************************************************************************
+// 字节序反转函数
+constexpr uint16_t byte_reverse(uint16_t x) {
+  x = (x & 0x00fful) << 8 | (x & 0xff00ul) >> 8;
+  return x;
+}
+constexpr uint32_t byte_reverse(uint32_t x) {
+  x = (x & 0x0000fffful) << 16 | (x & 0xffff0000ul) >> 16;
+  x = (x & 0x00ff00fful) << 8 | (x & 0xff00ff00ul) >> 8;
+  return x;
+}
+constexpr uint64_t byte_reverse(uint64_t x) {
+  x = (x & 0x00000000ffffffffull) << 32 | (x & 0xffffffff00000000ull) >> 32;
+  x = (x & 0x0000ffff0000ffffull) << 16 | (x & 0xffff0000ffff0000ull) >> 16;
+  x = (x & 0x00ff00ff00ff00ffull) << 8 | (x & 0xff00ff00ff00ff00ull) >> 8;
+  return x;
+}
 } // namespace BLT
 #endif //!_BL_CORE_BL_UTIL_HPP_
