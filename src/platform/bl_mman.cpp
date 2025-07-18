@@ -21,21 +21,25 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#include "bl_output.hpp"
 #include <bl_util.hpp>
-#include <errhandlingapi.h>
-#include <fileapi.h>
-#include <handleapi.h>
+#include <cstddef>
 #include <memoryapi.h>
 #include <platform/bl_mman.hpp>
-#include <winnt.h>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
     defined(__NT__) && !defined(__CYGWIN__)
 #define IS_WINDOWS
 #endif
 namespace BLT::sys {
-const char *const s_ErrorTypeString = "System";
+const char *const s_TypeName = "System";
 #ifdef __unix__
+int to_open_flag_int(ProtFlagBits f) {
+  if (f & (ProtFlagBits::Write | PrProtFlagBits::Read))
+    return O_RDWK;
+  else if (f & ProProtFlagBits::Write)
+    return O_WRONLY;
+  else
+    return O_RDONLY;
+}
 int to_prot_int(ProtFlagBits f) {
   int r = 0;
   if (f & ProtFlagBits::Exec)
@@ -52,12 +56,10 @@ int to_map_int(MapFlagBits f) {
     r |= MAP_SHARED;
   if (f & MapFlagBits::Private)
     r |= MAP_PRIVATE;
-  if (f & MapFlagBits::Anonymous)
-    r |= MAP_ANONYMOUS;
   return r;
 }
 #elif defined(IS_WINDOWS)
-DWORD to_prot_dw(ProtFlagBits f) {
+DWORD to_file_access_dw(ProtFlagBits f) {
   if (f & ProtFlagBits::All)
     return GENERIC_ALL;
   DWORD r = 0;
@@ -102,65 +104,86 @@ DWORD to_map_access_dw(MapFlagBits f, ProtFlagBits pf) {
 }
 void close_handle_win(HANDLE h) {
   if (!CloseHandle(h))
-    print_error(s_ErrorTypeString, GetLastError());
+    print_error(s_TypeName, GetLastError());
 }
-#endif // __unix__
-MappedMemory memory_mapping(size_t offset, size_t len, const char *fpath,
-                            ProtFlagBits prot, MapFlagBits flags) {
+#endif
+MappedMemory memory_map_file(const char *fpath, std::byte *start, size_t offset,
+                             size_t len, ProtFlagBits prot, MapFlagBits flags) {
 #ifdef __unix__
+  int fd;
+  if ((fd = open(fpath, to_open_flag_int(prot) | O_EXCL)))
   // todo...
 #elif defined(IS_WINDOWS)
   MappedMemory mem;
-  if (flags & MapFlagBits::Anonymous)
-    mem.m_FileDescriptor = INVALID_HANDLE_VALUE;
-  else {
-    mem.m_FileDescriptor = CreateFileA(
-        fpath, to_prot_dw(prot),
-        (flags & MapFlagBits::Shared)
-            ? (FILE_SHARE_DELETE | FILE_SHARE_READ | FILE_SHARE_WRITE)
-            : 0,
-        nullptr, OPEN_EXISTING,
-        (flags & MapFlagBits::Private) ? FILE_ATTRIBUTE_READONLY
-                                       : FILE_ATTRIBUTE_NORMAL,
-        nullptr);
-    if (mem.m_FileDescriptor == INVALID_HANDLE_VALUE) {
-      print_error(s_ErrorTypeString, GetLastError());
-      mem.m_Data = nullptr;
-      return mem;
-    }
+  SECURITY_ATTRIBUTES file_security_attributes{
+      .nLength = 0u, .lpSecurityDescriptor = nullptr, .bInheritHandle = TRUE};
+  mem.m_FileDescriptor = CreateFileA(
+      fpath, to_file_access_dw(prot),
+      (flags & MapFlagBits::Shared) ? (FILE_SHARE_READ | FILE_SHARE_WRITE)
+                                    : FILE_SHARE_READ,
+      &file_security_attributes, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+  if (mem.m_FileDescriptor == INVALID_HANDLE_VALUE) {
+    print_error(s_TypeName, GetLastError());
+    goto FAILED_WIN_0;
   }
-  mem.m_FileMappingObject = CreateFileMappingA(
-      mem.m_FileDescriptor, nullptr, to_protect_dw(flags, prot),
-      DWORD(len >> 32), DWORD(len & 0xffffffff), nullptr);
-  if (mem.m_FileMappingObject == INVALID_HANDLE_VALUE) {
-    if ((flags & MapFlagBits::Anonymous) && len == 0u)
-      print_error(s_ErrorTypeString, "Wrong mapping length(=0).");
+  LARGE_INTEGER size;
+  if (!GetFileSizeEx(mem.m_FileDescriptor, &size) || size.QuadPart == 0) {
+    if (size.QuadPart == 0)
+      print_error(s_TypeName, "File", fpath, "is empty.");
     else
-      print_error(s_ErrorTypeString, GetLastError());
-    close_handle_win(mem.m_FileDescriptor);
-    mem.m_Data = nullptr;
-    return mem;
+      print_error(s_TypeName, GetLastError());
+    goto FAILED_WIN_1;
   }
-  mem.m_Data = reinterpret_cast<std::byte *>(MapViewOfFile(
-      mem.m_FileMappingObject, to_map_access_dw(flags, prot),
-      DWORD(offset >> 32), DWORD(offset & 0xffffffff), (SIZE_T)len));
+  mem.m_Length = static_cast<size_t>(size.QuadPart);
+  mem.m_FileMappingObject =
+      CreateFileMappingA(mem.m_FileDescriptor, &file_security_attributes,
+                         to_protect_dw(flags, prot), DWORD(len >> 32),
+                         DWORD(len & 0xffffffff), nullptr);
+  if (mem.m_FileMappingObject == INVALID_HANDLE_VALUE) {
+    print_error(s_TypeName, GetLastError());
+    goto FAILED_WIN_1;
+  }
+  mem.m_Data = reinterpret_cast<std::byte *>(
+      MapViewOfFileEx(mem.m_FileMappingObject, to_map_access_dw(flags, prot),
+                      DWORD(offset >> 32), DWORD(offset & 0xffffffff),
+                      (SIZE_T)len, (void *)start));
   if (mem.m_Data == nullptr) {
-    print_error(s_ErrorTypeString, GetLastError());
-    close_handle_win(mem.m_FileMappingObject);
-    close_handle_win(mem.m_FileDescriptor);
-    return mem;
+    print_error(s_TypeName, GetLastError());
+    goto FAILED_WIN_2;
   }
+  return mem;
+FAILED_WIN_2:
+  close_handle_win(mem.m_FileMappingObject);
+FAILED_WIN_1:
+  close_handle_win(mem.m_FileDescriptor);
+FAILED_WIN_0:
+  mem.m_Data = nullptr;
+  mem.m_Length = 0u;
+  mem.m_FileDescriptor = INVALID_HANDLE_VALUE;
+  mem.m_FileMappingObject = INVALID_HANDLE_VALUE;
   return mem;
 #endif
 }
-void memory_unmapping(MappedMemory &&mem) {
+int memory_map_sync(std::byte *start, size_t len, SyncFlag flag) {
+#ifdef __unix__
+  // todo...
+#elif defined(IS_WINDOWS)
+  if (flag == SyncFlag::Sync)
+    if (!FlushViewOfFile((void *)start, len)) {
+      print_error(s_TypeName, GetLastError());
+      return -1;
+    }
+  return 0;
+#endif
+}
+void memory_unmap_file(MappedMemory &&mem) {
 #ifdef __unix__
   // todo...
 #elif defined(IS_WINDOWS)
   if (mem.m_Data == nullptr)
     return;
   if (!UnmapViewOfFile(mem.m_Data))
-    print_error(s_ErrorTypeString, GetLastError());
+    print_error(s_TypeName, GetLastError());
   if (mem.m_FileDescriptor != INVALID_HANDLE_VALUE)
     close_handle_win(mem.m_FileDescriptor);
   if (mem.m_FileMappingObject != INVALID_HANDLE_VALUE)
@@ -174,12 +197,12 @@ size_t acquire_file_size(const char *path) {
   HANDLE handle = CreateFileA(path, 0, FILE_SHARE_READ, nullptr, OPEN_EXISTING,
                               FILE_ATTRIBUTE_NORMAL, nullptr);
   if (handle == INVALID_HANDLE_VALUE) {
-    print_error(s_ErrorTypeString, GetLastError());
+    print_error(s_TypeName, GetLastError());
     return (~0u);
   }
   LARGE_INTEGER size;
   if (!GetFileSizeEx(handle, &size)) {
-    print_error(s_ErrorTypeString, GetLastError());
+    print_error(s_TypeName, GetLastError());
     return (~0u);
   }
   close_handle_win(handle);

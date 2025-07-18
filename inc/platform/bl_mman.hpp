@@ -21,6 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
+#include <handleapi.h>
 #ifndef BL_PLAT_MMAN_FILE
 #include <cstddef>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
@@ -31,7 +32,6 @@ SOFTWARE.
 #include <fcntl.h>
 #include <sys/mman.h>
 #elif defined(IS_WINDOWS)
-#include <fileapi.h>
 #include <windows.h>
 #endif // __unix__
 namespace BLT::sys {
@@ -43,20 +43,31 @@ struct _MapFlagBits_t {
   enum Flags { Shared = 0x1, Private = 0x2, Anonymous = 0x4 };
 };
 using MapFlagBits = _MapFlagBits_t::Flags;
+struct _SyncFlag_t {
+  enum Flags { Async, Sync };
+};
+using SyncFlag = _SyncFlag_t::Flags;
 struct MappedMemory {
   std::byte *m_Data;
-  // size_t m_Length;
+  size_t m_Length;
 #ifdef __unix__
   // todo...
 #elif defined(__WIN32__)
-  HANDLE m_FileDescriptor;
-  HANDLE m_FileMappingObject;
+  HANDLE m_FileDescriptor = INVALID_HANDLE_VALUE;
+  HANDLE m_FileMappingObject = INVALID_HANDLE_VALUE;
 #endif // __unix__
 };
-MappedMemory memory_mapping(size_t offset, size_t len, const char *fpath,
-                            ProtFlagBits prot, MapFlagBits flags);
-void memory_unmapping(MappedMemory &&mem);
-size_t acquire_file_size(const char* path);
+// map the file at %fpath to virtual memory, ranged from %offset to
+// %offset + %len.
+// prot: the file can be executed(ProtFlagBits::Exec), read(ProtFlagBits::Read),
+//   write(ProtFlagBits::Write), or not accessible(ProtFlagBits::None).
+// flags: the memory is shared with other processes(MapFlagBits::Shared), or
+//   copy on write(MapFlagBits::Private), it can't be MapFlagBits::Anonymous.
+MappedMemory memory_map_file(const char *fpath, std::byte *start, size_t offset,
+                             size_t len, ProtFlagBits prot, MapFlagBits flags);
+int memory_map_sync(std::byte *start, size_t len, SyncFlag flag);
+void memory_unmap_file(MappedMemory &&mem);
+size_t acquire_file_size(const char *path);
 } // namespace BLT::sys
 #undef IS_WINDOWS
 #endif // !BL_PLAT_MMAN_FILE
