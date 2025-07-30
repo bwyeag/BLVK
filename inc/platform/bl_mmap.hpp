@@ -21,8 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#include <handleapi.h>
 #ifndef BL_PLAT_MMAN_FILE
+#include <cstdint>
 #include <cstddef>
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
     defined(__NT__) && !defined(__CYGWIN__)
@@ -34,27 +34,33 @@ SOFTWARE.
 #elif defined(IS_WINDOWS)
 #include <windows.h>
 #endif // __unix__
-namespace BLT::sys {
-struct _ProtFlagBits_t {
-  enum Flags { All = 0x7, Exec = 0x1, Read = 0x2, Write = 0x4, None = 0 };
+namespace blt::sys {
+struct _Flag_t {
+  enum Flags1 : uint8_t {
+    All = 0x7,
+    Exec = 0x1,
+    Read = 0x2,
+    Write = 0x4,
+    None = 0x0
+  };
+  enum Flags2 : uint8_t { Shared = 0x1, Private = 0x2, Anonymous = 0x4 };
+  enum Flags3 : uint8_t { Async, Sync };
 };
-using ProtFlagBits = _ProtFlagBits_t::Flags;
-struct _MapFlagBits_t {
-  enum Flags { Shared = 0x1, Private = 0x2, Anonymous = 0x4 };
-};
-using MapFlagBits = _MapFlagBits_t::Flags;
-struct _SyncFlag_t {
-  enum Flags { Async, Sync };
-};
-using SyncFlag = _SyncFlag_t::Flags;
+using ProtFlagBits = _Flag_t::Flags1;
+using MapFlagBits = _Flag_t::Flags2;
+using SyncFlag = _Flag_t::Flags3;
 struct MappedMemory {
   std::byte *m_Data;
   size_t m_Length;
 #ifdef __unix__
   // todo...
 #elif defined(__WIN32__)
-  HANDLE m_FileDescriptor = INVALID_HANDLE_VALUE;
-  HANDLE m_FileMappingObject = INVALID_HANDLE_VALUE;
+  HANDLE m_FileDescriptor;
+  HANDLE m_FileMappingObject;
+#else
+  size_t m_Offset;
+  bool m_WriteBack;
+  std::fstream m_File;
 #endif // __unix__
 };
 // map the file at %fpath to virtual memory, ranged from %offset to
@@ -63,11 +69,12 @@ struct MappedMemory {
 //   write(ProtFlagBits::Write), or not accessible(ProtFlagBits::None).
 // flags: the memory is shared with other processes(MapFlagBits::Shared), or
 //   copy on write(MapFlagBits::Private), it can't be MapFlagBits::Anonymous.
-MappedMemory memory_map_file(const char *fpath, std::byte *start, size_t offset,
-                             size_t len, ProtFlagBits prot, MapFlagBits flags);
-int memory_map_sync(std::byte *start, size_t len, SyncFlag flag);
+auto memory_map_file(const char *fpath, std::byte *start, size_t offset,
+                     size_t len, ProtFlagBits prot, MapFlagBits flags)
+    -> MappedMemory;
+auto memory_map_sync(std::byte *start, size_t len, SyncFlag flag) -> int;
 void memory_unmap_file(MappedMemory &&mem);
-size_t acquire_file_size(const char *path);
-} // namespace BLT::sys
+auto acquire_file_size(const char *path) -> size_t;
+} // namespace blt::sys
 #undef IS_WINDOWS
 #endif // !BL_PLAT_MMAN_FILE

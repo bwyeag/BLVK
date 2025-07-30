@@ -34,7 +34,7 @@ SOFTWARE.
 #include <cstdint>
 #include <cstring>
 
-namespace BLT {
+namespace blt {
 /*
  * Vulkan类型封装
  */

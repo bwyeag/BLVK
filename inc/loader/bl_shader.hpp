@@ -25,7 +25,7 @@ SOFTWARE.
 #include <bl_util.hpp>
 #include <cstdint>
 #include <vector>
-namespace BLT {
+namespace blt {
 namespace details {
 struct ShaderStageInfo {
   uint32_t m_ModuleFlagBits;

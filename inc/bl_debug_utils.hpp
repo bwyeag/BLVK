@@ -28,7 +28,7 @@ SOFTWARE.
 #include <bl_contexts.hpp>
 // 标准库include
 #include <iomanip>
-namespace BLT::debug {
+namespace blt::debug {
 template <class BaseCtx> struct FpsTitle {
   BaseCtx *m_WindowCtx{nullptr};
   ContextBase *m_Context{nullptr};
@@ -60,6 +60,6 @@ template <class BaseCtx> void FpsTitle<BaseCtx>::title_fps() {
   } else
     ++m_FrameCount;
 }
-} // namespace BLT::debug
+} // namespace blt::debug
 #endif // DEBUG
 #endif // !_BL_DEBUG_UTILS_HPP_

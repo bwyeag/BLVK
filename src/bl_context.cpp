@@ -23,7 +23,7 @@ SOFTWARE.
 ******************************************************************************/
 // 本地include
 #include <bl_contexts.hpp>
-#include <bl_output.hpp>
+#include <bl_util.hpp>
 // 标准库include
 #include <algorithm>
 #include <cstring>
@@ -31,17 +31,17 @@ SOFTWARE.
 #include <vector>
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
-namespace BLT {
+namespace blt {
 //*****************************************************************************
 // WindowContextBase_*** 类
 //*****************************************************************************
 
 std::once_flag WindowContextBase_glfw::s_InitOnce_glfw{};
-VkResult WindowContextBase_glfw::make_surface(VkInstance instance,
+VkResult WindowContextBase_glfw::make_surface_impl(VkInstance instance,
                                               VkSurfaceKHR &surface) {
   return glfwCreateWindowSurface(instance, m_pWindow, nullptr, &surface);
 }
-CtxResult WindowContextBase_glfw::init_glfw() {
+CtxResult WindowContextBase_glfw::init_library() {
   static bool init_successful = false;
   std::call_once(s_InitOnce_glfw, [] {
     if (!glfwInit() || !glfwVulkanSupported()) {
@@ -55,11 +55,11 @@ CtxResult WindowContextBase_glfw::init_glfw() {
   });
   return init_successful ? CtxResult::Success : CtxResult::GLFWInitFailed;
 }
-void WindowContextBase_glfw::cleanup_glfw() noexcept { glfwTerminate(); }
+void WindowContextBase_glfw::cleanup_library() noexcept { glfwTerminate(); }
 CtxResult
-WindowContextBase_glfw::create_base(const WindowCreateInfo_glfw &info) {
+WindowContextBase_glfw::create_window_impl(const WindowCreateInfo_glfw &info) {
   using State = WindowCreateState;
-  if (CtxResult result = init_glfw(); result != CtxResult::Success)
+  if (CtxResult result = initialize(); result != CtxResult::Success)
     return result;
   // 1. 选取所用的监视器
   int monitor_count;
@@ -119,7 +119,7 @@ WindowContextBase_glfw::create_base(const WindowCreateInfo_glfw &info) {
                                  nullptr, nullptr);
     break;
   case State::specified:
-    m_pWindow = glfwCreateWindow(info.m_InitSizeX, info.m_InitSizeY,
+    m_pWindow = glfwCreateWindow(info.m_InitSizeWidth, info.m_InitSizeHeight,
                                  m_Title.c_str(), nullptr, nullptr);
     break;
   default:
@@ -132,21 +132,21 @@ WindowContextBase_glfw::create_base(const WindowCreateInfo_glfw &info) {
     m_Title.clear();
     return CtxResult::WindowCreateFailed;
   }
-  if (info.m_InitPosX != (~0u) && info.m_InitPosY != (~0u))
-    glfwSetWindowPos(m_pWindow, info.m_InitPosX, info.m_InitPosY);
-  glfwSetWindowSizeLimits(m_pWindow, info.m_MinSizeX, info.m_MinSizeY,
-                          info.m_MaxSizeX, info.m_MaxSizeY);
+  if (info.m_InitPosWidth != (~0u) && info.m_InitPosHeight != (~0u))
+    glfwSetWindowPos(m_pWindow, info.m_InitPosWidth, info.m_InitPosHeight);
+  glfwSetWindowSizeLimits(m_pWindow, info.m_MinSizeWidth, info.m_MinSizeHeight,
+                          info.m_MaxSizeWidth, info.m_MaxSizeHeight);
   glfwSetWindowUserPointer(m_pWindow, this);
   print_log(s_TypeName,
             std::format(
                 "Window created!\n Title:{}\n Position:{},{}\n Extent:{},{}\n  "
                 "with Size limits:{},{}~{},{}",
-                m_Title, info.m_InitPosX, info.m_InitPosY, info.m_InitSizeX,
-                info.m_InitSizeY, info.m_MinSizeX, info.m_MinSizeY,
-                info.m_MaxSizeX, info.m_MaxSizeY));
+                m_Title, info.m_InitPosWidth, info.m_InitPosHeight, info.m_InitSizeWidth,
+                info.m_InitSizeHeight, info.m_MinSizeWidth, info.m_MinSizeHeight,
+                info.m_MaxSizeWidth, info.m_MaxSizeHeight));
   return CtxResult::Success;
 }
-void WindowContextBase_glfw::cleanup_base() noexcept {
+void WindowContextBase_glfw::cleanup_window_impl() noexcept {
   if (m_pWindow)
     glfwDestroyWindow(m_pWindow), m_pWindow = nullptr;
   m_pMonitor = nullptr, m_Title.clear();
@@ -185,7 +185,7 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
     insert_debug_ext_layers(layer_names, extension_names);
 #endif // DEBUG
   {
-    WindowContextBase_glfw::init_glfw();
+    WindowContextBase_glfw::initialize();
     uint32_t extension_count = 0;
     const char **ppExtensionNames;
     ppExtensionNames = glfwGetRequiredInstanceExtensions(&extension_count);
@@ -874,4 +874,4 @@ void ContextBase::update() {
   m_CurrentTime = time_now;
   m_CallbackUpdate.iterate(this);
 }
-} // namespace BLT
+} // namespace blt

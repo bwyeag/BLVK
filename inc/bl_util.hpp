@@ -27,7 +27,7 @@ SOFTWARE.
 #include <vulkan/vulkan.h>
 // 标准库include
 #include <cstdint>
-namespace BLT {
+namespace blt {
 #define BL_VERSION VK_MAKE_API_VERSION(0, 0, 1, 0)
 #ifdef DEBUG
 constexpr int8_t is_debuging = 1;

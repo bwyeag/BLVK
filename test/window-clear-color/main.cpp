@@ -1,11 +1,10 @@
 #include "bl_rendering_loop.hpp"
-#include "bl_util.hpp"
 #include "bl_vktypes.hpp"
 #include "render_section.hpp"
 #include <bl_contexts.hpp>
 #include <bl_debug_utils.hpp>
 #include <cstdint>
-using namespace BLT;
+using namespace blt;
 WindowContext<WindowContextBase_glfw> window_context;
 ContextBase context;
 WindowRenderCtx<WindowContextBase_glfw> window_render_ctx;
@@ -26,12 +25,12 @@ int main() {
     WindowCreateInfo_glfw ci_wctx{
         .m_InitState = wState(wState::specified | wState::use_primary_monitor |
                               wState::decorated | wState::resizable),
-        .m_InitSizeX = 800,
-        .m_InitSizeY = 600,
-        .m_InitPosX = 100,
-        .m_InitPosY = 100,
+        .m_InitSizeWidth = 800,
+        .m_InitSizeHeight = 600,
+        .m_InitPosWidth = 100,
+        .m_InitPosHeight = 100,
         .m_InitTitle = "Test"};
-    window_context.create_base(ci_wctx);
+    window_context.create_window(ci_wctx);
     window_context.create_surface(); // -> get_surface
     DeviceCreateInfo ci_devi{};
     auto surfaces = window_context.get_surface();
@@ -50,7 +49,7 @@ int main() {
   print_log(s_LogType, "Finish Initialization.");
   bool should_end = false;
   VkClearValue clearColor = {.color = {{1.f, 0.f, 0.f, 1.f}}};
-  while (!glfwWindowShouldClose(window_context.m_pWindow) && !should_end) {
+  while (!glfwWindowShouldClose(window_context.native_handle()) && !should_end) {
     window_render_ctx.begin(
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         [clearColor](VkCommandBuffer buf, uint32_t i) {

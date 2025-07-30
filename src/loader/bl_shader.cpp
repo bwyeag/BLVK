@@ -25,7 +25,7 @@ SOFTWARE.
 #include "bl_util.hpp"
 #include <cstdio>
 #include <loader/bl_shader.hpp>
-namespace BLT {
+namespace blt {
 LoadResult load_shader(std::vector<VkPipelineShaderStageCreateInfo> &ret,
                        const char *path) {
   FILE *file = fopen(path, "rb");

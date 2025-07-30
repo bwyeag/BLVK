@@ -21,7 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#include <bl_util.hpp>
+#include <utils/bl_output.hpp>
+#include <clocale>
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
     defined(__NT__) && !defined(__CYGWIN__)
@@ -29,20 +30,16 @@ SOFTWARE.
 #include <Windows.h>
 #endif
 
-namespace BLT {
-//*****************************************************************************
-result_t::~result_t() noexcept(false) {
-  switch (m_category) {
-  case 1u:
-  case 2u:
-  case 3u:
-  default:
-    return;
-  }
-}
-//*****************************************************************************
+namespace blt {
+void output_setup() {
 #ifdef IS_WINDOWS
-WORD getColorCode(ConsoleColor color) {
+  std::setlocale(LC_ALL, ".utf-8");
+  SetConsoleOutputCP(CP_UTF8);
+#endif
+  std::cout.sync_with_stdio(false);
+}
+#ifdef IS_WINDOWS
+WORD _get_color_code(ConsoleColor color) {
   using CC = ConsoleColor;
   switch (color) {
   case CC::green:
@@ -90,7 +87,7 @@ WORD getColorCode(ConsoleColor color) {
   }
 }
 #else
-std::string getColorCode(ConsoleColor color) {
+std::string _get_color_code(ConsoleColor color) {
   using CC = ConsoleColor;
   switch (color) {
   case CC::green:
@@ -138,7 +135,7 @@ std::string getColorCode(ConsoleColor color) {
 #endif
 
 #ifdef IS_WINDOWS
-WORD getBackgroundColorCode(ConsoleBackgroundColor color) {
+WORD _get_background_color_code(ConsoleBackgroundColor color) {
   using BC = ConsoleBackgroundColor;
   switch (color) {
   case BC::green:
@@ -166,7 +163,7 @@ WORD getBackgroundColorCode(ConsoleBackgroundColor color) {
   }
 }
 #else
-const char *getBackgroundColorCode(ConsoleBackgroundColor color) {
+const char *_get_background_color_code(ConsoleBackgroundColor color) {
   using BC = ConsoleBackgroundColor;
   switch (color) {
   case BC::green:
@@ -197,19 +194,19 @@ const char *getBackgroundColorCode(ConsoleBackgroundColor color) {
 std::ostream &operator<<(std::ostream &os, ConsoleColor data) {
 #ifdef IS_WINDOWS
   HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(handle, getColorCode(data));
+  SetConsoleTextAttribute(handle, _get_color_code(data));
 #else
   HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-  os << GetColorCode(data);
+  os << _get_color_code(data);
 #endif
   return os;
 }
 std::ostream &operator<<(std::ostream &os, ConsoleBackgroundColor data) {
 #ifdef IS_WINDOWS
   HANDLE handle = GetStdHandle(STD_OUTPUT_HANDLE);
-  SetConsoleTextAttribute(handle, getBackgroundColorCode(data));
+  SetConsoleTextAttribute(handle, _get_background_color_code(data));
 #else
-  os << GetBackgroundColorCode(data);
+  os << _get_background_color_code(data);
 #endif
   return os;
 }

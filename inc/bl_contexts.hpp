@@ -39,9 +39,11 @@ SOFTWARE.
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #include <vma/vk_mem_alloc.h>
-namespace BLT {
+namespace blt {
 //*****************************************************************************
 // 辅助类
+//*****************************************************************************
+
 struct vkStructureHead {
   VkStructureType sType;
   void *pNext;
@@ -344,39 +346,75 @@ struct WindowCreateInfo_glfw {
   State m_InitState{State(State::specified | State::decorated |
                           State::resizable | State::use_primary_monitor)};
   // X = width, Y = height
-  uint32_t m_InitSizeX, m_InitSizeY;
-  uint32_t m_InitPosX{~0u}, m_InitPosY{~0u};
-  uint32_t m_MaxSizeX = GLFW_DONT_CARE, m_MaxSizeY = GLFW_DONT_CARE,
-           m_MinSizeX = GLFW_DONT_CARE, m_MinSizeY = GLFW_DONT_CARE;
+  uint32_t m_InitSizeWidth, m_InitSizeHeight;
+  uint32_t m_InitPosWidth{~0u}, m_InitPosHeight{~0u};
+  uint32_t m_MaxSizeWidth = GLFW_DONT_CARE, m_MaxSizeHeight = GLFW_DONT_CARE,
+           m_MinSizeWidth = GLFW_DONT_CARE, m_MinSizeHeight = GLFW_DONT_CARE;
   const char *m_InitTitle{"Window"};
   std::function<bool(GLFWmonitor *)> m_MonitorPred;
 };
-struct WindowContextBase_glfw {
-  static std::once_flag s_InitOnce_glfw;
-  static constexpr const char *s_TypeName = "WindowContextBase_glfw";
-  GLFWwindow *m_pWindow{nullptr};
-  GLFWmonitor *m_pMonitor{nullptr};
+template <typename T> struct WindowContextBase {
+#define ChildPtr static_cast<T *>(this)
   std::string m_Title;
 
-  static CtxResult init_glfw();
-  static void cleanup_glfw() noexcept;
-  CtxResult create_base(const WindowCreateInfo_glfw &info);
-  void cleanup_base() noexcept;
-
-  VkResult make_surface(VkInstance instance, VkSurfaceKHR &surface);
+  static CtxResult initialize() { T::init_library(); }
+  static CtxResult cleanup() { T::cleanup_library(); }
+  CtxResult create_window(const auto &info) { ChildPtr->create_base(info); }
+  void cleanup_window() noexcept { ChildPtr->cleanup_base(); }
+  VkResult make_surface(VkInstance instance, VkSurfaceKHR &surface) {
+    ChildPtr->make_surface_impl(instance, surface);
+  }
   void get_window_size(uint32_t &width, uint32_t &height) {
-    glfwGetWindowSize(m_pWindow, (int *)&width, (int *)&height);
+    ChildPtr->get_window_size_impl(width, height);
   }
   void set_window_size(uint32_t width, uint32_t height) {
-    glfwSetWindowSize(m_pWindow, width, height);
+    ChildPtr->set_window_size_impl(width, height);
   }
   const char *get_window_title() const { return m_Title.c_str(); }
   const std::string get_window_title_str() const { return m_Title; }
   void set_window_title(const char *newTitle) {
-    glfwSetWindowTitle(m_pWindow, newTitle);
+    m_Title = newTitle;
+    ChildPtr->set_window_title(newTitle);
+  }
+  void set_window_title_tempo(const char *newTitle) {
+    ChildPtr->set_window_title(newTitle);
   }
   void set_window_title(const std::string &newTitle) {
-    set_window_title(newTitle.c_str());
+    m_Title = newTitle;
+    ChildPtr->set_window_title(newTitle.c_str());
+  }
+  void set_window_title_tempo(const std::string &newTitle) {
+    ChildPtr->set_window_title(newTitle.c_str());
+  }
+  void reset_window_title() { ChildPtr->set_window_title(m_Title.c_str()); }
+  auto native_handle() { return ChildPtr->m_pWindow; }
+#undef ChildPtr
+};
+struct WindowContextBase_glfw
+    : public WindowContextBase<WindowContextBase_glfw> {
+  friend WindowContextBase<WindowContextBase_glfw>;
+  static constexpr const char *s_TypeName = "WindowContextBase_glfw";
+  using CreateInfo = WindowCreateInfo_glfw;
+
+private:
+  static std::once_flag s_InitOnce_glfw;
+  GLFWwindow *m_pWindow{nullptr};
+  GLFWmonitor *m_pMonitor{nullptr};
+
+  static CtxResult init_library();
+  static void cleanup_library() noexcept;
+  CtxResult create_window_impl(const CreateInfo &info);
+  void cleanup_window_impl() noexcept;
+
+  VkResult make_surface_impl(VkInstance instance, VkSurfaceKHR &surface);
+  void get_window_size_impl(uint32_t &width, uint32_t &height) {
+    glfwGetWindowSize(m_pWindow, (int *)&width, (int *)&height);
+  }
+  void set_window_size_impl(uint32_t width, uint32_t height) {
+    glfwSetWindowSize(m_pWindow, width, height);
+  }
+  void set_window_title_impl(const char *newTitle) {
+    glfwSetWindowTitle(m_pWindow, newTitle);
   }
 };
 //*****************************************************************************
@@ -436,10 +474,10 @@ protected:
   /// @return 是否成功执行
   VkResult set_surface_format(VkSurfaceFormatKHR surfaceFormat);
 };
-} // namespace BLT
+} // namespace blt
 
 // 模板函数实现
-namespace BLT {
+namespace blt {
 //*****************************************************************************
 // WindowContext 类
 //*****************************************************************************
@@ -504,7 +542,7 @@ WindowContext<BaseCtx, _Ctx>::create(const SwapchainCreateInfo &info) {
             {VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}) &&
         set_surface_format(
             {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR})) {
-      // 如果找不到上述图像格式和色彩空间的组合，那只能有什么用什么，采用availableSurfaceFormats中的第一组
+      // 如果找不到上述图像格式和色彩空间的组合，则采用availableSurfaceFormats中的第一组
       cInfo.imageFormat = m_AvailableFormats[0].format;
       cInfo.imageColorSpace = m_AvailableFormats[0].colorSpace;
       print_warning(s_TypeName,
@@ -746,5 +784,5 @@ VkResult WindowContext<BaseCtx, _Ctx>::set_surface_format(
     return recreate_swapchain();
   return VK_SUCCESS;
 }
-} // namespace BLT
+} // namespace blt
 #endif // !_BL_CORE_CONTEXTS_FILE_

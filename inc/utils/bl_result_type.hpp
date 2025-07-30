@@ -26,7 +26,7 @@ SOFTWARE.
 #include <vulkan/vulkan.h>
 // 标准库include
 #include <cstdint>
-namespace BLT {
+namespace blt {
 enum class CtxResult : int32_t {
   Success = 0,
   WrongArgument = -1,

@@ -24,7 +24,7 @@ SOFTWARE.
 #ifndef BL_UTIL_RESULT_TYPE_FILE
 #include <functional>
 #include <list>
-namespace BLT {
+namespace blt {
 //*****************************************************************************
 // 回调函数类
 //*****************************************************************************

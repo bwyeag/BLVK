@@ -25,10 +25,10 @@ SOFTWARE.
 #include <cstdint>
 #include <cstdio>
 #include <variant>
-namespace BLT {
+namespace blt {
 struct Profile {
   std::variant<std::byte *, std::FILE*> m_File;
   uint64_t m_FileSize;
   bool m_ByteReverse;
 };
-} // namespace BLT
+} // namespace blt

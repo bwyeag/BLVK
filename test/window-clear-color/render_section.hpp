@@ -2,7 +2,7 @@
 #include <bl_vktypes.hpp>
 #include <cstddef>
 #include <memory>
-using namespace BLT;
+using namespace blt;
 
 template <typename BaseCtx, typename _Ctx = ContextTraits>
 struct RenderSection {
