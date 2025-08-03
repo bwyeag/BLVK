@@ -1,9 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
-set(CMAKE_CXX_COMPILER "C:/llvm-mingw/bin/g++.exe")
-set(CMAKE_C_COMPILER "C:/llvm-mingw/bin/gcc.exe")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 set(CPM_SOURCE_CACHE ../cpmcache/ CACHE PATH "The CPM cache path")
@@ -15,6 +13,11 @@ add_compile_options(-std=c++23 -Wall -DDEBUG -g)
 
 # 生成boundlessvk库文件
 aux_source_directory(./src/ LIB_SRC)
+aux_source_directory(./src/utils/ LIB_SRC_utils)
+#aux_source_directory(./src/utils/ LIB_SRC_loader)
+#aux_source_directory(./src/utils/ LIB_SRC_platform)
+list(APPEND LIB_SRC ${LIB_SRC_utils})
+
 add_library(LIB_STATIC STATIC ${LIB_SRC})
 target_include_directories(LIB_STATIC PUBLIC ./inc/)
 target_link_libraries(LIB_STATIC glfw)

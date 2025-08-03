@@ -211,4 +211,4 @@ std::ostream &operator<<(std::ostream &os, ConsoleBackgroundColor data) {
   return os;
 }
 #undef IS_WINDOWS
-} // namespace BLT
+} // namespace blt

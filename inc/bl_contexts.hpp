@@ -223,96 +223,96 @@ class ContextTraits {
   inline static ContextBase *s_CurrentContext{nullptr};
 
 public:
-  static inline void set_current_context(ContextBase &ctx) {
+  INLINE static void set_current_context(ContextBase &ctx) {
     s_CurrentContext = &ctx;
   }
 
-  static inline VkInstance get_instance() {
+  INLINE static VkInstance get_instance() {
     return s_CurrentContext->m_Instance;
   }
-  static inline VkDevice get_device() { return s_CurrentContext->m_Device; }
-  static inline VmaAllocator get_allocator() {
+  INLINE static VkDevice get_device() { return s_CurrentContext->m_Device; }
+  INLINE static VmaAllocator get_allocator() {
     return s_CurrentContext->m_Allocator;
   }
-  static inline const VkPhysicalDeviceMemoryProperties &
+  INLINE static const VkPhysicalDeviceMemoryProperties &
   get_phydevice_memory_properties() {
     return s_CurrentContext->m_PhysicalDeviceMemoryProperties.memoryProperties;
   }
-  static inline uint32_t get_vulkanApiVersion() {
+  INLINE static uint32_t get_vulkanApiVersion() {
     return s_CurrentContext->m_VulkanApiVersion;
   }
-  static inline VkPhysicalDevice get_phyDevice() {
+  INLINE static VkPhysicalDevice get_phyDevice() {
     return s_CurrentContext->m_PhysicalDevice;
   }
-  static inline uint32_t get_queueFamilyIndex_graphics() {
+  INLINE static uint32_t get_queueFamilyIndex_graphics() {
     return s_CurrentContext->m_QueueFamilyIndex_graphics;
   }
-  static inline uint32_t get_queueFamilyIndex_compute() {
+  INLINE static uint32_t get_queueFamilyIndex_compute() {
     return s_CurrentContext->m_QueueFamilyIndex_compute;
   }
-  static inline uint32_t get_queueFamilyIndex_presentation() {
+  INLINE static uint32_t get_queueFamilyIndex_presentation() {
     return s_CurrentContext->m_QueueFamilyIndex_presentation;
   }
-  static inline VkQueue get_queue_graphics() {
+  INLINE static VkQueue get_queue_graphics() {
     return s_CurrentContext->m_Queue_graphics;
   }
-  static inline VkQueue get_queue_compute() {
+  INLINE static VkQueue get_queue_compute() {
     return s_CurrentContext->m_Queue_compute;
   }
-  static inline VkQueue get_queue_presentation() {
+  INLINE static VkQueue get_queue_presentation() {
     return s_CurrentContext->m_Queue_presentation;
   }
-  static inline const VkPhysicalDeviceProperties2 &get_phyDeviceProperties() {
+  INLINE static const VkPhysicalDeviceProperties2 &get_phyDeviceProperties() {
     return s_CurrentContext->m_PhysicalDeviceProperties;
   }
-  static inline const VkPhysicalDeviceVulkan11Properties &
+  INLINE static const VkPhysicalDeviceVulkan11Properties &
   get_phyDeviceVulkan11Properties() {
     return s_CurrentContext->m_PhysicalDeviceVulkan11Properties;
   }
-  static inline const VkPhysicalDeviceVulkan12Properties &
+  INLINE static const VkPhysicalDeviceVulkan12Properties &
   get_phyDeviceVulkan12Properties() {
     return s_CurrentContext->m_PhysicalDeviceVulkan12Properties;
   }
-  static inline const VkPhysicalDeviceVulkan13Properties &
+  INLINE static const VkPhysicalDeviceVulkan13Properties &
   get_phyDeviceVulkan13Properties() {
     return s_CurrentContext->m_PhysicalDeviceVulkan13Properties;
   }
-  static inline const VkPhysicalDeviceVulkan14Properties &
+  INLINE static const VkPhysicalDeviceVulkan14Properties &
   get_phyDeviceVulkan14Properties() {
     return s_CurrentContext->m_PhysicalDeviceVulkan14Properties;
   }
-  static inline const VkPhysicalDeviceMemoryProperties2 &
+  INLINE static const VkPhysicalDeviceMemoryProperties2 &
   get_phyDeviceMemoryProperties() {
     return s_CurrentContext->m_PhysicalDeviceMemoryProperties;
   }
-  static inline const VkPhysicalDeviceFeatures2 &get_phyDeviceFeatures() {
+  INLINE static const VkPhysicalDeviceFeatures2 &get_phyDeviceFeatures() {
     return s_CurrentContext->m_PhysicalDeviceFeatures;
   }
-  static inline const VkPhysicalDeviceVulkan11Features &
+  INLINE static const VkPhysicalDeviceVulkan11Features &
   get_phyDeviceVulkan11Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan11Features;
   }
-  static inline const VkPhysicalDeviceVulkan12Features &
+  INLINE static const VkPhysicalDeviceVulkan12Features &
   get_phyDeviceVulkan12Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan12Features;
   }
-  static inline const VkPhysicalDeviceVulkan13Features &
+  INLINE static const VkPhysicalDeviceVulkan13Features &
   get_phyDeviceVulkan13Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan13Features;
   }
-  static inline const VkPhysicalDeviceVulkan14Features &
+  INLINE static const VkPhysicalDeviceVulkan14Features &
   get_phyDeviceVulkan14Features() {
     return s_CurrentContext->m_PhysicalDeviceVulkan14Features;
   }
 #ifdef DEBUG
-  static inline VkDebugUtilsMessengerEXT get_debugger() {
+  INLINE static VkDebugUtilsMessengerEXT get_debugger() {
     return s_CurrentContext->m_Debugger;
   }
 #endif // DEBUG
-  static inline double get_current_time() {
+  INLINE static double get_current_time() {
     return s_CurrentContext->m_CurrentTime;
   }
-  static inline double get_delta_time() {
+  INLINE static double get_delta_time() {
     return s_CurrentContext->m_DeltaTime;
   }
 };
@@ -357,37 +357,41 @@ template <typename T> struct WindowContextBase {
 #define ChildPtr static_cast<T *>(this)
   std::string m_Title;
 
-  static CtxResult initialize() { T::init_library(); }
-  static CtxResult cleanup() { T::cleanup_library(); }
-  CtxResult create_window(const auto &info) { ChildPtr->create_base(info); }
-  void cleanup_window() noexcept { ChildPtr->cleanup_base(); }
-  VkResult make_surface(VkInstance instance, VkSurfaceKHR &surface) {
-    ChildPtr->make_surface_impl(instance, surface);
+  INLINE static CtxResult initialize() { return T::init_library(); }
+  INLINE static void cleanup() { T::cleanup_library(); }
+  INLINE CtxResult create_window(const auto &info) {
+    return ChildPtr->create_window_impl(info);
   }
-  void get_window_size(uint32_t &width, uint32_t &height) {
+  INLINE void cleanup_window() noexcept { ChildPtr->cleanup_window_impl(); }
+  INLINE VkResult make_surface(VkInstance instance, VkSurfaceKHR &surface) {
+    return ChildPtr->make_surface_impl(instance, surface);
+  }
+  INLINE void get_window_size(uint32_t &width, uint32_t &height) {
     ChildPtr->get_window_size_impl(width, height);
   }
-  void set_window_size(uint32_t width, uint32_t height) {
+  INLINE void set_window_size(uint32_t width, uint32_t height) {
     ChildPtr->set_window_size_impl(width, height);
   }
-  const char *get_window_title() const { return m_Title.c_str(); }
-  const std::string get_window_title_str() const { return m_Title; }
-  void set_window_title(const char *newTitle) {
+  INLINE const char *get_window_title() const { return m_Title.c_str(); }
+  INLINE const std::string get_window_title_str() const { return m_Title; }
+  INLINE void set_window_title(const char *newTitle) {
     m_Title = newTitle;
-    ChildPtr->set_window_title(newTitle);
+    ChildPtr->set_window_title_impl(newTitle);
   }
-  void set_window_title_tempo(const char *newTitle) {
-    ChildPtr->set_window_title(newTitle);
+  INLINE void set_window_title_tempo(const char *newTitle) {
+    ChildPtr->set_window_title_impl(newTitle);
   }
-  void set_window_title(const std::string &newTitle) {
+  INLINE void set_window_title(const std::string &newTitle) {
     m_Title = newTitle;
-    ChildPtr->set_window_title(newTitle.c_str());
+    ChildPtr->set_window_title_impl(newTitle.c_str());
   }
-  void set_window_title_tempo(const std::string &newTitle) {
-    ChildPtr->set_window_title(newTitle.c_str());
+  INLINE void set_window_title_tempo(const std::string &newTitle) {
+    ChildPtr->set_window_title_impl(newTitle.c_str());
   }
-  void reset_window_title() { ChildPtr->set_window_title(m_Title.c_str()); }
-  auto native_handle() { return ChildPtr->m_pWindow; }
+  INLINE void reset_window_title() {
+    ChildPtr->set_window_title_impl(m_Title.c_str());
+  }
+  INLINE auto native_handle() { return ChildPtr->m_pWindow; }
 #undef ChildPtr
 };
 struct WindowContextBase_glfw
@@ -407,13 +411,13 @@ private:
   void cleanup_window_impl() noexcept;
 
   VkResult make_surface_impl(VkInstance instance, VkSurfaceKHR &surface);
-  void get_window_size_impl(uint32_t &width, uint32_t &height) {
+  INLINE void get_window_size_impl(uint32_t &width, uint32_t &height) {
     glfwGetWindowSize(m_pWindow, (int *)&width, (int *)&height);
   }
-  void set_window_size_impl(uint32_t width, uint32_t height) {
+  INLINE void set_window_size_impl(uint32_t width, uint32_t height) {
     glfwSetWindowSize(m_pWindow, width, height);
   }
-  void set_window_title_impl(const char *newTitle) {
+  INLINE void set_window_title_impl(const char *newTitle) {
     glfwSetWindowTitle(m_pWindow, newTitle);
   }
 };
@@ -447,7 +451,7 @@ struct WindowContext : public BaseCtx {
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
   VkResult create_surface();
-  VkSurfaceKHR get_surface() { return m_Surface; }
+  INLINE VkSurfaceKHR get_surface() { return m_Surface; }
 
   /// @brief 重建交换链
   /// @param ctx 使用的Vulkan上下文
@@ -595,7 +599,7 @@ void WindowContext<BaseCtx, _Ctx>::cleanup() noexcept {
   if (m_Surface) {
     vkDestroySurfaceKHR(_Ctx::get_instance(), m_Surface, nullptr);
     m_Surface = VK_NULL_HANDLE;
-    BaseCtx::cleanup_base();
+    BaseCtx::cleanup_window();
   }
 }
 template <typename BaseCtx, typename _Ctx>

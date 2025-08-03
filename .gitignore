@@ -1,2 +1,5 @@
 /build/
 /.cache/
+/.clangd
+/build.cmd
+/build.sh

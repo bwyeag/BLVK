@@ -1,4 +1,0 @@
-CompileFlags:
-  Add: [-Wall -std=c++23, -IC:\VulkanSDK\1.4.313.2\Include, -I.\inc, -DDEBUG]
-  Remove: [-W*]
-  Compiler: clang++

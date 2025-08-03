@@ -21,25 +21,28 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#ifndef _BL_CORE_BL_UTIL_HPP_
-#define _BL_CORE_BL_UTIL_HPP_
-// 第三方库include
-#include <vulkan/vulkan.h>
-// 标准库include
-#include <cstdint>
-namespace blt {
-#define BL_VERSION VK_MAKE_API_VERSION(0, 0, 1, 0)
-#ifdef DEBUG
-constexpr int8_t is_debuging = 1;
+
+//*****************************************************************************
+// 宏定义
+//*****************************************************************************
+#ifdef __GNUC__
+//***************************gnuc**********************************************
+#define INLINE [[gnu::always_inline]] inline
+#define INLINE_CALL
+#define RESTRICT __restrict
+#elif defined(__clang__)
+//***************************clang*********************************************
+#define INLINE [[clang::always_inline]] inline
+#define INLINE_CALL
+#define RESTRICT __restrict
+#elif defined(_MSC_VER)
+//***************************msvc**********************************************
+#define INLINE [[msvc::forceinline]] inline
+#define INLINE_CALL [[msvc::forceinline_calls]]
+#define RESTRICT __restrict
 #else
-constexpr int8_t is_debuging = 0;
-#endif // DEBUG
-} // namespace blt
-// 本地include
-#include <utils/bl_byte_magic.hpp>
-#include <utils/bl_callback_type.hpp>
-#include <utils/bl_output.hpp>
-#include <utils/bl_result_type.hpp>
-#include <utils/bl_timer_type.hpp>
-#include <utils/bl_macro.hpp>
-#endif //!_BL_CORE_BL_UTIL_HPP_
+//***************************other*********************************************
+#define INLINE
+#define INLINE_CALL
+#define RESTRICT
+#endif

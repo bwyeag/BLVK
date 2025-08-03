@@ -21,14 +21,30 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#include <cstddef>
 #include <cstdint>
-#include <cstdio>
-#include <variant>
+#include <bl_util.hpp>
+#include <platform/bl_mmap.hpp>
 namespace blt {
-struct Profile {
-  std::variant<std::byte *, std::FILE*> m_File;
-  uint64_t m_FileSize;
-  bool m_ByteReverse;
+/*
+struct File {
+  uint32_t header;
+  uint32_t head_length;
+  ...
+};
+ */
+template <typename T> struct Profile {
+  sys::MappedMemory m_mem;
+  void open(const char *path) {
+    m_mem = sys::memory_map_file(path, nullptr, 0, 0, sys::ProtFlagBits::Read,
+                         sys::MapFlagBits::Shared);
+    if (!m_mem.m_Data)
+      return;
+    constexpr uint32_t head = T::get_headcode();
+    void* p = m_mem.m_Data;
+    if (*(uint32_t*)p == head)
+    else if (*(uint32_t*)p == byte_reverse(head))
+    else return;
+      
+  }
 };
 } // namespace blt

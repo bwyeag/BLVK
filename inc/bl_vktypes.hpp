@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#ifndef _BL_VKTYPES_FILE_ 
+#ifndef _BL_VKTYPES_FILE_
 #define _BL_VKTYPES_FILE_
 // 本地include
 #include <bl_contexts.hpp>
@@ -38,19 +38,19 @@ namespace blt {
 /*
  * Vulkan类型封装
  */
-constexpr VkFenceCreateInfo
+INLINE constexpr VkFenceCreateInfo
 make_fence_createinfo(VkFenceCreateFlags flags = 0) {
   return {.sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = flags};
 }
 template <typename _Ctx = ContextTraits> class Fence {
-  static constexpr const char* s_TypeName = "Fence";
+  static constexpr const char *s_TypeName = "Fence";
   VkFence handle = VK_NULL_HANDLE;
 
 public:
-  Fence() = default;
-  explicit Fence(VkFenceCreateInfo &createInfo) { create(createInfo); }
-  explicit Fence(VkFenceCreateFlags flags) { create(flags); }
-  Fence(Fence &&other) noexcept {
+  INLINE Fence() = default;
+  INLINE explicit Fence(VkFenceCreateInfo &createInfo) { create(createInfo); }
+  INLINE explicit Fence(VkFenceCreateFlags flags) { create(flags); }
+  INLINE Fence(Fence &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -59,8 +59,8 @@ public:
       vkDestroyFence(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkFence() { return handle; }
-  VkFence *get_pointer() { return &handle; }
+  INLINE operator VkFence() { return handle; }
+  INLINE VkFence *get_pointer() { return &handle; }
   VkResult wait(uint64_t time = UINT64_MAX) const {
     VkResult result =
         vkWaitForFences(_Ctx::get_device(), 1, &handle, false, time);
@@ -96,23 +96,25 @@ public:
                   "Failed to create a fence! Code:", string_VkResult(result));
     return result;
   }
-  VkResult create(VkFenceCreateFlags flags = 0) {
+  INLINE VkResult create(VkFenceCreateFlags flags = 0) {
     VkFenceCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, .flags = flags};
     return create(createInfo);
   }
 };
-constexpr VkSemaphoreCreateInfo make_semaphore_createinfo() {
+INLINE constexpr VkSemaphoreCreateInfo make_semaphore_createinfo() {
   return {.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
 }
 template <typename _Ctx = ContextTraits> class Semaphore {
-  static constexpr const char* s_TypeName = "Semaphore";
+  static constexpr const char *s_TypeName = "Semaphore";
   VkSemaphore handle = VK_NULL_HANDLE;
 
 public:
-  Semaphore() = default;
-  explicit Semaphore(VkSemaphoreCreateInfo &createInfo) { create(createInfo); }
-  explicit Semaphore(Semaphore &&other) noexcept {
+  INLINE Semaphore() = default;
+  INLINE explicit Semaphore(VkSemaphoreCreateInfo &createInfo) {
+    create(createInfo);
+  }
+  INLINE explicit Semaphore(Semaphore &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -121,17 +123,17 @@ public:
       vkDestroySemaphore(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkSemaphore() { return handle; }
-  VkSemaphore *get_pointer() { return &handle; }
+  INLINE operator VkSemaphore() { return handle; }
+  INLINE VkSemaphore *get_pointer() { return &handle; }
   VkResult create(VkSemaphoreCreateInfo &createInfo) {
-    VkResult result = vkCreateSemaphore(_Ctx::get_device(), &createInfo,
-                                        nullptr, &handle);
+    VkResult result =
+        vkCreateSemaphore(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result)
       print_error(s_TypeName, "Failed to create a semaphore! Code:",
                   string_VkResult(result));
     return result;
   }
-  VkResult create() {
+  INLINE VkResult create() {
     VkSemaphoreCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO};
     return create(createInfo);
@@ -139,18 +141,18 @@ public:
 };
 template <typename _Ctx> class CommandPool;
 template <typename _Ctx = ContextTraits> class CommandBuffer {
-  static constexpr const char* s_TypeName = s_TypeName;
+  static constexpr const char *s_TypeName = s_TypeName;
   friend class CommandPool<_Ctx>;
   VkCommandBuffer handle = VK_NULL_HANDLE;
 
 public:
-  CommandBuffer() = default;
-  explicit CommandBuffer(CommandBuffer &&other) noexcept {
+  INLINE CommandBuffer() = default;
+  INLINE explicit CommandBuffer(CommandBuffer &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
-  operator VkCommandBuffer() { return handle; }
-  VkCommandBuffer *get_pointer() { return &handle; }
+  INLINE operator VkCommandBuffer() { return handle; }
+  INLINE VkCommandBuffer *get_pointer() { return &handle; }
   VkResult begin(VkCommandBufferUsageFlags usageFlags,
                  VkCommandBufferInheritanceInfo &inheritanceInfo) {
     VkCommandBufferBeginInfo beginInfo = {
@@ -166,32 +168,32 @@ public:
     };
     return vkBeginCommandBuffer(handle, &beginInfo);
   }
-  VkResult end() { return vkEndCommandBuffer(handle); }
-  VkResult reset(VkCommandBufferResetFlags flags = 0) {
+  INLINE VkResult end() { return vkEndCommandBuffer(handle); }
+  INLINE VkResult reset(VkCommandBufferResetFlags flags = 0) {
     return vkResetCommandBuffer(handle, flags);
   }
 };
-inline VkCommandPoolCreateInfo
-make_commandpool_createinfo(uint32_t queueFamilyIndex,
-                            VkCommandPoolCreateFlags flags = 0) {
+INLINE VkCommandPoolCreateInfo make_commandpool_createinfo(
+    uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0) {
   return {.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
           .flags = flags,
           .queueFamilyIndex = queueFamilyIndex};
 }
 template <typename _Ctx = ContextTraits> class CommandPool {
-  static constexpr const char* s_TypeName = "CommandPool";
+  static constexpr const char *s_TypeName = "CommandPool";
   VkCommandPool handle = VK_NULL_HANDLE;
 
 public:
   using CmdBuffer = CommandBuffer<_Ctx>;
-  CommandPool() = default;
-  explicit CommandPool(VkCommandPoolCreateInfo &createInfo) {
+  INLINE CommandPool() = default;
+  INLINE explicit CommandPool(VkCommandPoolCreateInfo &createInfo) {
     create(createInfo);
   }
-  CommandPool(uint32_t queueFamilyIndex, VkCommandPoolCreateFlags flags = 0) {
+  INLINE CommandPool(uint32_t queueFamilyIndex,
+                     VkCommandPoolCreateFlags flags = 0) {
     create(queueFamilyIndex, flags);
   }
-  CommandPool(CommandPool &&other) noexcept {
+  INLINE CommandPool(CommandPool &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -200,8 +202,8 @@ public:
       vkDestroyCommandPool(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkCommandPool() { return handle; }
-  VkCommandPool *get_pointer() { return &handle; }
+  INLINE operator VkCommandPool() { return handle; }
+  INLINE VkCommandPool *get_pointer() { return &handle; }
   VkResult allocate_buffer(
       CmdBuffer *pBuffer,
       VkCommandBufferLevel level = VK_COMMAND_BUFFER_LEVEL_PRIMARY) const {
@@ -235,8 +237,7 @@ public:
     return result;
   }
   void free_buffer(CmdBuffer *pBuffer) const {
-    vkFreeCommandBuffers(_Ctx::get_device(), handle, 1,
-                         pBuffer->get_pointer());
+    vkFreeCommandBuffers(_Ctx::get_device(), handle, 1, pBuffer->get_pointer());
     pBuffer->handle = VK_NULL_HANDLE;
   }
   void free_buffers(CmdBuffer *pBuffers, uint32_t count) const {
@@ -245,16 +246,16 @@ public:
     std::memset((void *)pBuffers, 0, sizeof(VkCommandBuffer) * count);
   }
   VkResult create(VkCommandPoolCreateInfo &createInfo) {
-    VkResult result = vkCreateCommandPool(_Ctx::get_device(), &createInfo,
-                                          nullptr, &handle);
+    VkResult result =
+        vkCreateCommandPool(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
       print_error("commandPool", "Failed to create a command pool! Code:",
                   string_VkResult(result));
     }
     return result;
   }
-  VkResult create(uint32_t queueFamilyIndex,
-                  VkCommandPoolCreateFlags flags = 0) {
+  INLINE VkResult create(uint32_t queueFamilyIndex,
+                         VkCommandPoolCreateFlags flags = 0) {
     VkCommandPoolCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         .flags = flags,
@@ -263,19 +264,19 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class RenderPass {
-  static constexpr const char* s_TypeName = "RenderPass";
+  static constexpr const char *s_TypeName = "RenderPass";
   VkRenderPass handle = VK_NULL_HANDLE;
 
 public:
-  RenderPass() = default;
-  RenderPass(VkRenderPassCreateInfo &createInfo) { create(createInfo); }
-  RenderPass(RenderPass &&other) noexcept {
+  INLINE RenderPass() = default;
+  INLINE RenderPass(VkRenderPassCreateInfo &createInfo) { create(createInfo); }
+  INLINE RenderPass(RenderPass &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
   ~RenderPass() { destroy(); }
-  operator VkRenderPass() { return handle; }
-  VkRenderPass *get_pointer() { return &handle; }
+  INLINE operator VkRenderPass() { return handle; }
+  INLINE VkRenderPass *get_pointer() { return &handle; }
   void destroy() {
     if (handle)
       vkDestroyRenderPass(_Ctx::get_device(), handle, nullptr);
@@ -301,38 +302,43 @@ public:
         .pClearValues = clearValues};
     vkCmdBeginRenderPass(cmdBuf, &beginInfo, subpassContents);
   }
-  void cmd_next(VkCommandBuffer cmdBuf, VkSubpassContents subpassContents =
-                                            VK_SUBPASS_CONTENTS_INLINE) const {
+  INLINE void cmd_next(
+      VkCommandBuffer cmdBuf,
+      VkSubpassContents subpassContents = VK_SUBPASS_CONTENTS_INLINE) const {
     vkCmdNextSubpass(cmdBuf, subpassContents);
   }
-  void cmd_end(VkCommandBuffer cmdBuf) const { vkCmdEndRenderPass(cmdBuf); }
+  INLINE void cmd_end(VkCommandBuffer cmdBuf) const {
+    vkCmdEndRenderPass(cmdBuf);
+  }
   VkResult create(VkRenderPassCreateInfo &createInfo) {
-    VkResult result = vkCreateRenderPass(_Ctx::get_device(), &createInfo,
-                                         nullptr, &handle);
+    VkResult result =
+        vkCreateRenderPass(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
-      print_error("renderPass", "Failed to create a render pass! Code:",
+      print_error("RenderPass", "Failed to create a render pass! Code:",
                   string_VkResult(result));
     }
     return result;
   }
 };
 template <typename _Ctx = ContextTraits> class Framebuffer {
-  static constexpr const char* s_TypeName = "Framebuffer";
+  static constexpr const char *s_TypeName = "Framebuffer";
   VkFramebuffer handle = VK_NULL_HANDLE;
 
 public:
-  Framebuffer() = default;
-  Framebuffer(VkFramebufferCreateInfo &createInfo) { create(createInfo); }
-  Framebuffer(Framebuffer &&other) noexcept {
+  INLINE Framebuffer() = default;
+  INLINE Framebuffer(VkFramebufferCreateInfo &createInfo) {
+    create(createInfo);
+  }
+  INLINE Framebuffer(Framebuffer &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
   ~Framebuffer() { destroy(); }
-  operator VkFramebuffer() { return handle; }
-  VkFramebuffer *get_pointer() { return &handle; }
+  INLINE operator VkFramebuffer() { return handle; }
+  INLINE VkFramebuffer *get_pointer() { return &handle; }
   VkResult create(VkFramebufferCreateInfo &createInfo) {
-    VkResult result = vkCreateFramebuffer(_Ctx::get_device(), &createInfo,
-                                          nullptr, &handle);
+    VkResult result =
+        vkCreateFramebuffer(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
       print_error("framebuffer", "Failed to create a framebuffer Code:",
                   string_VkResult(result));
@@ -346,7 +352,7 @@ public:
   }
 };
 struct PipelineCreateInfosPack {
-  static constexpr const char* s_TypeName = "PipelineCreateInfosPack";
+  static constexpr const char *s_TypeName = "PipelineCreateInfosPack";
   VkGraphicsPipelineCreateInfo createInfo = {
       VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO};
   std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -387,7 +393,7 @@ struct PipelineCreateInfosPack {
       VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO};
   std::vector<VkDynamicState> dynamicStates;
   //-------------------------------------------------------------------------
-  PipelineCreateInfosPack() {
+  INLINE PipelineCreateInfosPack() {
     set_create_infos();
     createInfo.basePipelineIndex = -1;
   }
@@ -422,8 +428,8 @@ struct PipelineCreateInfosPack {
     dynamicStates = other.dynamicStates;
     update_all_array_pointers();
   }
-  operator VkGraphicsPipelineCreateInfo &() { return createInfo; }
-  VkGraphicsPipelineCreateInfo *get_pointer() { return &createInfo; }
+  INLINE operator VkGraphicsPipelineCreateInfo &() { return createInfo; }
+  INLINE VkGraphicsPipelineCreateInfo *get_pointer() { return &createInfo; }
   // 该函数用于将各个vector中数据的地址赋值给各个创建信息中相应成员，并相应改变各个count
   void update_all_arrays() {
     createInfo.stageCount = shaderStages.size();
@@ -466,13 +472,15 @@ private:
   }
 };
 template <typename _Ctx = ContextTraits> class PipelineLayout {
-  static constexpr const char* s_TypeName = "PipelineLayout";
+  static constexpr const char *s_TypeName = "PipelineLayout";
   VkPipelineLayout handle = VK_NULL_HANDLE;
 
 public:
-  PipelineLayout() = default;
-  PipelineLayout(VkPipelineLayoutCreateInfo &createInfo) { create(createInfo); }
-  PipelineLayout(PipelineLayout &&other) noexcept {
+  INLINE PipelineLayout() = default;
+  INLINE PipelineLayout(VkPipelineLayoutCreateInfo &createInfo) {
+    create(createInfo);
+  }
+  INLINE PipelineLayout(PipelineLayout &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -481,12 +489,12 @@ public:
       vkDestroyPipelineLayout(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkPipelineLayout() { return handle; }
-  VkPipelineLayout *get_pointer() { return &handle; }
+  INLINE operator VkPipelineLayout() { return handle; }
+  INLINE VkPipelineLayout *get_pointer() { return &handle; }
 
   VkResult create(VkPipelineLayoutCreateInfo &createInfo) {
-    VkResult result = vkCreatePipelineLayout(_Ctx::get_device(),
-                                             &createInfo, nullptr, &handle);
+    VkResult result = vkCreatePipelineLayout(_Ctx::get_device(), &createInfo,
+                                             nullptr, &handle);
     if (result) {
       print_error("pipelineLayout", "create pipelineLayout failed! Code: ",
                   string_VkResult(result));
@@ -495,24 +503,27 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class Pipeline {
-  static constexpr const char* s_TypeName = "Pipeline";
+  static constexpr const char *s_TypeName = "Pipeline";
   VkPipeline handle = VK_NULL_HANDLE;
 
 public:
-  Pipeline() = default;
-  Pipeline(VkGraphicsPipelineCreateInfo &createInfo) { create(createInfo); }
-  Pipeline(VkComputePipelineCreateInfo &createInfo) { create(createInfo); }
-  Pipeline(Pipeline &&other) noexcept {
+  INLINE Pipeline() = default;
+  INLINE Pipeline(VkGraphicsPipelineCreateInfo &createInfo) {
+    create(createInfo);
+  }
+  INLINE Pipeline(VkComputePipelineCreateInfo &createInfo) {
+    create(createInfo);
+  }
+  INLINE Pipeline(Pipeline &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
   ~Pipeline() { vkDestroyPipeline(_Ctx::get_device(), handle, nullptr); }
-  operator VkPipeline() { return handle; }
-  VkPipeline *get_pointer() { return &handle; }
+  INLINE operator VkPipeline() { return handle; }
+  INLINE VkPipeline *get_pointer() { return &handle; }
   VkResult create(VkGraphicsPipelineCreateInfo &createInfo) {
-    VkResult result =
-        vkCreateGraphicsPipelines(_Ctx::get_device(), VK_NULL_HANDLE, 1,
-                                  &createInfo, nullptr, &handle);
+    VkResult result = vkCreateGraphicsPipelines(
+        _Ctx::get_device(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &handle);
     if (result) {
       print_error("pipeline", "Failed to create a graphics pipeline! Code:",
                   string_VkResult(result));
@@ -520,9 +531,8 @@ public:
     return result;
   }
   VkResult create(VkComputePipelineCreateInfo &createInfo) {
-    VkResult result =
-        vkCreateComputePipelines(_Ctx::get_device(), VK_NULL_HANDLE, 1,
-                                 &createInfo, nullptr, &handle);
+    VkResult result = vkCreateComputePipelines(
+        _Ctx::get_device(), VK_NULL_HANDLE, 1, &createInfo, nullptr, &handle);
     if (result) {
       print_error("pipeline", "Failed to create a compute pipeline! Code:",
                   string_VkResult(result));
@@ -532,32 +542,34 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class Buffer {
-  static constexpr const char* s_TypeName = "Buffer";
+  static constexpr const char *s_TypeName = "Buffer";
+
 protected:
   VkBuffer handle = VK_NULL_HANDLE;
   VmaAllocation allocation = VK_NULL_HANDLE;
 
 public:
-  Buffer() = default;
-  Buffer(VkBufferCreateInfo &createInfo, VmaAllocationCreateInfo &allocInfo) {
+  INLINE Buffer() = default;
+  INLINE Buffer(VkBufferCreateInfo &createInfo,
+                VmaAllocationCreateInfo &allocInfo) {
     allocate(createInfo, allocInfo);
   }
-  Buffer(VkDeviceSize size, VkBufferCreateFlags vk_flag,
-         VkBufferUsageFlags vk_usage, VmaAllocationCreateFlags vma_flag,
-         VmaMemoryUsage vma_usage = VMA_MEMORY_USAGE_AUTO,
-         VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
+  INLINE Buffer(VkDeviceSize size, VkBufferCreateFlags vk_flag,
+                VkBufferUsageFlags vk_usage, VmaAllocationCreateFlags vma_flag,
+                VmaMemoryUsage vma_usage = VMA_MEMORY_USAGE_AUTO,
+                VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
     allocate(size, vk_flag, vk_usage, vma_flag, vma_usage, sharing_mode);
   }
-  Buffer(Buffer &&other) noexcept {
+  INLINE Buffer(Buffer &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
     allocation = other.allocation;
     other.allocation = VK_NULL_HANDLE;
   }
-  operator VkBuffer() { return handle; }
-  VkBuffer *get_pointer() { return &handle; }
-  operator VmaAllocation() { return allocation; }
-  VmaAllocation getAllocation() { return allocation; }
+  INLINE operator VkBuffer() { return handle; }
+  INLINE VkBuffer *get_pointer() { return &handle; }
+  INLINE operator VmaAllocation() { return allocation; }
+  INLINE VmaAllocation getAllocation() { return allocation; }
   ~Buffer() {
     vmaDestroyBuffer(_Ctx::get_allocator(), handle, allocation);
     handle = VK_NULL_HANDLE;
@@ -565,8 +577,8 @@ public:
   }
   VkResult transfer_data(const void *pData, VkDeviceSize length,
                          VkDeviceSize offset = 0) {
-    VkResult result = vmaCopyMemoryToAllocation(
-        _Ctx::get_allocator(), pData, allocation, offset, length);
+    VkResult result = vmaCopyMemoryToAllocation(_Ctx::get_allocator(), pData,
+                                                allocation, offset, length);
     if (result) {
       print_error(s_TypeName,
                   "transfer_data() failed! Code:", string_VkResult(result));
@@ -585,19 +597,20 @@ public:
   }
   void *map_data() {
     void *data = nullptr;
-    VkResult result =
-        vmaMapMemory(_Ctx::get_allocator(), allocation, &data);
+    VkResult result = vmaMapMemory(_Ctx::get_allocator(), allocation, &data);
     if (result) {
       print_error(s_TypeName,
                   "map_data() failed! Code:", string_VkResult(result));
     }
     return data;
   }
-  void unmap_data() { vmaUnmapMemory(_Ctx::get_allocator(), allocation); }
+  INLINE void unmap_data() {
+    vmaUnmapMemory(_Ctx::get_allocator(), allocation);
+  }
   VkResult flush_data(VkDeviceSize offset = 0,
                       VkDeviceSize length = VK_WHOLE_SIZE) {
-    VkResult result = vmaFlushAllocation(_Ctx::get_allocator(), allocation,
-                                         offset, length);
+    VkResult result =
+        vmaFlushAllocation(_Ctx::get_allocator(), allocation, offset, length);
     if (result) {
       print_error(s_TypeName,
                   "flush_data() failed! Code:", string_VkResult(result));
@@ -606,8 +619,8 @@ public:
   }
   VkResult invalidate_data(VkDeviceSize offset = 0,
                            VkDeviceSize length = VK_WHOLE_SIZE) {
-    VkResult result = vmaInvalidateAllocation(_Ctx::get_allocator(),
-                                              allocation, offset, length);
+    VkResult result = vmaInvalidateAllocation(_Ctx::get_allocator(), allocation,
+                                              offset, length);
     if (result) {
       print_error(s_TypeName,
                   "invalidate_data() failed! Code:", string_VkResult(result));
@@ -617,8 +630,8 @@ public:
   VkResult allocate(VkBufferCreateInfo &createInfo,
                     VmaAllocationCreateInfo &allocInfo) {
     VkResult result =
-        vmaCreateBuffer(_Ctx::get_allocator(), &createInfo, &allocInfo,
-                        &handle, &allocation, nullptr);
+        vmaCreateBuffer(_Ctx::get_allocator(), &createInfo, &allocInfo, &handle,
+                        &allocation, nullptr);
     if (result) {
       print_error(s_TypeName, "VMA error when create Buffer. Code:",
                   string_VkResult(result));
@@ -640,7 +653,7 @@ public:
   }
 };
 template <typename _Ctx>
-VkDeviceSize calculate_block_alignment(VkDeviceSize size) {
+INLINE VkDeviceSize calculate_block_alignment(VkDeviceSize size) {
   static const VkDeviceSize uniformAlignment =
       _Ctx::get_phydevice_memory_properties()
           .properties.limits.minUniformBufferOffsetAlignment;
@@ -648,22 +661,23 @@ VkDeviceSize calculate_block_alignment(VkDeviceSize size) {
 }
 template <typename _Ctx = ContextTraits>
 class IndexBuffer : public Buffer<_Ctx> {
-  static constexpr const char* s_TypeName = "IndexBuffer";
+  static constexpr const char *s_TypeName = "IndexBuffer";
+
 public:
-  IndexBuffer() = default;
-  IndexBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
-              VkBufferUsageFlags other_usage = 0,
-              VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
+  INLINE IndexBuffer() = default;
+  INLINE IndexBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
+                     VkBufferUsageFlags other_usage = 0,
+                     VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
     create(block_size, flags, other_usage, sharing_mode);
   }
-  IndexBuffer(IndexBuffer &&other) noexcept
+  INLINE IndexBuffer(IndexBuffer &&other) noexcept
       : Buffer<_Ctx>(std::move(other)) {}
-  operator VkBuffer() { return this->handle; }
-  VkBuffer *get_pointer() { return &this->handle; }
-  ~IndexBuffer() {}
-  VkResult create(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
-                  VkBufferUsageFlags other_usage = 0,
-                  VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
+  INLINE operator VkBuffer() { return this->handle; }
+  INLINE VkBuffer *get_pointer() { return &this->handle; }
+  INLINE VkResult
+  create(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
+         VkBufferUsageFlags other_usage = 0,
+         VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
     VkResult result =
         this->allocate(block_size, flags,
                        VK_BUFFER_USAGE_INDEX_BUFFER_BIT |
@@ -674,22 +688,24 @@ public:
 };
 template <typename _Ctx = ContextTraits>
 class VertexBuffer : protected Buffer<_Ctx> {
-  static constexpr const char* s_TypeName = "VertexBuffer";
+  static constexpr const char *s_TypeName = "VertexBuffer";
+
 public:
-  VertexBuffer() = default;
-  VertexBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
-               VkBufferUsageFlags other_usage = 0,
-               VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
+  INLINE VertexBuffer() = default;
+  INLINE VertexBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
+                      VkBufferUsageFlags other_usage = 0,
+                      VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
     create(block_size, flags, other_usage, sharing_mode);
   }
-  VertexBuffer(VertexBuffer &&other) noexcept
+  INLINE VertexBuffer(VertexBuffer &&other) noexcept
       : Buffer<_Ctx>(std::move(other)) {}
-  operator VkBuffer() { return this->handle; }
-  VkBuffer *get_pointer() { return &this->handle; }
+  INLINE operator VkBuffer() { return this->handle; }
+  INLINE VkBuffer *get_pointer() { return &this->handle; }
   ~VertexBuffer() {}
-  VkResult create(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
-                  VkBufferUsageFlags other_usage = 0,
-                  VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
+  INLINE VkResult
+  create(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
+         VkBufferUsageFlags other_usage = 0,
+         VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
     VkResult result =
         this->allocate(block_size, flags,
                        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT |
@@ -700,23 +716,25 @@ public:
 };
 template <typename _Ctx = ContextTraits>
 class TransferBuffer : protected Buffer<_Ctx> {
-  static constexpr const char* s_TypeName = "TransferBuffer";
+  static constexpr const char *s_TypeName = "TransferBuffer";
+
 protected:
   void *pBufferData;
   VkDeviceSize bufferSize;
 
 public:
-  TransferBuffer() = default;
+  INLINE TransferBuffer() = default;
+  INLINE
   TransferBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
                  VkBufferUsageFlags other_usage = 0,
                  VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
     create(block_size, flags, other_usage, sharing_mode);
   }
-  TransferBuffer(TransferBuffer &&other) noexcept
+  INLINE TransferBuffer(TransferBuffer &&other) noexcept
       : Buffer<_Ctx>(std::move(other)) {}
-  operator VkBuffer() { return this->handle; }
-  VkBuffer *get_pointer() { return &this->handle; }
-  void *get_pdata() { return pBufferData; }
+  INLINE operator VkBuffer() { return this->handle; }
+  INLINE VkBuffer *get_pointer() { return &this->handle; }
+  INLINE void *get_pdata() { return pBufferData; }
   ~TransferBuffer() {}
   VkResult resize(VkDeviceSize new_size, VkBufferCreateFlags flags = 0,
                   VkBufferUsageFlags other_usage = 0,
@@ -724,26 +742,26 @@ public:
     if (bufferSize >= new_size)
       return VK_SUCCESS;
     else {
-      vmaDestroyBuffer(_Ctx::get_allocator(), this->handle,
-                       this->allocation);
+      vmaDestroyBuffer(_Ctx::get_allocator(), this->handle, this->allocation);
       return create(new_size, flags, other_usage, sharing_mode);
     }
   }
-  VkResult flush() { return this->flush_data(); }
-  VkResult flush(VkDeviceSize offset, VkDeviceSize length) {
+  INLINE VkResult flush() { return this->flush_data(); }
+  INLINE VkResult flush(VkDeviceSize offset, VkDeviceSize length) {
     return this->flush_data(offset, length);
   }
-  VkResult transfer_data(const void *pData) {
+  INLINE VkResult transfer_data(const void *pData) {
     memcpy(pBufferData, pData, bufferSize);
     return this->flush_data();
   }
-  VkResult transfer_data(const void *pData, VkDeviceSize offset,
-                         VkDeviceSize length) {
+  INLINE VkResult transfer_data(const void *pData, VkDeviceSize offset,
+                                VkDeviceSize length) {
     memcpy((uint8_t *)pBufferData + offset, pData, length);
     return this->flush_data(offset, length);
   }
-  void cmd_insert_transfer(VkCommandBuffer cmdBuf, VkBuffer dstBuf,
-                           const VkBufferCopy *copyInfos, uint32_t count = 1) {
+  INLINE void cmd_insert_transfer(VkCommandBuffer cmdBuf, VkBuffer dstBuf,
+                                  const VkBufferCopy *copyInfos,
+                                  uint32_t count = 1) {
     vkCmdCopyBuffer(cmdBuf, this->handle, dstBuf, count, copyInfos);
   }
   VkResult transfer_to_buffer(VkQueue cmdPool, VkCommandBuffer cmdBuf,
@@ -785,8 +803,7 @@ public:
             VMA_ALLOCATION_CREATE_HOST_ACCESS_RANDOM_BIT,
         VMA_MEMORY_USAGE_AUTO_PREFER_HOST, sharing_mode);
     VmaAllocationInfo allocInfo;
-    vmaGetAllocationInfo(_Ctx::get_allocator(), this->allocation,
-                         &allocInfo);
+    vmaGetAllocationInfo(_Ctx::get_allocator(), this->allocation, &allocInfo);
     pBufferData = allocInfo.pMappedData;
     bufferSize = allocInfo.size;
     return result;
@@ -794,27 +811,28 @@ public:
 };
 template <typename _Ctx = ContextTraits>
 class UniformBuffer : protected Buffer<_Ctx> {
-  static constexpr const char* s_TypeName = "UniformBuffer";
+  static constexpr const char *s_TypeName = "UniformBuffer";
+
 protected:
   void *pBufferData;
   VkDeviceSize blockOffset, blockSize;
 
 public:
-  UniformBuffer() = default;
-  UniformBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
-                VkBufferUsageFlags other_usage = 0,
-                VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
+  INLINE UniformBuffer() = default;
+  INLINE UniformBuffer(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
+                       VkBufferUsageFlags other_usage = 0,
+                       VkSharingMode sharing_mode = VK_SHARING_MODE_EXCLUSIVE) {
     create(blockSize, flags, other_usage, sharing_mode);
   }
-  UniformBuffer(UniformBuffer &&other) noexcept
+  INLINE UniformBuffer(UniformBuffer &&other) noexcept
       : Buffer<_Ctx>(std::move(other)) {
     pBufferData = other.pBufferData;
     other.pBufferData = nullptr;
     blockOffset = other.blockOffset;
     blockSize = other.blockSize;
   }
-  operator VkBuffer() { return this->handle; }
-  VkBuffer *get_pointer() { return &this->handle; }
+  INLINE operator VkBuffer() { return this->handle; }
+  INLINE VkBuffer *get_pointer() { return &this->handle; }
   ~UniformBuffer() { pBufferData = nullptr; }
   void transfer_data(const void *pData) {
     for (uint32_t i = 0; i < _Ctx::get_inflight_maxnum(); i++) {
@@ -830,9 +848,9 @@ public:
       this->flush_data(d, size);
     }
   }
-  void *get_pdata() { return pBufferData; }
-  VkDeviceSize get_alignment() { return blockOffset; }
-  VkDeviceSize get_block_size() { return blockSize; }
+  INLINE void *get_pdata() { return pBufferData; }
+  INLINE VkDeviceSize get_alignment() { return blockOffset; }
+  INLINE VkDeviceSize get_block_size() { return blockSize; }
 
   VkResult create(VkDeviceSize block_size, VkBufferCreateFlags flags = 0,
                   VkBufferUsageFlags other_usage = 0,
@@ -846,8 +864,7 @@ public:
             VMA_ALLOCATION_CREATE_HOST_ACCESS_SEQUENTIAL_WRITE_BIT,
         VMA_MEMORY_USAGE_AUTO, sharing_mode);
     VmaAllocationInfo allocInfo;
-    vmaGetAllocationInfo(_Ctx::get_allocator(), this->allocation,
-                         &allocInfo);
+    vmaGetAllocationInfo(_Ctx::get_allocator(), this->allocation, &allocInfo);
     pBufferData = allocInfo.pMappedData;
     return result;
   }
@@ -856,13 +873,13 @@ template <typename _Ctx = ContextTraits> class BufferView {
   VkBufferView handle = VK_NULL_HANDLE;
 
 public:
-  BufferView() = default;
-  BufferView(VkBufferViewCreateInfo &createInfo) { create(createInfo); }
-  BufferView(VkBuffer buffer, VkFormat format, VkDeviceSize offset = 0,
-             VkDeviceSize range = 0 /*VkBufferViewCreateFlags flags*/) {
+  INLINE BufferView() = default;
+  INLINE BufferView(VkBufferViewCreateInfo &createInfo) { create(createInfo); }
+  INLINE BufferView(VkBuffer buffer, VkFormat format, VkDeviceSize offset = 0,
+                    VkDeviceSize range = 0 /*VkBufferViewCreateFlags flags*/) {
     create(buffer, format, offset, range);
   }
-  BufferView(BufferView &&other) noexcept {
+  INLINE BufferView(BufferView &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -871,11 +888,11 @@ public:
       vkDestroyBufferView(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkBufferView() { return handle; }
-  VkBufferView *get_pointer() { return &handle; }
+  INLINE operator VkBufferView() { return handle; }
+  INLINE VkBufferView *get_pointer() { return &handle; }
   VkResult create(VkBufferViewCreateInfo &createInfo) {
-    VkResult result = vkCreateBufferView(_Ctx::get_device(), &createInfo,
-                                         nullptr, &handle);
+    VkResult result =
+        vkCreateBufferView(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
       print_error("BufferView", "Failed to create a buffer view! Code:",
                   string_VkResult(result));
@@ -896,16 +913,17 @@ public:
 // 图像数据类
 // 指定格式时使用 vk_format_utils.h 的内容
 template <typename _Ctx = ContextTraits> class Image {
-  static constexpr const char* s_TypeName = "Image";
+  static constexpr const char *s_TypeName = "Image";
   VkImage handle = VK_NULL_HANDLE;
   VmaAllocation allocation = VK_NULL_HANDLE;
 
 public:
-  Image() = default;
-  Image(VkImageCreateInfo &createInfo, VmaAllocationCreateInfo &allocInfo) {
+  INLINE Image() = default;
+  INLINE Image(VkImageCreateInfo &createInfo,
+               VmaAllocationCreateInfo &allocInfo) {
     create(createInfo, allocInfo);
   }
-  Image(Image &&other) noexcept {
+  INLINE Image(Image &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
     allocation = other.allocation;
@@ -916,10 +934,10 @@ public:
     handle = VK_NULL_HANDLE;
     allocation = VK_NULL_HANDLE;
   }
-  operator VkImage() { return handle; }
-  VkImage *get_pointer() { return &handle; }
-  operator VmaAllocation() { return allocation; }
-  VmaAllocation getAllocation() { return allocation; }
+  INLINE operator VkImage() { return handle; }
+  INLINE VkImage *get_pointer() { return &handle; }
+  INLINE operator VmaAllocation() { return allocation; }
+  INLINE VmaAllocation getAllocation() { return allocation; }
   VkResult create(VkImageCreateInfo &createInfo,
                   VmaAllocationCreateInfo &allocInfo) {
     VkResult result = vmaCreateImage(_Ctx::get_allocator(), &createInfo,
@@ -932,18 +950,18 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class ImageView {
-  static constexpr const char* s_TypeName = "ImageView";
+  static constexpr const char *s_TypeName = "ImageView";
   VkImageView handle = VK_NULL_HANDLE;
 
 public:
-  ImageView() = default;
-  ImageView(VkImageViewCreateInfo &createInfo) { allocate(createInfo); }
-  ImageView(VkImage image, VkImageViewType viewType, VkFormat format,
-            const VkImageSubresourceRange &subresourceRange,
-            VkImageViewCreateFlags flags = 0) {
+  INLINE ImageView() = default;
+  INLINE ImageView(VkImageViewCreateInfo &createInfo) { allocate(createInfo); }
+  INLINE ImageView(VkImage image, VkImageViewType viewType, VkFormat format,
+                   const VkImageSubresourceRange &subresourceRange,
+                   VkImageViewCreateFlags flags = 0) {
     allocate(image, viewType, format, subresourceRange, flags);
   }
-  ImageView(ImageView &&other) noexcept {
+  INLINE ImageView(ImageView &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -952,11 +970,11 @@ public:
       vkDestroyImageView(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkImageView() { return handle; }
-  VkImageView *get_pointer() { return &handle; }
+  INLINE operator VkImageView() { return handle; }
+  INLINE VkImageView *get_pointer() { return &handle; }
   VkResult allocate(VkImageViewCreateInfo &createInfo) {
-    VkResult result = vkCreateImageView(_Ctx::get_device(), &createInfo,
-                                        nullptr, &handle);
+    VkResult result =
+        vkCreateImageView(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
       print_error(s_TypeName,
                   "Failed to create an image view! "
@@ -979,13 +997,13 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class Sampler {
-  static constexpr const char* s_TypeName = "Sampler";
+  static constexpr const char *s_TypeName = "Sampler";
   VkSampler handle = VK_NULL_HANDLE;
 
 public:
-  Sampler() = default;
-  Sampler(VkSamplerCreateInfo &createInfo) { create(createInfo); }
-  Sampler(Sampler &&other) noexcept {
+  INLINE Sampler() = default;
+  INLINE Sampler(VkSamplerCreateInfo &createInfo) { create(createInfo); }
+  INLINE Sampler(Sampler &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -994,8 +1012,8 @@ public:
       vkDestroySampler(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkSampler() { return handle; }
-  VkSampler *get_pointer() { return &handle; }
+  INLINE operator VkSampler() { return handle; }
+  INLINE VkSampler *get_pointer() { return &handle; }
   VkResult create(VkSamplerCreateInfo &createInfo) {
     VkResult result =
         vkCreateSampler(_Ctx::get_device(), &createInfo, nullptr, &handle);
@@ -1007,15 +1025,15 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class DescriptorSetLayout {
-  static constexpr const char* s_TypeName = "DescriptorSetLayout";
+  static constexpr const char *s_TypeName = "DescriptorSetLayout";
   VkDescriptorSetLayout handle = VK_NULL_HANDLE;
 
 public:
-  DescriptorSetLayout() = default;
-  DescriptorSetLayout(VkDescriptorSetLayoutCreateInfo &createInfo) {
+  INLINE DescriptorSetLayout() = default;
+  INLINE DescriptorSetLayout(VkDescriptorSetLayoutCreateInfo &createInfo) {
     create(createInfo);
   }
-  DescriptorSetLayout(DescriptorSetLayout &&other) noexcept {
+  INLINE DescriptorSetLayout(DescriptorSetLayout &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -1024,14 +1042,13 @@ public:
       vkDestroyDescriptorSetLayout(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkDescriptorSetLayout() { return handle; }
-  VkDescriptorSetLayout *get_pointer() { return &handle; }
+  INLINE operator VkDescriptorSetLayout() { return handle; }
+  INLINE VkDescriptorSetLayout *get_pointer() { return &handle; }
   VkResult create(VkDescriptorSetLayoutCreateInfo &createInfo) {
     VkResult result = vkCreateDescriptorSetLayout(
         _Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
-      print_error(s_TypeName,
-                  "Failed to create a descriptor set layout! Code:",
+      print_error(s_TypeName, "Failed to create a descriptor set layout! Code:",
                   string_VkResult(result));
     }
     return result;
@@ -1039,18 +1056,18 @@ public:
 };
 template <typename _Ctx> class DescriptorPool;
 template <typename _Ctx = ContextTraits> class DescriptorSet {
-  static constexpr const char* s_TypeName = "DescriptorSet";
+  static constexpr const char *s_TypeName = "DescriptorSet";
   friend class DescriptorPool<_Ctx>;
   VkDescriptorSet handle = VK_NULL_HANDLE;
 
 public:
-  DescriptorSet() = default;
-  DescriptorSet(DescriptorSet &&other) noexcept {
+  INLINE DescriptorSet() = default;
+  INLINE DescriptorSet(DescriptorSet &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
-  operator VkDescriptorSet() { return handle; }
-  VkDescriptorSet *get_pointer() { return &handle; }
+  INLINE operator VkDescriptorSet() { return handle; }
+  INLINE VkDescriptorSet *get_pointer() { return &handle; }
   void write(const VkDescriptorImageInfo *pDescriptorImageInfos,
              uint32_t descriptorInfoCount, VkDescriptorType descriptorType,
              uint32_t dstBinding = 0, uint32_t dstArrayElement = 0) const {
@@ -1090,34 +1107,35 @@ public:
         .pTexelBufferView = pBufferViews};
     update(&writeDescriptorSet);
   }
-  static void update(VkWriteDescriptorSet *write) {
+  INLINE static void update(VkWriteDescriptorSet *write) {
     vkUpdateDescriptorSets(_Ctx::get_device(), 1, write, 0, nullptr);
   }
-  static void update(VkWriteDescriptorSet *write, VkCopyDescriptorSet *copy) {
+  INLINE static void update(VkWriteDescriptorSet *write,
+                            VkCopyDescriptorSet *copy) {
     vkUpdateDescriptorSets(_Ctx::get_device(), 1, write, 1, copy);
   }
-  static void update(uint32_t writeCount, VkWriteDescriptorSet *writes,
-                     uint32_t copiesCount = 0,
-                     VkCopyDescriptorSet *copies = nullptr) {
-    vkUpdateDescriptorSets(_Ctx::get_device(), writeCount, writes,
-                           copiesCount, copies);
+  INLINE static void update(uint32_t writeCount, VkWriteDescriptorSet *writes,
+                            uint32_t copiesCount = 0,
+                            VkCopyDescriptorSet *copies = nullptr) {
+    vkUpdateDescriptorSets(_Ctx::get_device(), writeCount, writes, copiesCount,
+                           copies);
   }
 };
 template <typename _Ctx = ContextTraits> class DescriptorPool {
-  static constexpr const char* s_TypeName = "DescriptorPool";
+  static constexpr const char *s_TypeName = "DescriptorPool";
   VkDescriptorPool handle = VK_NULL_HANDLE;
 
 public:
-  DescriptorPool() = default;
-  DescriptorPool(const VkDescriptorPoolCreateInfo &createInfo) {
+  INLINE DescriptorPool() = default;
+  INLINE DescriptorPool(const VkDescriptorPoolCreateInfo &createInfo) {
     create(createInfo);
   }
-  DescriptorPool(uint32_t maxSetCount, uint32_t poolSizeCount,
-                 const VkDescriptorPoolSize *poolSizes,
-                 VkDescriptorPoolCreateFlags flags = 0) {
+  INLINE DescriptorPool(uint32_t maxSetCount, uint32_t poolSizeCount,
+                        const VkDescriptorPoolSize *poolSizes,
+                        VkDescriptorPoolCreateFlags flags = 0) {
     create(maxSetCount, poolSizeCount, poolSizes, flags);
   }
-  DescriptorPool(DescriptorPool &&other) noexcept {
+  INLINE DescriptorPool(DescriptorPool &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -1127,8 +1145,8 @@ public:
     }
     handle = VK_NULL_HANDLE;
   }
-  operator VkDescriptorPool() { return handle; }
-  VkDescriptorPool *get_pointer() { return &handle; }
+  INLINE operator VkDescriptorPool() { return handle; }
+  INLINE VkDescriptorPool *get_pointer() { return &handle; }
   // 分配描述符集
   // setLayouts的数量必须等于sets的数量
   VkResult allocate_sets(uint32_t setCount, VkDescriptorSet *sets,
@@ -1155,8 +1173,8 @@ public:
     return result;
   }
   VkResult create(const VkDescriptorPoolCreateInfo &createInfo) {
-    VkResult result = vkCreateDescriptorPool(_Ctx::get_device(),
-                                             &createInfo, nullptr, &handle);
+    VkResult result = vkCreateDescriptorPool(_Ctx::get_device(), &createInfo,
+                                             nullptr, &handle);
     if (result) {
       print_error(s_TypeName,
                   "Failed to create a descriptor "
@@ -1178,18 +1196,18 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class QueryPool {
-  static constexpr const char* s_TypeName = "QueryPool";
+  static constexpr const char *s_TypeName = "QueryPool";
   VkQueryPool handle = VK_NULL_HANDLE;
 
 public:
-  QueryPool() = default;
-  QueryPool(VkQueryPoolCreateInfo &createInfo) { create(createInfo); }
-  QueryPool(VkQueryType queryType, uint32_t queryCount,
-            VkQueryPipelineStatisticFlags pipelineStatistics =
-                0 /*VkQueryPoolCreateFlags flags*/) {
+  INLINE QueryPool() = default;
+  INLINE QueryPool(VkQueryPoolCreateInfo &createInfo) { create(createInfo); }
+  INLINE QueryPool(VkQueryType queryType, uint32_t queryCount,
+                   VkQueryPipelineStatisticFlags pipelineStatistics =
+                       0 /*VkQueryPoolCreateFlags flags*/) {
     create(queryType, queryCount, pipelineStatistics);
   }
-  QueryPool(QueryPool &&other) noexcept {
+  INLINE QueryPool(QueryPool &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -1198,8 +1216,8 @@ public:
       vkDestroyQueryPool(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkQueryPool() { return handle; }
-  VkQueryPool *get_pointer() { return &handle; }
+  INLINE operator VkQueryPool() { return handle; }
+  INLINE VkQueryPool *get_pointer() { return &handle; }
   void cmd_reset(VkCommandBuffer cmdBuf, uint32_t firstQueryIndex,
                  uint32_t queryCount) const {
     vkCmdResetQueryPool(cmdBuf, handle, firstQueryIndex, queryCount);
@@ -1239,13 +1257,12 @@ public:
     }
     return result;
   }
-  void reset(uint32_t firstQueryIndex, uint32_t queryCount) {
-    vkResetQueryPool(_Ctx::get_device(), handle, firstQueryIndex,
-                     queryCount);
+  INLINE void reset(uint32_t firstQueryIndex, uint32_t queryCount) {
+    vkResetQueryPool(_Ctx::get_device(), handle, firstQueryIndex, queryCount);
   }
   VkResult create(VkQueryPoolCreateInfo &createInfo) {
-    VkResult result = vkCreateQueryPool(_Ctx::get_device(), &createInfo,
-                                        nullptr, &handle);
+    VkResult result =
+        vkCreateQueryPool(_Ctx::get_device(), &createInfo, nullptr, &handle);
     if (result) {
       print_error(s_TypeName, "Failed to create a query pool! Code:",
                   string_VkResult(result));
@@ -1264,34 +1281,36 @@ public:
   }
 };
 template <typename _Ctx = ContextTraits> class OcclusionQueries {
-  static constexpr const char* s_TypeName = "OcclusionQueries";
+  static constexpr const char *s_TypeName = "OcclusionQueries";
+
 protected:
   QueryPool<_Ctx> queryPool;
   std::vector<uint32_t> occlusionResults;
 
 public:
-  OcclusionQueries() = default;
-  OcclusionQueries(uint32_t capacity) { create(capacity); }
-  operator VkQueryPool() { return queryPool; }
-  VkQueryPool *get_pointer() { return queryPool.get_pointer(); }
-  uint32_t capacity() const { return occlusionResults.size(); }
-  uint32_t passing_sample_count(uint32_t index) const {
+  INLINE OcclusionQueries() = default;
+  INLINE OcclusionQueries(uint32_t capacity) { create(capacity); }
+  INLINE operator VkQueryPool() { return queryPool; }
+  INLINE VkQueryPool *get_pointer() { return queryPool.get_pointer(); }
+  INLINE uint32_t capacity() const { return occlusionResults.size(); }
+  INLINE uint32_t passing_sample_count(uint32_t index) const {
     return occlusionResults[index];
   }
-  void cmd_reset(VkCommandBuffer cmdBuf) const {
+  INLINE void cmd_reset(VkCommandBuffer cmdBuf) const {
     queryPool.cmd_reset(cmdBuf, 0, capacity());
   }
-  void cmd_begin(VkCommandBuffer cmdBuf, uint32_t queryIndex,
-                 bool isPrecise = false) const {
+  INLINE void cmd_begin(VkCommandBuffer cmdBuf, uint32_t queryIndex,
+                        bool isPrecise = false) const {
     queryPool.cmd_begin(cmdBuf, queryIndex, isPrecise);
   }
-  void cmd_end(VkCommandBuffer cmdBuf, uint32_t queryIndex) const {
+  INLINE void cmd_end(VkCommandBuffer cmdBuf, uint32_t queryIndex) const {
     queryPool.cmd_end(cmdBuf, queryIndex);
   }
   /*常用于GPU-driven遮挡剔除*/
-  void cmd_copy_results(VkCommandBuffer cmdBuf, uint32_t firstQueryIndex,
-                        uint32_t queryCount, VkBuffer buffer_dst,
-                        VkDeviceSize offset_dst, VkDeviceSize stride) const {
+  INLINE void cmd_copy_results(VkCommandBuffer cmdBuf, uint32_t firstQueryIndex,
+                               uint32_t queryCount, VkBuffer buffer_dst,
+                               VkDeviceSize offset_dst,
+                               VkDeviceSize stride) const {
     // 需要等待查询结束以获取正确的数值，flags为VK_QUERY_RESULT_WAIT_BIT
     queryPool.cmd_copy_results(cmdBuf, firstQueryIndex, queryCount, buffer_dst,
                                offset_dst, stride, VK_QUERY_RESULT_WAIT_BIT);
@@ -1301,23 +1320,23 @@ public:
     occlusionResults.shrink_to_fit();
     queryPool.create(VK_QUERY_TYPE_OCCLUSION, capacity);
   }
-  VkResult get_results(uint32_t queryCount) {
+  INLINE VkResult get_results(uint32_t queryCount) {
     return queryPool.get_results(0, queryCount, queryCount * 4,
                                  occlusionResults.data(), 4);
   }
-  VkResult get_results() {
+  INLINE VkResult get_results() {
     return queryPool.get_results(0, capacity(), capacity() * 4,
                                  occlusionResults.data(), 4);
   }
 };
 template <typename _Ctx = ContextTraits> class Event {
-  static constexpr const char* s_TypeName = s_TypeName;
+  static constexpr const char *s_TypeName = s_TypeName;
   VkEvent handle = VK_NULL_HANDLE;
 
 public:
-  Event() = default;
-  Event(VkEventCreateInfo &createInfo) { create(createInfo); }
-  Event(Event &&other) noexcept {
+  INLINE Event() = default;
+  INLINE Event(VkEventCreateInfo &createInfo) { create(createInfo); }
+  INLINE Event(Event &&other) noexcept {
     handle = other.handle;
     other.handle = VK_NULL_HANDLE;
   }
@@ -1326,23 +1345,25 @@ public:
       vkDestroyEvent(_Ctx::get_device(), handle, nullptr);
     handle = VK_NULL_HANDLE;
   }
-  operator VkEvent() { return handle; }
-  VkEvent *get_pointer() { return &handle; }
-  void cmd_set(VkCommandBuffer commandBuffer,
-               VkPipelineStageFlags stage_from) const {
+  INLINE operator VkEvent() { return handle; }
+  INLINE VkEvent *get_pointer() { return &handle; }
+  INLINE void cmd_set(VkCommandBuffer commandBuffer,
+                      VkPipelineStageFlags stage_from) const {
     vkCmdSetEvent(commandBuffer, handle, stage_from);
   }
-  void cmd_reset(VkCommandBuffer commandBuffer,
-                 VkPipelineStageFlags stage_from) const {
+  INLINE void cmd_reset(VkCommandBuffer commandBuffer,
+                        VkPipelineStageFlags stage_from) const {
     vkCmdResetEvent(commandBuffer, handle, stage_from);
   }
-  void cmd_wait(VkCommandBuffer commandBuffer, VkPipelineStageFlags stage_from,
-                VkPipelineStageFlags stage_to, VkMemoryBarrier *memoryBarriers,
-                uint32_t memoryBarrierCount,
-                VkBufferMemoryBarrier *bufferMemoryBarriers,
-                uint32_t bufferMemoryBarrierCount,
-                VkImageMemoryBarrier *imageMemoryBarriers,
-                uint32_t imageMemoryBarrierCount) const {
+  INLINE void cmd_wait(VkCommandBuffer commandBuffer,
+                       VkPipelineStageFlags stage_from,
+                       VkPipelineStageFlags stage_to,
+                       VkMemoryBarrier *memoryBarriers,
+                       uint32_t memoryBarrierCount,
+                       VkBufferMemoryBarrier *bufferMemoryBarriers,
+                       uint32_t bufferMemoryBarrierCount,
+                       VkImageMemoryBarrier *imageMemoryBarriers,
+                       uint32_t imageMemoryBarrierCount) const {
     vkCmdWaitEvents(commandBuffer, 1, &handle, stage_from, stage_to,
                     memoryBarrierCount, memoryBarriers,
                     bufferMemoryBarrierCount, bufferMemoryBarriers,
@@ -1384,15 +1405,14 @@ public:
     }
     return result;
   }
-  VkResult create(VkEventCreateFlags flags = 0) {
+  INLINE VkResult create(VkEventCreateFlags flags = 0) {
     VkEventCreateInfo createInfo = {
         .sType = VK_STRUCTURE_TYPE_EVENT_CREATE_INFO, .flags = flags};
     return create(createInfo);
   }
 };
-} // namespace BLT
+} // namespace blt
 #ifdef forceinline
 #undef forceinline
 #endif
 #endif //! _BL_VKTYPES_FILE_
-
