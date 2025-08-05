@@ -21,26 +21,30 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#include <bl_vktypes.hpp>
+#ifndef _BL_LOADER_SHADER_HPP_FILE_
+#define _BL_LOADER_SHADER_HPP_FILE_
 #include <bl_util.hpp>
+#include <bl_vktypes.hpp>
 #include <cstdint>
 #include <vector>
 namespace blt {
-namespace details {
+namespace _shader_traits {
 struct ShaderStageInfo {
   uint32_t m_ModuleFlagBits;
   uint64_t m_ModuleCodeSize;
   uint64_t m_MoeuleCodeOffset;
 };
 struct ShaderFile {
-constexpr static uint32_t magic_number =  0x53484144;// hex of ascii: SHAD
-constexpr static uint32_t current_version = 1; 
-uint32_t m_HeadNumber;
-uint32_t m_FileVersion;
-uint32_t m_HeadSize;
-uint32_t m_StagesCount;
-ShaderStageInfo m_Stages[];
+  constexpr static uint32_t magic_number = 0x53484144; // hex of ascii: SHAD
+  constexpr static uint32_t current_version = 1;
+  uint32_t m_HeadNumber;
+  uint32_t m_FileVersion;
+  uint32_t m_HeadSize;
+  uint32_t m_StagesCount;
+  ShaderStageInfo m_Stages[];
 };
-}
-LoadResult load_shader(std::vector<VkPipelineShaderStageCreateInfo>& ret, const char* path);
-}
+} // namespace _shader_traits
+LoadResult load_shader(std::vector<VkPipelineShaderStageCreateInfo> &ret,
+                       const char *path);
+} // namespace blt
+#endif //! _BL_LOADER_SHADER_HPP_FILE_

@@ -21,17 +21,15 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#ifndef BL_PLAT_MMAN_FILE
-#include <cstdint>
+#ifndef _BL_PLAT_MMAN_FILE_
+#define _BL_PLAT_MMAN_FILE_
+#include <bl_util.hpp>
 #include <cstddef>
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
-    defined(__NT__) && !defined(__CYGWIN__)
-#define IS_WINDOWS
-#endif
-#ifdef __unix__
+#include <cstdint>
+#ifdef BL_PLATFORM_UNIX
 #include <fcntl.h>
 #include <sys/mman.h>
-#elif defined(IS_WINDOWS)
+#elif defined(BL_PLATFORM_WINDOWS)
 #include <windows.h>
 #endif // __unix__
 namespace blt::sys {
@@ -52,9 +50,9 @@ using SyncFlag = _Flag_t::Flags3;
 struct MappedMemory {
   std::byte *m_Data;
   size_t m_Length;
-#ifdef __unix__
-  // todo...
-#elif defined(__WIN32__)
+#ifdef BL_PLATFORM_UNIX
+  int m_fd, m_sync;
+#elif defined(BL_PLATFORM_WINDOWS)
   HANDLE m_FileDescriptor;
   HANDLE m_FileMappingObject;
 #else
@@ -70,11 +68,10 @@ struct MappedMemory {
 // flags: the memory is shared with other processes(MapFlagBits::Shared), or
 //   copy on write(MapFlagBits::Private), it can't be MapFlagBits::Anonymous.
 auto memory_map_file(const char *fpath, std::byte *start, size_t offset,
-                     size_t len, ProtFlagBits prot, MapFlagBits flags)
-    -> MappedMemory;
+                     size_t len, ProtFlagBits prot,
+                     MapFlagBits flags) -> MappedMemory;
 auto memory_map_sync(std::byte *start, size_t len, SyncFlag flag) -> int;
 void memory_unmap_file(MappedMemory &&mem);
 auto acquire_file_size(const char *path) -> size_t;
 } // namespace blt::sys
-#undef IS_WINDOWS
-#endif // !BL_PLAT_MMAN_FILE
+#endif // !_BL_PLAT_MMAN_FILE_

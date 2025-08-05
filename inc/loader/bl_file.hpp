@@ -21,30 +21,44 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#include <cstdint>
+#ifndef _BL_LOADER_FILE_HPP_FILE_
+#define _BL_LOADER_FILE_HPP_FILE_
 #include <bl_util.hpp>
-#include <platform/bl_mmap.hpp>
+#include <cstdint>
+#include <platform/bl_mman.hpp>
 namespace blt {
 /*
 struct File {
   uint32_t header;
   uint32_t head_length;
   ...
+  uint32_t crc32;
 };
  */
+#define READ_UINT32(p) *reinterpret_cast<uint32_t *>(p)
+enum class ProfileStatBits : uint32_t { BitReverse = 0x1 };
+constexpr ProfileStatBits operator|(ProfileStatBits a, ProfileStatBits b) {
+  return static_cast<ProfileStatBits>(a | b);
+}
+constexpr ProfileStatBits operator&(ProfileStatBits a, ProfileStatBits b) {
+  return static_cast<ProfileStatBits>(a & b);
+}
 template <typename T> struct Profile {
   sys::MappedMemory m_mem;
-  void open(const char *path) {
+  ProfileStatBits m_stat;
+  int open(const char *path) {
     m_mem = sys::memory_map_file(path, nullptr, 0, 0, sys::ProtFlagBits::Read,
-                         sys::MapFlagBits::Shared);
+                                 sys::MapFlagBits::Shared);
     if (!m_mem.m_Data)
-      return;
+      return -2;
     constexpr uint32_t head = T::get_headcode();
-    void* p = m_mem.m_Data;
-    if (*(uint32_t*)p == head)
-    else if (*(uint32_t*)p == byte_reverse(head))
-    else return;
-      
+    auto *p = m_mem.m_Data;
+    if (READ_UINT32(p) == byte_reverse(head)) {
+      m_stat = m_stat | ProfileStatBits::BitReverse;
+    } else if (READ_UINT32(p) == head) {
+    } else
+      return -1;
   }
 };
 } // namespace blt
+#endif // !_BL_LOADER_FILE_HPP_FILE_

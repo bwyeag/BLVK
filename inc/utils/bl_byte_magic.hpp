@@ -43,5 +43,8 @@ constexpr uint64_t byte_reverse(uint64_t x) {
   x = (x & 0x00ff00ff00ff00ffull) << 8 | (x & 0xff00ff00ff00ff00ull) >> 8;
   return x;
 }
+//*****************************************************************************
+// CRC 循环冗余校验
+//*****************************************************************************
 } // namespace BLT
 #endif // !BL_UTIL_RESULT_TYPE_FILE

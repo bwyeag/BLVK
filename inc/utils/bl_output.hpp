@@ -31,10 +31,9 @@ SOFTWARE.
 #include <print>
 #include <source_location>
 #include <system_error>
+#include <utils/bl_macro.hpp>
 
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
-    defined(__NT__) && !defined(__CYGWIN__)
-#define IS_WINDOWS
+#ifdef BL_PLATFORM_WINDOWS
 #include <Windows.h>
 #endif
 namespace blt {
@@ -90,6 +89,11 @@ inline void print_source_loc(std::ostream &stm,
   std::print(stm, "[{0}:{1}]", loc.file_name(), loc.line());
 #endif // bl_lib_output_complex
 #else
+  stm << '[' << loc.file_name() << ':' << loc.line();
+#ifdef bl_lib_output_complex
+  stm << '@' << loc.function_name();
+#endif // bl_lib_output_complex
+  stm << ']';
 #endif // __cpp_lib_print
 }
 /// @brief 打印时间点
@@ -107,6 +111,10 @@ inline void print_time(std::ostream &stm) {
   else
     std::print(stm, "[{0}.{1}]", buf, now_ms.count() % count_pre_sec_ms);
 #else
+  if (!std::strftime(buf, max_buf_length, "%H:%M:%S", std::localtime(&t)))
+    stm << '[' << now_ms.count() << "ms]";
+  else
+    stm << '[' << buf << '.' << (now_ms.count() % count_pre_sec_ms) << ']';
 #endif // __cpp_lib_print
 }
 /// @brief 打印错误

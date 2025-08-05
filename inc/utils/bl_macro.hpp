@@ -21,7 +21,18 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
+#undef BL_PLATFORM_WINDOWS
+#undef BL_PLATFORM_UNIX
+#undef INLINE
+#undef INLINE_CALL
+#undef RESTRICT
 
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
+    defined(__NT__) && !defined(__CYGWIN__)
+#define BL_PLATFORM_WINDOWS
+#elif defined(__unix__)
+#define BL_PLATFORM_UNIX
+#endif
 //*****************************************************************************
 // 宏定义
 //*****************************************************************************

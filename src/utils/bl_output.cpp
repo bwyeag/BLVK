@@ -40,47 +40,47 @@ void output_setup() {
 }
 #ifdef IS_WINDOWS
 WORD _get_color_code(ConsoleColor color) {
-  using CC = ConsoleColor;
+  using enum ConsoleColor;
   switch (color) {
-  case CC::green:
+  case green:
     return FOREGROUND_GREEN;
-  case CC::black:
+  case black:
     return 0;
-  case CC::blue:
+  case blue:
     return FOREGROUND_BLUE;
-  case CC::gray:
+  case gray:
     return FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED;
-  case CC::purple:
+  case purple:
     return FOREGROUND_BLUE | FOREGROUND_RED;
-  case CC::red:
+  case red:
     return FOREGROUND_RED;
-  case CC::white:
+  case white:
     return FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_GREEN;
-  case CC::cyan:
+  case cyan:
     return FOREGROUND_BLUE | FOREGROUND_GREEN;
-  case CC::yellow:
+  case yellow:
     return FOREGROUND_RED | FOREGROUND_GREEN;
-  case CC::none:
+  case none:
     return FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_GREEN;
-  case CC::green_intensity:
+  case green_intensity:
     return FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-  case CC::black_intensity:
+  case black_intensity:
     return 0;
-  case CC::blue_intensity:
+  case blue_intensity:
     return FOREGROUND_BLUE | FOREGROUND_INTENSITY;
-  case CC::gray_intensity:
+  case gray_intensity:
     return FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_RED |
            FOREGROUND_INTENSITY;
-  case CC::purple_intensity:
+  case purple_intensity:
     return FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_INTENSITY;
-  case CC::red_intensity:
+  case red_intensity:
     return FOREGROUND_RED | FOREGROUND_INTENSITY;
-  case CC::white_intensity:
+  case white_intensity:
     return FOREGROUND_BLUE | FOREGROUND_RED | FOREGROUND_GREEN |
            FOREGROUND_INTENSITY;
-  case CC::yellow_intensity:
+  case yellow_intensity:
     return FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
-  case CC::cyan_intensity:
+  case cyan_intensity:
     return FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY;
   default:
     return 0;
@@ -88,45 +88,45 @@ WORD _get_color_code(ConsoleColor color) {
 }
 #else
 std::string _get_color_code(ConsoleColor color) {
-  using CC = ConsoleColor;
+  using enum ConsoleColor;
   switch (color) {
-  case CC::green:
+  case green:
     return "\033[32m";
-  case CC::black:
+  case black:
     return "\033[30m";
-  case CC::blue:
+  case blue:
     return "\033[34m";
-  case CC::gray:
+  case gray:
     return "\033[37m";
-  case CC::purple:
+  case purple:
     return "\033[35m";
-  case CC::red:
+  case red:
     return "\033[31m";
-  case CC::white:
+  case white:
     return "\033[37m";
-  case CC::cyan:
+  case cyan:
     return "\033[36m";
-  case CC::yellow:
+  case yellow:
     return "\033[33m";
-  case CC::none:
+  case none:
     return "\033[0m";
-  case CC::green_intensity:
+  case green_intensity:
     return "\033[32m;1m";
-  case CC::black_intensity:
+  case black_intensity:
     return "\033[30m;1m";
-  case CC::blue_intensity:
+  case blue_intensity:
     return "\033[34m;1m";
-  case CC::gray_intensity:
+  case gray_intensity:
     return "\033[37m;1m";
-  case CC::purple_intensity:
+  case purple_intensity:
     return "\033[35m;1m";
-  case CC::red_intensity:
+  case red_intensity:
     return "\033[31m;1m";
-  case CC::white_intensity:
+  case white_intensity:
     return "\033[37m;1m";
-  case CC::yellow_intensity:
+  case yellow_intensity:
     return "\033[33m;1m";
-  case CC::cyan_intensity:
+  case cyan_intensity:
     return "\033[36m;1m";
   default:
     return 0;
@@ -136,27 +136,27 @@ std::string _get_color_code(ConsoleColor color) {
 
 #ifdef IS_WINDOWS
 WORD _get_background_color_code(ConsoleBackgroundColor color) {
-  using BC = ConsoleBackgroundColor;
+  using enum ConsoleBackgroundColor;
   switch (color) {
-  case BC::green:
+  case green:
     return BACKGROUND_GREEN;
-  case BC::black:
+  case black:
     return 0;
-  case BC::blue:
+  case blue:
     return BACKGROUND_BLUE;
-  case BC::gray:
+  case gray:
     return 0;
-  case BC::purple:
+  case purple:
     return BACKGROUND_RED | BACKGROUND_BLUE;
-  case BC::red:
+  case red:
     return BACKGROUND_RED;
-  case BC::white:
+  case white:
     return BACKGROUND_RED | BACKGROUND_BLUE | BACKGROUND_GREEN;
-  case BC::cyan:
+  case cyan:
     return BACKGROUND_BLUE | BACKGROUND_GREEN;
-  case BC::yellow:
+  case yellow:
     return BACKGROUND_RED | BACKGROUND_GREEN;
-  case BC::none:
+  case none:
     return 0;
   default:
     return 0;
@@ -164,27 +164,27 @@ WORD _get_background_color_code(ConsoleBackgroundColor color) {
 }
 #else
 const char *_get_background_color_code(ConsoleBackgroundColor color) {
-  using BC = ConsoleBackgroundColor;
+  using enum ConsoleBackgroundColor;
   switch (color) {
-  case BC::green:
+  case green:
     return "\033[42m";
-  case BC::black:
+  case black:
     return "\033[40m";
-  case BC::blue:
+  case blue:
     return "\033[44m";
-  case BC::gray:
+  case gray:
     return "\033[40m";
-  case BC::purple:
+  case purple:
     return "\033[45m";
-  case BC::red:
+  case red:
     return "\033[41m";
-  case BC::white:
+  case white:
     return "\033[47m";
-  case BC::cyan:
+  case cyan:
     return "\033[46m";
-  case BC::yellow:
+  case yellow:
     return "\033[43m";
-  case BC::none:
+  case none:
     return "\033[40m";
   default:
     return 0;

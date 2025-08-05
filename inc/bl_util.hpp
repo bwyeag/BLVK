@@ -23,6 +23,12 @@ SOFTWARE.
 ******************************************************************************/
 #ifndef _BL_CORE_BL_UTIL_HPP_
 #define _BL_CORE_BL_UTIL_HPP_
+#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
+    defined(__NT__) && !defined(__CYGWIN__)
+#define BL_PLATFORM_WINDOWS
+#elif defined(__unix__)
+#define BL_PLATFORM_UNIX
+#endif
 // 第三方库include
 #include <vulkan/vulkan.h>
 // 标准库include
