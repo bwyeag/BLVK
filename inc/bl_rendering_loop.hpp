@@ -62,7 +62,7 @@ template <typename _Ctx = ContextTraits> struct RenderingLoop {
   std::unique_ptr<cmd_buf_t[]> m_CmdBufs;
   objects_per_frame *m_CurrentObject;
 
-  RenderResult create(uint32_t stages_count, uint32_t resource_count);
+  result_t create(uint32_t stages_count, uint32_t resource_count);
   void cleanup() noexcept;
   objects_per_frame *get_current_objects() { return m_CurrentObject; }
   void next_frame() noexcept { m_CurrentObject = m_CurrentObject->m_Next; }
@@ -92,15 +92,15 @@ struct WindowRenderCtx {
   using FrameInfo = decltype(m_RenderLoop)::objects_per_frame;
   using cmd_buf_t = decltype(m_RenderLoop)::cmd_buf_t;
 
-  RenderResult create(const CreateInfo &info);
+  result_t create(const CreateInfo &info);
   void cleanup() noexcept;
   template <typename Callable>
-  RenderResult begin(VkPipelineStageFlags wait_flag, Callable func,
+  result_t begin(VkPipelineStageFlags wait_flag, Callable func,
                      bool final_stage = false);
   template <typename Callable>
-  RenderResult next(VkPipelineStageFlags wait_flag, Callable func,
+  result_t next(VkPipelineStageFlags wait_flag, Callable func,
                     bool final_stage = false);
-  RenderResult end_and_present(VkPipelineStageFlags wait_flag);
+  result_t end_and_present(VkPipelineStageFlags wait_flag);
 
 protected:
   VkResult present_image(VkPresentInfoKHR &presentInfo);
@@ -122,7 +122,7 @@ namespace blt {
 //*****************************************************************************
 
 template <typename _Ctx>
-RenderResult
+result_t
 RenderingLoop<_Ctx>::create(uint32_t stages_count, uint32_t resource_count) {
   m_StagesCount = stages_count, m_ResCount = resource_count;
   m_Objects = std::make_unique<objects_per_frame[]>(resource_count);
@@ -153,7 +153,7 @@ RenderingLoop<_Ctx>::create(uint32_t stages_count, uint32_t resource_count) {
     obj.m_CmdBufs_p = m_CmdBufs.get() + cmdbufs_size + i;
   }
   m_Objects[resource_count - 1].m_Next = m_CurrentObject = m_Objects.get();
-  return RenderResult::Success;
+  return make_result(RenderResult::Success);
 }
 template <typename _Ctx> void RenderingLoop<_Ctx>::cleanup() noexcept {
   m_Objects.release(), m_Semaphores.release(), m_CmdPool_graphics.~cmd_pool_t(),
@@ -165,10 +165,10 @@ template <typename _Ctx> void RenderingLoop<_Ctx>::cleanup() noexcept {
 //*****************************************************************************
 
 template <typename BaseCtx, typename _Ctx>
-RenderResult WindowRenderCtx<BaseCtx, _Ctx>::create(
+result_t WindowRenderCtx<BaseCtx, _Ctx>::create(
     const WindowRenderCtx<BaseCtx, _Ctx>::CreateInfo &info) {
   if (!info.m_pWindowCtx)
-    return RenderResult::NullPointer;
+    return make_result(RenderResult::NullPointer);
   bool g2p_membarrier_flag =
       (m_Flags & WindowRenderCtxFlagBits::ForceG2PMemBarrier) ||
       _Ctx::get_queueFamilyIndex_graphics() !=
@@ -182,7 +182,7 @@ RenderResult WindowRenderCtx<BaseCtx, _Ctx>::create(
                       (m_Flags & WindowRenderCtxFlagBits::ForceInfight)
                           ? m_pWindowCtx->m_SwapchainImages.size()
                           : 1);
-  return RenderResult::Success;
+  return make_result(RenderResult::Success);
 }
 template <typename BaseCtx, typename _Ctx>
 void WindowRenderCtx<BaseCtx, _Ctx>::cleanup() noexcept {
@@ -191,7 +191,7 @@ void WindowRenderCtx<BaseCtx, _Ctx>::cleanup() noexcept {
 }
 template <typename BaseCtx, typename _Ctx>
 template <typename Callable>
-RenderResult
+result_t
 WindowRenderCtx<BaseCtx, _Ctx>::begin(VkPipelineStageFlags wait_flag,
                                       Callable func, bool final_stage) {
   static_assert(
@@ -204,13 +204,13 @@ WindowRenderCtx<BaseCtx, _Ctx>::begin(VkPipelineStageFlags wait_flag,
   auto &semaphore_to_signal =
       objects.m_Semaphores[m_RenderLoop.m_CurrentStages];
   if (swap_image(semaphore_to_signal, VK_NULL_HANDLE))
-    return RenderResult::SwapImageFailed;
+    return make_result(RenderResult::SwapImageFailed);
   next(wait_flag, func, final_stage);
-  return RenderResult::Success;
+  return make_result(RenderResult::Success);
 }
 template <typename BaseCtx, typename _Ctx>
 template <typename Callable>
-RenderResult
+result_t
 WindowRenderCtx<BaseCtx, _Ctx>::next(VkPipelineStageFlags wait_flag,
                                      Callable func, bool final_stage) {
   static_assert(
@@ -243,13 +243,13 @@ WindowRenderCtx<BaseCtx, _Ctx>::next(VkPipelineStageFlags wait_flag,
           vkQueueSubmit(_Ctx::get_queue_graphics(), 1, &submit,
                         final_stage ? object.m_Fence : VK_NULL_HANDLE)) {
     print_error(s_TypeName, "vkQueueSubmit() failed:", string_VkResult(result));
-    return RenderResult::QueueSubmitFailed;
+    return make_result(RenderResult::QueueSubmitFailed);
   }
   ++m_RenderLoop.m_CurrentStages;
-  return RenderResult::Success;
+  return make_result(RenderResult::Success);
 }
 template <typename BaseCtx, typename _Ctx>
-RenderResult WindowRenderCtx<BaseCtx, _Ctx>::end_and_present(
+result_t WindowRenderCtx<BaseCtx, _Ctx>::end_and_present(
     VkPipelineStageFlags wait_flag) {
   int offset = 0;
   if (_Ctx::get_queueFamilyIndex_graphics() !=
@@ -275,7 +275,7 @@ RenderResult WindowRenderCtx<BaseCtx, _Ctx>::end_and_present(
                                         VK_NULL_HANDLE)) {
       print_error(s_TypeName,
                   "vkQueueSubmit() failed:", string_VkResult(result));
-      return RenderResult::QueueSubmitFailed;
+      return make_result(RenderResult::QueueSubmitFailed);
     }
     offset = 1;
   }
@@ -283,9 +283,9 @@ RenderResult WindowRenderCtx<BaseCtx, _Ctx>::end_and_present(
   if (present_image(
           object.m_Semaphores[m_RenderLoop.m_CurrentStages + offset])) {
     print_error(s_TypeName, "present_image() failed!");
-    return RenderResult::PresentImageFailed;
+    return make_result(RenderResult::PresentImageFailed);
   }
-  return RenderResult::Success;
+  return make_result(RenderResult::Success);
 }
 
 template <typename BaseCtx, typename _Ctx>

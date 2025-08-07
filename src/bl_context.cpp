@@ -28,6 +28,7 @@ SOFTWARE.
 #include <algorithm>
 #include <cstring>
 #include <mutex>
+#include <stdexcept>
 #include <vector>
 #define VMA_IMPLEMENTATION
 #include <vma/vk_mem_alloc.h>
@@ -37,11 +38,11 @@ namespace blt {
 //*****************************************************************************
 
 std::once_flag WindowContextBase_glfw::s_InitOnce_glfw{};
-VkResult WindowContextBase_glfw::make_surface_impl(VkInstance instance,
+result_t WindowContextBase_glfw::make_surface_impl(VkInstance instance,
                                               VkSurfaceKHR &surface) {
-  return glfwCreateWindowSurface(instance, m_pWindow, nullptr, &surface);
+  return make_result(glfwCreateWindowSurface(instance, m_pWindow, nullptr, &surface));
 }
-CtxResult WindowContextBase_glfw::init_library() {
+result_t WindowContextBase_glfw::init_library() {
   static bool init_successful = false;
   std::call_once(s_InitOnce_glfw, [] {
     if (!glfwInit() || !glfwVulkanSupported()) {
@@ -53,13 +54,13 @@ CtxResult WindowContextBase_glfw::init_library() {
     });
     init_successful = true;
   });
-  return init_successful ? CtxResult::Success : CtxResult::GLFWInitFailed;
+  return make_result(init_successful ? CtxResult::Success : CtxResult::GLFWInitFailed);
 }
 void WindowContextBase_glfw::cleanup_library() noexcept { glfwTerminate(); }
-CtxResult
+result_t
 WindowContextBase_glfw::create_window_impl(const WindowCreateInfo_glfw &info) {
   using State = WindowCreateState;
-  if (CtxResult result = initialize(); result != CtxResult::Success)
+  if (result_t result = initialize())
     return result;
   // 1. 选取所用的监视器
   int monitor_count;
@@ -83,7 +84,7 @@ WindowContextBase_glfw::create_window_impl(const WindowCreateInfo_glfw &info) {
     use_primary_monitor();
   } else {
     print_error(s_TypeName, "No Monitor select function!");
-    return CtxResult::WrongArgument;
+    throw std::invalid_argument{"select function"};
   }
   // 2. 创建窗口
   m_Title = info.m_InitTitle;
@@ -106,7 +107,7 @@ WindowContextBase_glfw::create_window_impl(const WindowCreateInfo_glfw &info) {
   const GLFWvidmode *pMode = glfwGetVideoMode(m_pMonitor);
   if (!pMode) {
     print_error("WindowContext", "Get video mode failed!");
-    return CtxResult::FuncGetVideoModeFailed;
+    return make_result(CtxResult::FuncGetVideoModeFailed);
   }
   switch (size_state) {
   case State::full_screen:
@@ -123,14 +124,12 @@ WindowContextBase_glfw::create_window_impl(const WindowCreateInfo_glfw &info) {
                                  m_Title.c_str(), nullptr, nullptr);
     break;
   default:
-    m_pMonitor = nullptr;
-    m_Title.clear();
-    return CtxResult::WrongArgument;
+    throw std::invalid_argument("state");
   }
   if (!m_pWindow) {
     m_pMonitor = nullptr, m_pWindow = nullptr;
     m_Title.clear();
-    return CtxResult::WindowCreateFailed;
+    return make_result(CtxResult::WindowCreateFailed);
   }
   if (info.m_InitPosWidth != (~0u) && info.m_InitPosHeight != (~0u))
     glfwSetWindowPos(m_pWindow, info.m_InitPosWidth, info.m_InitPosHeight);
@@ -144,7 +143,7 @@ WindowContextBase_glfw::create_window_impl(const WindowCreateInfo_glfw &info) {
                 m_Title, info.m_InitPosWidth, info.m_InitPosHeight, info.m_InitSizeWidth,
                 info.m_InitSizeHeight, info.m_MinSizeWidth, info.m_MinSizeHeight,
                 info.m_MaxSizeWidth, info.m_MaxSizeHeight));
-  return CtxResult::Success;
+  return make_result(CtxResult::Success);
 }
 void WindowContextBase_glfw::cleanup_window_impl() noexcept {
   if (m_pWindow)
@@ -158,15 +157,15 @@ void WindowContextBase_glfw::cleanup_window_impl() noexcept {
 //*****************************************************************************
 // create_instance() 部分
 
-CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
+result_t ContextBase::create_instance(const InstanceCreateInfo &info) {
   uint32_t current_version = 0u;
   if (acquire_vkapi_version(current_version)) {
     print_error(s_TypeName, "acquire_vkapi_version failed!");
-    return CtxResult::AcquireApiVersionFailed;
+    return make_result(CtxResult::AcquireApiVersionFailed);
   }
   if (current_version < info.m_MinApiVersion) {
     print_error(s_TypeName, "Vulkan API version too low!");
-    return CtxResult::VulkanAPIVersionTooLow;
+    return make_result(CtxResult::VulkanAPIVersionTooLow);
   }
   m_VulkanApiVersion = std::max(current_version, info.m_MinApiVersion);
   VkApplicationInfo app_info = {
@@ -185,14 +184,15 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
     insert_debug_ext_layers(layer_names, extension_names);
 #endif // DEBUG
   {
-    WindowContextBase_glfw::initialize();
+    if (WindowContextBase_glfw::initialize())
+      throw std::runtime_error("Base init failed!");
     uint32_t extension_count = 0;
     const char **ppExtensionNames;
     ppExtensionNames = glfwGetRequiredInstanceExtensions(&extension_count);
     if (!ppExtensionNames && !glfwVulkanSupported()) {
       print_error(s_TypeName, "Vulkan is not available on this "
                               "machine!");
-      return CtxResult::AcquireGlfwExtFailed;
+      return make_result(CtxResult::AcquireGlfwExtFailed);
     }
     extension_names.append_range(
         std::span<const char *>(ppExtensionNames, extension_count));
@@ -200,15 +200,11 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
     //  info.m_ExtensionNames.push_back(extensionNames[i]);
   }
 
-  if (VkResult result = check_instance_extension(extension_names)) {
-    print_error(s_TypeName, "check_instance_extension() failed! Code:",
-                string_VkResult(result));
-    return CtxResult::CheckExtFailed;
+  if (result_t result = check_instance_extension(extension_names)) {
+    return make_result(CtxResult::CheckExtFailed);
   }
-  if (VkResult result = check_instance_layer(layer_names)) {
-    print_error(s_TypeName, "check_instance_layer() failed! Code:",
-                string_VkResult(result));
-    return CtxResult::CheckLayerFailed;
+  if (result_t result = check_instance_layer(layer_names)) {
+    return make_result(CtxResult::CheckLayerFailed);
   }
 
   VkInstanceCreateInfo createInfo = {
@@ -239,7 +235,7 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
     default:
       print_error(s_TypeName, "Vulkan instance create failed! Code:",
                   string_VkResult(result));
-      return CtxResult::InstanceCreateFailed;
+      return make_result(CtxResult::InstanceCreateFailed);
     }
   }
   print_log(s_TypeName,
@@ -248,22 +244,20 @@ CtxResult ContextBase::create_instance(const InstanceCreateInfo &info) {
             VK_API_VERSION_PATCH(m_VulkanApiVersion));
 #ifdef DEBUG
   if (info.m_isDebuging)
-    if (VkResult result = create_debugger()) {
-      print_error(s_TypeName,
-                  "create debug failed! Code:", string_VkResult(result));
-      return CtxResult::DebugCreateFailed;
+    if (result_t result = create_debugger()) {
+      return make_result(CtxResult::DebugCreateFailed);
     }
 #endif // DEBUG
-  return CtxResult::Success;
+  return make_result(CtxResult::Success);
 }
-VkResult ContextBase::acquire_vkapi_version(uint32_t &version) {
+result_t ContextBase::acquire_vkapi_version(uint32_t &version) {
   if (vkGetInstanceProcAddr(VK_NULL_HANDLE, "vkEnumerateInstanceVersion"))
-    return vkEnumerateInstanceVersion(&version);
+    return make_result(vkEnumerateInstanceVersion(&version));
   else
     version = VK_API_VERSION_1_0;
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
-VkResult
+result_t
 ContextBase::check_instance_extension(std::span<const char *> extensionNames,
                                       const char *layerName) {
   uint32_t extension_count;
@@ -274,7 +268,7 @@ ContextBase::check_instance_extension(std::span<const char *> extensionNames,
                 "Failed to get the count of instance "
                 "extension! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   if (extension_count) {
     available_extensions.resize(extension_count);
@@ -284,7 +278,7 @@ ContextBase::check_instance_extension(std::span<const char *> extensionNames,
                   "Failed to enumerate instance extension "
                   "properties! Code:",
                   string_VkResult(result));
-      return result;
+      return make_result(result);
     }
     for (auto &i : extensionNames)
       if (auto it = std::find_if(available_extensions.begin(),
@@ -296,16 +290,16 @@ ContextBase::check_instance_extension(std::span<const char *> extensionNames,
         i = nullptr;
   } else
     std::fill(extensionNames.begin(), extensionNames.end(), nullptr);
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
-VkResult ContextBase::check_instance_layer(std::span<const char *> layerNames) {
+result_t ContextBase::check_instance_layer(std::span<const char *> layerNames) {
   uint32_t layer_count;
   std::vector<VkLayerProperties> available_layers;
   if (VkResult result =
           vkEnumerateInstanceLayerProperties(&layer_count, nullptr)) {
     print_error(s_TypeName, "Failed to get the count of instance layers! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   if (layer_count) {
     available_layers.resize(layer_count);
@@ -314,7 +308,7 @@ VkResult ContextBase::check_instance_layer(std::span<const char *> layerNames) {
       print_error(s_TypeName,
                   "Failed to enumerate instance layer properties! Code:",
                   string_VkResult(result));
-      return result;
+      return make_result(result);
     }
     for (auto &i : layerNames)
       if (auto it = std::find_if(
@@ -324,7 +318,7 @@ VkResult ContextBase::check_instance_layer(std::span<const char *> layerNames) {
         i = nullptr;
   } else
     std::fill(layerNames.begin(), layerNames.end(), nullptr);
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 #ifdef DEBUG
 std::string ContextBase::combine_debug_message(
@@ -367,7 +361,7 @@ std::string ContextBase::combine_debug_message(
   sstm.str("");
   return message;
 }
-VkResult ContextBase::create_debugger() {
+result_t ContextBase::create_debugger() {
   static PFN_vkDebugUtilsMessengerCallbackEXT DebugUtilsMessengerCallback =
       [](VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
          VkDebugUtilsMessageTypeFlagsEXT messageTypes,
@@ -411,11 +405,11 @@ VkResult ContextBase::create_debugger() {
     if (result)
       print_error(s_TypeName, "Failed to create debug messenger! Code:",
                   string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   print_error(s_TypeName, "Failed to get the function pointer of "
                           "vkCreateDebugUtilsMessengerEXT!");
-  return VK_RESULT_MAX_ENUM;
+  return make_result(VK_RESULT_MAX_ENUM);
 }
 void ContextBase::insert_debug_ext_layers(
     std::vector<const char *> &layerNames,
@@ -427,9 +421,10 @@ void ContextBase::insert_debug_ext_layers(
 //*****************************************************************************
 // create_device() 部分
 
-CtxResult ContextBase::create_device(const DeviceCreateInfo &info,
+result_t ContextBase::create_device(const DeviceCreateInfo &info,
                                      std::span<VkSurfaceKHR> surfaces) {
-  init_physical_device(surfaces);
+  if (result_t result = init_physical_device(surfaces))
+    return result;
   // 1.构建队列创建表
   float queue_priority = 1.0f;
   VkDeviceQueueCreateInfo queue_create_infos[3] = {
@@ -461,7 +456,7 @@ CtxResult ContextBase::create_device(const DeviceCreateInfo &info,
   // 设备扩展(设备没有层级，已经弃用)
   // 获取设备扩展并排序，放入m_AvailableExtensions, m_Extensions中
   if (acquire_device_extensions(m_AvailableExtensions))
-    return CtxResult::AcquireDeviceExtensionsFailed;
+    return make_result(CtxResult::AcquireDeviceExtensionsFailed);
 
   auto extension_names = info.m_ExtensionNames;
   extension_names.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
@@ -510,7 +505,7 @@ CtxResult ContextBase::create_device(const DeviceCreateInfo &info,
                 string_VkResult(result));
     if (last)
       last->pNext = nullptr;
-    return CtxResult::DeviceCreateFailed;
+    return make_result(CtxResult::DeviceCreateFailed);
   }
   if (last)
     last->pNext = nullptr;
@@ -522,12 +517,12 @@ CtxResult ContextBase::create_device(const DeviceCreateInfo &info,
   if (queue_index_compute != VK_QUEUE_FAMILY_IGNORED)
     vkGetDeviceQueue(m_Device, queue_index_compute, 0, &m_Queue_compute);
   if (init_vma(vma_flags))
-    return CtxResult::VmaCreateFailed;
+    return make_result(CtxResult::VmaCreateFailed);
   print_log(s_TypeName,
             "Renderer:", m_PhysicalDeviceProperties.properties.deviceName);
-  return CtxResult::Success;
+  return make_result(CtxResult::Success);
 }
-VkResult ContextBase::acquire_physical_devices(
+result_t ContextBase::acquire_physical_devices(
     std::vector<VkPhysicalDevice> &availablePhysicalDevices) {
   uint32_t device_count;
   if (VkResult result =
@@ -535,7 +530,7 @@ VkResult ContextBase::acquire_physical_devices(
     print_error(s_TypeName,
                 "Failed to get the count of physical devices! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   if (!device_count) {
     print_error(s_TypeName,
@@ -548,9 +543,9 @@ VkResult ContextBase::acquire_physical_devices(
   if (result)
     print_error(s_TypeName, "Failed to enumerate physical devices! Code:",
                 string_VkResult(result));
-  return result;
+  return make_result(result);
 }
-VkResult ContextBase::acquire_queue_family_indices(
+result_t ContextBase::acquire_queue_family_indices(
     VkPhysicalDevice physicalDevice, uint32_t (&queueFamilyIndices)[3],
     std::span<VkSurfaceKHR> surfacesData, bool enableGraphicsQueue,
     bool enableComputeQueue) {
@@ -558,7 +553,7 @@ VkResult ContextBase::acquire_queue_family_indices(
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queue_family_count,
                                            nullptr);
   if (!queue_family_count)
-    return VK_RESULT_MAX_ENUM;
+    return make_result(VK_RESULT_MAX_ENUM);
   std::vector<VkQueueFamilyProperties> queue_family_properties(
       queue_family_count);
   vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queue_family_count,
@@ -586,7 +581,7 @@ VkResult ContextBase::acquire_queue_family_indices(
                       "Failed to determine if the queue "
                       "family supports presentation! Code:",
                       string_VkResult(result));
-          return result;
+          return make_result(result);
         }
     }
     // 若某队列族同时支持图形操作和计算
@@ -614,13 +609,13 @@ VkResult ContextBase::acquire_queue_family_indices(
   if ((ig == VK_QUEUE_FAMILY_IGNORED && enableGraphicsQueue) ||
       (ip == VK_QUEUE_FAMILY_IGNORED && surfacesData.size() > 0) ||
       (ic == VK_QUEUE_FAMILY_IGNORED && enableComputeQueue))
-    return VK_RESULT_MAX_ENUM;
+    return make_result(VK_RESULT_MAX_ENUM);
   m_QueueFamilyIndex_graphics = ig;
   m_QueueFamilyIndex_presentation = ip;
   m_QueueFamilyIndex_compute = ic;
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
-VkResult ContextBase::determine_physical_device(
+result_t ContextBase::determine_physical_device(
     std::vector<VkPhysicalDevice> &availablePhysicalDevices,
     uint32_t deviceIndex, std::span<VkSurfaceKHR> surfacesData,
     bool enableGraphicsQueue, bool enableComputeQueue) {
@@ -642,14 +637,14 @@ VkResult ContextBase::determine_physical_device(
   if ((ig == not_found && enableGraphicsQueue) ||
       (ip == not_found && !surfacesData.empty()) ||
       (ic == not_found && enableComputeQueue))
-    return VK_RESULT_MAX_ENUM;
+    return make_result(VK_RESULT_MAX_ENUM);
 
   // 如果有任何队列族索引应被获取但还未被找过
   if ((ig == VK_QUEUE_FAMILY_IGNORED && enableGraphicsQueue) ||
       (ip == VK_QUEUE_FAMILY_IGNORED && !surfacesData.empty()) ||
       (ic == VK_QUEUE_FAMILY_IGNORED && enableComputeQueue)) {
     uint32_t indices[3];
-    VkResult result = acquire_queue_family_indices(
+    result_t result = acquire_queue_family_indices(
         availablePhysicalDevices[deviceIndex], indices, surfacesData,
         enableGraphicsQueue, enableComputeQueue);
     // 若GetQueueFamilyIndices(...)返回VK_SUCCESS或VK_RESULT_MAX_ENUM（vkGetPhysicalDeviceSurfaceSupportKHR(...)执行成功但没找齐所需队列族），
@@ -677,7 +672,7 @@ VkResult ContextBase::determine_physical_device(
         enableComputeQueue ? ic : VK_QUEUE_FAMILY_IGNORED;
   }
   m_PhysicalDevice = availablePhysicalDevices[deviceIndex];
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 void ContextBase::acquire_physical_divice_properties() {
   //   设备属性:
@@ -747,23 +742,23 @@ void ContextBase::acquire_physical_divice_features() {
     vkGetPhysicalDeviceFeatures(m_PhysicalDevice,
                                 &m_PhysicalDeviceFeatures.features);
 }
-CtxResult
+result_t
 ContextBase::init_physical_device(std::span<VkSurfaceKHR> surfacesData) {
   std::vector<VkPhysicalDevice> available_physical_devices;
   if (acquire_physical_devices(available_physical_devices))
-    return CtxResult::AcquirePhysicalDevicesFailed;
+    return make_result(CtxResult::AcquirePhysicalDevicesFailed);
   for (uint32_t i = 0; i < available_physical_devices.size(); ++i)
     if (determine_physical_device(available_physical_devices, i, surfacesData,
                                   true, true) == VK_SUCCESS)
       goto FIND_SUCCESS;
   print_error(s_TypeName, "Can not find any phyDevice fits all conditions!");
-  return CtxResult::NoFitDevice;
+  return make_result(CtxResult::NoFitDevice);
 FIND_SUCCESS:
   acquire_physical_divice_properties();
   acquire_physical_divice_features();
-  return CtxResult::Success;
+  return make_result(CtxResult::Success);
 }
-VkResult ContextBase::acquire_device_extensions(
+result_t ContextBase::acquire_device_extensions(
     std::vector<VkExtensionProperties> &extensionNames, const char *layerName) {
   uint32_t extCount;
   if (VkResult result = vkEnumerateDeviceExtensionProperties(
@@ -771,7 +766,7 @@ VkResult ContextBase::acquire_device_extensions(
     print_error(s_TypeName,
                 "vkEnumerateDeviceExtensionProperties() failed! Code:",
                 string_VkResult(result));
-    return VK_RESULT_MAX_ENUM;
+    return make_result(VK_RESULT_MAX_ENUM);
   }
   extensionNames.resize(extCount);
   if (VkResult result = vkEnumerateDeviceExtensionProperties(
@@ -779,7 +774,7 @@ VkResult ContextBase::acquire_device_extensions(
     print_error(s_TypeName,
                 "vkEnumerateDeviceExtensionProperties() failed! Code:",
                 string_VkResult(result));
-    return VK_RESULT_MAX_ENUM;
+    return make_result(VK_RESULT_MAX_ENUM);
   }
   m_Extensions.resize(m_AvailableExtensions.size());
   std::transform(m_AvailableExtensions.begin(), m_AvailableExtensions.end(),
@@ -787,7 +782,7 @@ VkResult ContextBase::acquire_device_extensions(
                  [](VkExtensionProperties &ext) { return ext.extensionName; });
   std::sort(m_Extensions.begin(), m_Extensions.end(),
             [](const char *a, const char *b) { return std::strcmp(a, b) < 0; });
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 //*****************************************************************************
 // VMA 部分
@@ -837,14 +832,14 @@ void ContextBase::check_device_extension(std::span<const char *> extensionNames,
       i = nullptr;
   }
 }
-VkResult ContextBase::init_vma(VmaAllocatorCreateFlagBits vmaFlags) {
+result_t ContextBase::init_vma(VmaAllocatorCreateFlagBits vmaFlags) {
   VmaAllocatorCreateInfo allocatorCreateInfo = {
       .flags = vmaFlags,
       .physicalDevice = m_PhysicalDevice,
       .device = m_Device,
       .instance = m_Instance,
       .vulkanApiVersion = m_VulkanApiVersion};
-  return vmaCreateAllocator(&allocatorCreateInfo, &m_Allocator);
+  return make_result(vmaCreateAllocator(&allocatorCreateInfo, &m_Allocator));
 }
 void ContextBase::cleanup() noexcept {
   if (!m_Instance)

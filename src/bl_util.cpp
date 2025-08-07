@@ -21,42 +21,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#ifndef _BL_CORE_BL_UTIL_HPP_
-#define _BL_CORE_BL_UTIL_HPP_
-#if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
-    defined(__NT__) && !defined(__CYGWIN__)
-#define BL_PLATFORM_WINDOWS
-#elif defined(__unix__)
-#define BL_PLATFORM_UNIX
-#endif
-// 第三方库include
-#include <vulkan/vulkan.h>
-// 标准库include
-#include <cstdint>
-#include <sstream>
-namespace blt {
-#define BL_VERSION VK_MAKE_API_VERSION(0, 0, 1, 0)
-#ifdef DEBUG
-constexpr int8_t is_debuging = 1;
-#else
-constexpr int8_t is_debuging = 0;
-#endif // DEBUG
-} // namespace blt
-// 本地include
-#include <utils/bl_byte_magic.hpp>
-#include <utils/bl_callback_type.hpp>
-#include <utils/bl_output.hpp>
-#include <utils/bl_result_type.hpp>
-#include <utils/bl_timer_type.hpp>
-#include <utils/bl_macro.hpp>
-/// @brief 线程本地数据，方便获取上下文
-struct ThreadData_util {
-  std::stringstream m_LocalSstream;
-};
-extern thread_local ThreadData_util s_LocalData;
-/// @brief 获取线程本地数据
-/// @return 线程本地数据
-INLINE ThreadData_util &acquire_local_data() {
-  return s_LocalData;
+#include <bl_util.hpp>
+
+namespace blt{
+thread_local ThreadData_util s_LocalData;
 }
-#endif //!_BL_CORE_BL_UTIL_HPP_

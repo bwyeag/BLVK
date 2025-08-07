@@ -112,11 +112,10 @@ struct ContextBase {
 #endif // DEBUG
   VmaAllocator m_Allocator{VK_NULL_HANDLE};
 
-  CtxResult m_ErrorState{CtxResult::Success};
   Callback<ContextBase, ContextBase *> m_CallbackUpdate;
 
-  CtxResult create_instance(const InstanceCreateInfo &info);
-  CtxResult create_device(const DeviceCreateInfo &info,
+  result_t create_instance(const InstanceCreateInfo &info);
+  result_t create_device(const DeviceCreateInfo &info,
                           std::span<VkSurfaceKHR> surfaces);
   void cleanup() noexcept;
   void update();
@@ -125,17 +124,17 @@ protected:
   /// @brief 获取VulkanAPI的版本
   /// @param version 返回版本
   /// @return 是否正确查询
-  VkResult acquire_vkapi_version(uint32_t &version);
+  result_t acquire_vkapi_version(uint32_t &version);
   /// @brief 检查实例扩展是否可用
   /// @param extensionNames 被检查的数组
   /// @param layerName 扩展所在的层级, 一律为nullptr
   /// @return 是否正确检查
-  VkResult check_instance_extension(std::span<const char *> extensionNames,
+  result_t check_instance_extension(std::span<const char *> extensionNames,
                                     const char *layerName = nullptr);
   /// @brief 检查实例层级是否可用
   /// @param layerNames 被检查的数组
   /// @return 是否正确检查
-  VkResult check_instance_layer(std::span<const char *> layerNames);
+  result_t check_instance_layer(std::span<const char *> layerNames);
 #ifdef DEBUG
   /// @brief 合并pCallbackData内容为一个字符串输出
   /// @param pCallbackData 被合并的debug数据
@@ -144,7 +143,7 @@ protected:
       const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData);
   /// @brief 初始化debug部分
   /// @return 是否正确完成
-  VkResult create_debugger();
+  result_t create_debugger();
   void insert_debug_ext_layers(std::vector<const char *> &layerNames,
                                std::vector<const char *> &extensionNames);
 #endif // DEBUG
@@ -153,7 +152,7 @@ protected:
   /// @brief 取得物理设备列表
   /// @param availablePhysicalDevices 返回该列表
   /// @return 是否正确完成
-  VkResult acquire_physical_devices(
+  result_t acquire_physical_devices(
       std::vector<VkPhysicalDevice> &availablePhysicalDevices);
   /// @brief 获取设备所用的队列族
   /// @param physicalDevice 被获取的设备
@@ -161,7 +160,7 @@ protected:
   /// @param enableComputeQueue 是否查找计算队列
   /// @param queueFamilyIndices 返回队列族索引, 依次为图形,呈现,计算
   /// @return 是否正确完成
-  VkResult acquire_queue_family_indices(VkPhysicalDevice physicalDevice,
+  result_t acquire_queue_family_indices(VkPhysicalDevice physicalDevice,
                                         uint32_t (&queueFamilyIndices)[3],
                                         std::span<VkSurfaceKHR> windowData,
                                         bool enableGraphicsQueue = true,
@@ -172,7 +171,7 @@ protected:
   /// @param enableGraphicsQueue 是否启用图形队列
   /// @param enableComputeQueue 是否启用计算队列
   /// @return 是否正确完成
-  VkResult determine_physical_device(
+  result_t determine_physical_device(
       std::vector<VkPhysicalDevice> &availablePhysicalDevices,
       uint32_t deviceIndex = 0, std::span<VkSurfaceKHR> windowData = {},
       bool enableGraphicsQueue = true, bool enableComputeQueue = true);
@@ -183,8 +182,8 @@ protected:
   /// @brief 初始化物理设备
   /// @param windowData 当前需要与设备匹配的各个窗口
   /// @return 是否正确完成
-  CtxResult init_physical_device(std::span<VkSurfaceKHR> windowData);
-  VkResult
+  result_t init_physical_device(std::span<VkSurfaceKHR> windowData);
+  result_t
   acquire_device_extensions(std::vector<VkExtensionProperties> &extensionNames,
                             const char *layerName = nullptr);
   /// @brief 获取VMA可使用的所有扩展并加入到extensionNames中
@@ -201,23 +200,9 @@ protected:
   /// @brief 初始化VMA库(内存分配)
   /// @param info 创建信息
   /// @return 是否正确完成
-  VkResult init_vma(VmaAllocatorCreateFlagBits vmaFlags);
+  result_t init_vma(VmaAllocatorCreateFlagBits vmaFlags);
 };
 
-//*****************************************************************************
-// LocalData 部分
-//*****************************************************************************
-
-/// @brief 线程本地数据，方便获取上下文
-struct ThreadData {
-  std::stringstream m_LocalSstream;
-};
-/// @brief 获取线程本地数据
-/// @return 线程本地数据
-inline ThreadData &acquire_local_data() {
-  static thread_local ThreadData local_data;
-  return local_data;
-}
 /// @brief 默认使用的获取当前上下文的静态类和各种常数设置
 class ContextTraits {
   inline static ContextBase *s_CurrentContext{nullptr};
@@ -357,13 +342,13 @@ template <typename T> struct WindowContextBase {
 #define ChildPtr static_cast<T *>(this)
   std::string m_Title;
 
-  INLINE static CtxResult initialize() { return T::init_library(); }
+  INLINE static result_t initialize() { return T::init_library(); }
   INLINE static void cleanup() { T::cleanup_library(); }
-  INLINE CtxResult create_window(const auto &info) {
+  INLINE result_t create_window(const auto &info) {
     return ChildPtr->create_window_impl(info);
   }
   INLINE void cleanup_window() noexcept { ChildPtr->cleanup_window_impl(); }
-  INLINE VkResult make_surface(VkInstance instance, VkSurfaceKHR &surface) {
+  INLINE result_t make_surface(VkInstance instance, VkSurfaceKHR &surface) {
     return ChildPtr->make_surface_impl(instance, surface);
   }
   INLINE void get_window_size(uint32_t &width, uint32_t &height) {
@@ -405,12 +390,12 @@ private:
   GLFWwindow *m_pWindow{nullptr};
   GLFWmonitor *m_pMonitor{nullptr};
 
-  static CtxResult init_library();
+  static result_t init_library();
   static void cleanup_library() noexcept;
-  CtxResult create_window_impl(const CreateInfo &info);
+  result_t create_window_impl(const CreateInfo &info);
   void cleanup_window_impl() noexcept;
 
-  VkResult make_surface_impl(VkInstance instance, VkSurfaceKHR &surface);
+  result_t make_surface_impl(VkInstance instance, VkSurfaceKHR &surface);
   INLINE void get_window_size_impl(uint32_t &width, uint32_t &height) {
     glfwGetWindowSize(m_pWindow, (int *)&width, (int *)&height);
   }
@@ -444,39 +429,39 @@ struct WindowContext : public BaseCtx {
   Callback<WindowContext, WindowContext *> m_CallbackSwapchainDestroy;
   Callback<WindowContext, WindowContext *> m_CallbackSwapchainConstruct;
 
-  CtxResult create(const SwapchainCreateInfo &info);
+  result_t create(const SwapchainCreateInfo &info);
   void cleanup() noexcept;
 
   /// @brief 创建窗口表面, 应当委托到BaseCtx执行
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
-  VkResult create_surface();
+  result_t create_surface();
   INLINE VkSurfaceKHR get_surface() { return m_Surface; }
 
   /// @brief 重建交换链
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
-  VkResult recreate_swapchain();
+  result_t recreate_swapchain();
 
 protected:
   /// @brief 直接创建交换链，并且获取交换链图像和视图，不调用回调
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
-  VkResult create_swapchain_Internal();
+  result_t create_swapchain_Internal();
   /// @brief 获取窗口表面格式，在create()中调用
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
-  VkResult acquire_surface_formats();
+  result_t acquire_surface_formats();
   /// @brief 获取窗口呈现模式，在create()中调用
   /// @param presentModes
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
-  VkResult acquire_present_modes(std::vector<VkPresentModeKHR> &presentModes);
+  result_t acquire_present_modes(std::vector<VkPresentModeKHR> &presentModes);
   /// @brief 设定当前窗口表面格式
   /// @param surfaceFormat
   /// @param ctx 使用的Vulkan上下文
   /// @return 是否成功执行
-  VkResult set_surface_format(VkSurfaceFormatKHR surfaceFormat);
+  result_t set_surface_format(VkSurfaceFormatKHR surfaceFormat);
 };
 } // namespace blt
 
@@ -486,7 +471,7 @@ namespace blt {
 // WindowContext 类
 //*****************************************************************************
 template <typename BaseCtx, typename _Ctx>
-CtxResult
+result_t
 WindowContext<BaseCtx, _Ctx>::create(const SwapchainCreateInfo &info) {
   VkSurfaceCapabilitiesKHR surface_capabilities;
   // 获取surface支持能力
@@ -495,7 +480,7 @@ WindowContext<BaseCtx, _Ctx>::create(const SwapchainCreateInfo &info) {
     print_error(s_TypeName,
                 "Failed to get physical device surface capabilities! Code:",
                 string_VkResult(result));
-    return CtxResult::FuncGetPhysicalDeviceSurfaceCapFailed;
+    return make_result(CtxResult::FuncGetPhysicalDeviceSurfaceCapFailed);
   }
   auto &cInfo = m_SwapchainCreateInfo;
   // 如果容许的最大数量与最小数量不等，那么使用最小数量+1
@@ -540,7 +525,7 @@ WindowContext<BaseCtx, _Ctx>::create(const SwapchainCreateInfo &info) {
                   "VK_IMAGE_USAGE_TRANSFER_DST_BIT isn't supported!");
   // 指定图像格式
   if (m_AvailableFormats.empty() && acquire_surface_formats())
-    return CtxResult::AcquireSurfaceFormatsFailed;
+    return make_result(CtxResult::AcquireSurfaceFormatsFailed);
   if (!cInfo.imageFormat)
     if (set_surface_format(
             {VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}) &&
@@ -555,7 +540,7 @@ WindowContext<BaseCtx, _Ctx>::create(const SwapchainCreateInfo &info) {
   // 指定呈现模式
   std::vector<VkPresentModeKHR> surfacePresentModes;
   if (acquire_present_modes(surfacePresentModes))
-    return CtxResult::AcquirePresentModesFailed;
+    return make_result(CtxResult::AcquirePresentModesFailed);
   cInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
   if (!info.m_isFrameRateLimited)
     for (size_t i = 0; i < surfacePresentModes.size(); i++)
@@ -575,9 +560,9 @@ WindowContext<BaseCtx, _Ctx>::create(const SwapchainCreateInfo &info) {
   cInfo.pNext = nullptr;
   //---------------------------------------------------------------------------
   if (create_swapchain_Internal())
-    return CtxResult::FuncCreateSwapchainInternalFailed;
+    return make_result(CtxResult::FuncCreateSwapchainInternalFailed);
   m_CallbackSwapchainConstruct.iterate(this);
-  return CtxResult::Success;
+  return make_result(CtxResult::Success);
 }
 template <typename BaseCtx, typename _Ctx>
 void WindowContext<BaseCtx, _Ctx>::cleanup() noexcept {
@@ -603,18 +588,18 @@ void WindowContext<BaseCtx, _Ctx>::cleanup() noexcept {
   }
 }
 template <typename BaseCtx, typename _Ctx>
-VkResult WindowContext<BaseCtx, _Ctx>::create_surface() {
+result_t WindowContext<BaseCtx, _Ctx>::create_surface() {
   VkSurfaceKHR surface = VK_NULL_HANDLE;
   if (VkResult result = BaseCtx::make_surface(_Ctx::get_instance(), surface)) {
     print_error(s_TypeName, "Failed to create a window surface! Code:",
                 string_VkResult(result));
-    return VK_RESULT_MAX_ENUM;
+    return make_result(VK_RESULT_MAX_ENUM);
   }
   this->m_Surface = surface;
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 template <typename BaseCtx, typename _Ctx>
-VkResult WindowContext<BaseCtx, _Ctx>::recreate_swapchain() {
+result_t WindowContext<BaseCtx, _Ctx>::recreate_swapchain() {
   auto &cInfo = m_SwapchainCreateInfo;
   VkSurfaceCapabilitiesKHR surface_capabilities{};
   // 获取窗口表面能力，每次使用必须重新获取
@@ -623,11 +608,11 @@ VkResult WindowContext<BaseCtx, _Ctx>::recreate_swapchain() {
     print_error(s_TypeName,
                 "Failed to get physical device surface capabilities! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   if (surface_capabilities.currentExtent.width == 0 ||
       surface_capabilities.currentExtent.height == 0)
-    return VK_SUBOPTIMAL_KHR;
+    return make_result(VK_SUBOPTIMAL_KHR);
   cInfo.imageExtent = surface_capabilities.currentExtent;
   cInfo.oldSwapchain = m_Swapchain;
   VkResult result = vkQueueWaitIdle(_Ctx::get_queue_graphics());
@@ -637,7 +622,7 @@ VkResult WindowContext<BaseCtx, _Ctx>::recreate_swapchain() {
   if (result) {
     print_error(s_TypeName, "Failed to wait for the queue to be idle! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   m_CallbackSwapchainDestroy.iterate(this);
   std::ranges::for_each(m_SwapchainImageViews, [](VkImageView view) {
@@ -647,23 +632,23 @@ VkResult WindowContext<BaseCtx, _Ctx>::recreate_swapchain() {
   if (VkResult result = create_swapchain_Internal()) {
     print_error(s_TypeName,
                 "Create swapchain failed! Code:", string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   m_CallbackSwapchainConstruct.iterate(this);
   print_log(s_TypeName, std::format("Swapchain recreated! New extent:{},{}",
                                     m_SwapchainCreateInfo.imageExtent.width,
                                     m_SwapchainCreateInfo.imageExtent.height));
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 template <typename BaseCtx, typename _Ctx>
-VkResult WindowContext<BaseCtx, _Ctx>::create_swapchain_Internal() {
+result_t WindowContext<BaseCtx, _Ctx>::create_swapchain_Internal() {
   auto &cInfo = m_SwapchainCreateInfo;
   // 直接创建交换链
   if (VkResult result = vkCreateSwapchainKHR(_Ctx::get_device(), &cInfo,
                                              nullptr, &m_Swapchain)) {
     print_error(s_TypeName,
                 "Failed to create a swapchain! Code:", string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   // 获取交换链图像
   uint32_t swapchainImageCount;
@@ -672,7 +657,7 @@ VkResult WindowContext<BaseCtx, _Ctx>::create_swapchain_Internal() {
     print_error(s_TypeName,
                 "Failed to get the count of swapchain images! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   m_SwapchainImages.resize(swapchainImageCount);
   if (VkResult result = vkGetSwapchainImagesKHR(_Ctx::get_device(), m_Swapchain,
@@ -680,7 +665,7 @@ VkResult WindowContext<BaseCtx, _Ctx>::create_swapchain_Internal() {
                                                 m_SwapchainImages.data())) {
     print_error(s_TypeName, "Failed to get swapchain images! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   // 直接创建交换链，并且获取交换链图像和视图
   m_SwapchainImageViews.resize(swapchainImageCount);
@@ -697,13 +682,13 @@ VkResult WindowContext<BaseCtx, _Ctx>::create_swapchain_Internal() {
                               &m_SwapchainImageViews[i])) {
       print_error(s_TypeName, "Failed to create a swapchain image view! Code:",
                   string_VkResult(result));
-      return result;
+      return make_result(result);
     }
   }
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 template <typename BaseCtx, typename _Ctx>
-VkResult WindowContext<BaseCtx, _Ctx>::acquire_surface_formats() {
+result_t WindowContext<BaseCtx, _Ctx>::acquire_surface_formats() {
   // 获取窗口表面格式例程
   uint32_t surfaceFormatCount;
   if (VkResult result = vkGetPhysicalDeviceSurfaceFormatsKHR(
@@ -712,7 +697,7 @@ VkResult WindowContext<BaseCtx, _Ctx>::acquire_surface_formats() {
                 "Failed to get the count of surface "
                 "formats! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   if (!surfaceFormatCount)
     print_error(s_TypeName, "Failed to find any supported surface "
@@ -727,10 +712,10 @@ VkResult WindowContext<BaseCtx, _Ctx>::acquire_surface_formats() {
                 "Failed to get surface formats! "
                 "Code:",
                 string_VkResult(result));
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 template <typename BaseCtx, typename _Ctx>
-VkResult WindowContext<BaseCtx, _Ctx>::acquire_present_modes(
+result_t WindowContext<BaseCtx, _Ctx>::acquire_present_modes(
     std::vector<VkPresentModeKHR> &presentModes) {
   // 获取呈现模式例程
   uint32_t surfacePresentModeCount;
@@ -740,7 +725,7 @@ VkResult WindowContext<BaseCtx, _Ctx>::acquire_present_modes(
     print_error(s_TypeName,
                 "Failed to get the count of surface present modes! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
   if (!surfacePresentModeCount)
     print_error(s_TypeName, "Failed to find any surface present mode!"),
@@ -753,12 +738,12 @@ VkResult WindowContext<BaseCtx, _Ctx>::acquire_present_modes(
                 "Failed to get surface present "
                 "modes! Code:",
                 string_VkResult(result));
-    return result;
+    return make_result(result);
   }
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 template <typename BaseCtx, typename _Ctx>
-VkResult WindowContext<BaseCtx, _Ctx>::set_surface_format(
+result_t WindowContext<BaseCtx, _Ctx>::set_surface_format(
     VkSurfaceFormatKHR surfaceFormat) {
   bool formatIsAvailable = false;
   if (!surfaceFormat.format) {
@@ -782,11 +767,11 @@ VkResult WindowContext<BaseCtx, _Ctx>::set_surface_format(
       }
   // 如果没有符合的格式, 返回错误
   if (!formatIsAvailable)
-    return VK_ERROR_FORMAT_NOT_SUPPORTED;
+    return make_result(VK_ERROR_FORMAT_NOT_SUPPORTED);
   // 如果交换链已存在，调用recreate_swapchain()重建交换链
   if (m_Swapchain)
     return recreate_swapchain();
-  return VK_SUCCESS;
+  return make_result(VK_SUCCESS);
 }
 } // namespace blt
 #endif // !_BL_CORE_CONTEXTS_FILE_
