@@ -26,7 +26,15 @@ SOFTWARE.
 #undef INLINE
 #undef INLINE_CALL
 #undef RESTRICT
+#undef CARG
+#undef CARG_WRAP
+#undef CARG_UNWRAP
 
+#define CARG typename
+#define CARG_WRAP(x) [] { return (x); }
+#define CARG_UNWRAP(x) (x)()
+
+//*****************************************************************************
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
     defined(__NT__) && !defined(__CYGWIN__)
 #define BL_PLATFORM_WINDOWS

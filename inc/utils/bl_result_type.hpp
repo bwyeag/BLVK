@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ******************************************************************************/
-#include <cassert>
+#include <string>
 #ifndef BL_UTIL_RESULT_TYPE_FILE
 #include <utils/bl_macro.hpp>
 // 第三方库include
@@ -29,8 +29,12 @@ SOFTWARE.
 // 标准库include
 #include <array>
 #include <bit>
+#include <cassert>
 #include <cstdint>
 #include <cstdlib>
+#include <source_location>
+#include <stdexcept>
+#include <type_traits>
 namespace blt {
 template <typename T> struct ResultEnumTrait {
   static constexpr bool is_error_enum = false;
@@ -97,7 +101,15 @@ template <> struct ResultEnumTrait<LoadResult> {
 struct result_value_data_t {
   const char *file_name;
   const char *function_name;
-  int line;
+  uint64_t line;
+
+  result_value_data_t &
+  fill(std::source_location loc = std::source_location::current()) {
+    file_name = loc.file_name();
+    function_name = loc.function_name();
+    line = loc.line();
+    return *this;
+  }
 };
 struct [[nodiscard]] result_t {
   static constexpr uint32_t NullIndex = 0xffff;
@@ -110,27 +122,35 @@ struct [[nodiscard]] result_t {
   template <typename T>
     requires ResultEnumTrait<T>::is_error_enum &&
              (!ResultEnumTrait<T>::has_detail_info)
-  constexpr result_t(const T &code);
+  constexpr result_t(const T &errc);
   constexpr result_t(const result_t &) = default;
   constexpr result_t(result_t &&) = default;
   constexpr ~result_t() = default;
-  const char *category() const;
-  const char *message() const;
-  result_value_data_t &acquire();
+
   INLINE constexpr operator bool() const { return m_type == 0; }
   INLINE constexpr operator uint64_t() const {
     return std::bit_cast<uint64_t>(*this);
   }
-  template <typename T> INLINE constexpr bool operator==(T code) const {
+  template <typename T> INLINE constexpr bool operator==(T errc) const {
     return (m_category == ResultEnumTrait<T>::category_id &&
-            m_type == static_cast<int32_t>(code));
+            m_type == static_cast<int32_t>(errc));
   }
-  template <typename Func> void install(Func &&fn, const result_t &next);
-  template <typename Func> void remove(Func &&fn);
+
+  const char *category() const;
+  const char *message() const;
+  result_value_data_t &acquire();
+  result_value_data_t &install(const result_t &next);
   void remove();
+  template <typename T, typename Func>
+    requires ResultEnumTrait<T>::is_error_enum &&
+             std::is_invocable<Func, result_value_data_t &>::value
+  result_t &forward(T errc, Func &&fn);
+
+private:
+  result_value_data_t &install_internal(const result_t &next);
 };
 static_assert(sizeof(result_t) == 8);
-template <typename T> result_t make_result(T code) { return result_t{code}; }
+template <typename T> result_t make_result(T errc) { return result_t{errc}; }
 //*****************************************************************************
 // static data
 //*****************************************************************************
@@ -166,43 +186,29 @@ INLINE result_value_data_t &result_t::acquire() {
 template <typename T>
   requires ResultEnumTrait<T>::is_error_enum &&
                (!ResultEnumTrait<T>::has_detail_info)
-INLINE constexpr result_t::result_t(const T &code)
+INLINE constexpr result_t::result_t(const T &errc)
     : m_category(ResultEnumTrait<T>::category_id),
-      m_type(static_cast<int32_t>(code)), m_index(result_t::NullIndex) {}
-template <typename Func>
-void result_t::install(Func &&fn, const result_t &next) {
-  result_value_t *p = s_ResultValue_head.ptr;
-  s_ResultValue_head.ptr =
-      std::bit_cast<decltype(p)>(s_ResultValue_head.ptr->m_Head);
-  m_index = p - s_ResultValue.data();
-  p->m_NextVal = (next.m_index != result_t::NullIndex)
-                     ? s_ResultValue.data() + next.m_index
-                     : nullptr;
-  p->m_Head = uint64_t(*this);
-  fn(p->m_Data);
+      m_type(static_cast<int32_t>(errc)), m_index(result_t::NullIndex) {}
+INLINE result_value_data_t &result_t::install(const result_t &next) {
+#ifdef DEBUG
+  if (m_index != result_t::NullIndex)
+    throw std::logic_error("re-install result_t");
+#endif // DEBUG
+  return install_internal(next);
 }
-template <typename Func> void result_t::remove(Func &&fn) {
+template <typename T, typename Func>
+  requires ResultEnumTrait<T>::is_error_enum &&
+           std::is_invocable<Func, result_value_data_t &>::value
+result_t &result_t::forward(T errc, Func &&fn) {
 #ifdef DEBUG
-  if (m_index != result_t::NullIndex) {
+  if (m_index == result_t::NullIndex)
+    throw std::logic_error("uninstalled result_t");
 #endif // DEBUG
-    result_value_t *p = s_ResultValue.data() + m_index;
-    fn(s_ResultValue[m_index].m_Data);
-    p->m_Head = std::bit_cast<uint64_t>(s_ResultValue_head.ptr);
-    s_ResultValue_head.ptr = p;
-#ifdef DEBUG
-  }
-#endif // DEBUG
-}
-INLINE void result_t::remove() {
-#ifdef DEBUG
-  if (m_index != result_t::NullIndex) {
-#endif // DEBUG
-    result_value_t *p = s_ResultValue.data() + m_index;
-    p->m_Head = std::bit_cast<uint64_t>(s_ResultValue_head.ptr);
-    s_ResultValue_head.ptr = p;
-#ifdef DEBUG
-  }
-#endif // DEBUG
+  result_t self = *this;
+  m_category = ResultEnumTrait<T>::category_id;
+  m_type = static_cast<int32_t>(errc);
+  (void)fn(install(self));
+  return *this;
 }
 } // namespace blt
-#endif // !BL_UTIL_RESULT_TYPE_FILE
+#endif // ! BL_UTIL_RESULT_TYPE_FILE

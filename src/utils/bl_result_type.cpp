@@ -110,4 +110,26 @@ result_head_t::result_head_t() {
   s_ResultValue[err_info_capacity - 1].m_Head =
       std::bit_cast<uint64_t>(nullptr);
 }
+auto result_t::install_internal(const result_t &next) -> result_value_data_t & {
+  result_value_t *p = s_ResultValue_head.ptr;
+  s_ResultValue_head.ptr =
+      std::bit_cast<decltype(p)>(s_ResultValue_head.ptr->m_Head);
+  m_index = p - s_ResultValue.data();
+  p->m_NextVal = (next.m_index != result_t::NullIndex)
+                     ? s_ResultValue.data() + next.m_index
+                     : nullptr;
+  p->m_Head = uint64_t(*this);
+}
+void result_t::remove() {
+#ifdef DEBUG
+  if (m_index != result_t::NullIndex) {
+#endif // DEBUG
+    result_value_t *p = s_ResultValue.data() + m_index;
+    p->m_Head = std::bit_cast<uint64_t>(s_ResultValue_head.ptr);
+    s_ResultValue_head.ptr = p;
+#ifdef DEBUG
+  } else
+    throw std::logic_error("uninstalled result_t");
+#endif // DEBUG
+}
 } // namespace blt
