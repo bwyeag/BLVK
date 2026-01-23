@@ -33,7 +33,11 @@ SOFTWARE.
 #define CARG typename
 #define CARG_WRAP(x) [] { return (x); }
 #define CARG_UNWRAP(x) (x)()
-
+#ifdef DEBUG
+#define DEBUG_V true
+#else
+#define DEBUG_V false
+#endif // DEBUG
 //*****************************************************************************
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32__) ||                 \
     defined(__NT__) && !defined(__CYGWIN__)
